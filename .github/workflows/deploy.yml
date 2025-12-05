@@ -33,6 +33,6 @@ jobs:
           password: ${{ secrets.SFTP_PASSWORD }}
           protocol: ftp
           port: 21
-          local-dir: ./dist
+          local-dir: ./dist/
           server-dir: ${{ secrets.SFTP_TARGET }}
           dangerous-clean-slate: true
