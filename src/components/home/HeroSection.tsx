@@ -15,13 +15,17 @@ const HeroSection = () => {
         <div className="max-w-3xl mx-auto text-center">
           <p className="text-sm text-muted-foreground mb-6 opacity-0 animate-fade-up animation-delay-100">Cyklistický klub Esko.cc</p>
 
-          <h1 className="text-hero font-semibold mb-8 opacity-0 animate-fade-up animation-delay-200">
+          <h1 className="text-hero font-semibold mb-4 opacity-0 animate-fade-up animation-delay-200">
             Jezdi tak dlouho,
             <br />
             <span className="text-muted-foreground">nebo krátce jak zvládáš.</span>
             <br />
             <span className="text-gradient">Ale jezdi.</span>
           </h1>
+
+          <p className="text-xs text-muted-foreground mb-10 opacity-0 animate-fade-up animation-delay-250">
+            — Eddy Merckx
+          </p>
 
           <p className="text-lg text-muted-foreground mb-10 max-w-xl mx-auto opacity-0 animate-fade-up animation-delay-300">
             Přidej se k naší komunitě cyklistů. Společné vyjížďky, nezapomenutelné zážitky.
@@ -41,9 +45,6 @@ const HeroSection = () => {
             </Link>
           </div>
 
-          <p className="text-xs text-muted-foreground mt-8 opacity-0 animate-fade-up animation-delay-500">
-            — Eddy Merckx
-          </p>
         </div>
       </div>
     </section>;
