@@ -74,6 +74,41 @@ const Gallery = () => {
             {user && isMember && <PhotoUpload onUploadComplete={fetchPhotos} />}
           </div>
 
+          {/* External Google Photos Albums */}
+          <div className="mb-12">
+            <h2 className="text-2xl font-semibold mb-4">Výjezdy - Google Foto</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <a
+                href="https://photos.app.goo.gl/Ma8bocoTRLdCebndA"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group block p-6 rounded-lg border border-border bg-card hover:bg-accent transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <ImageIcon className="w-8 h-8 text-primary" />
+                  <div>
+                    <h3 className="font-medium group-hover:text-primary transition-colors">Mallorca 2025</h3>
+                    <p className="text-sm text-muted-foreground">Google Photos album</p>
+                  </div>
+                </div>
+              </a>
+              <a
+                href="https://photos.app.goo.gl/RTPTPpkc1kPtMMgBA"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group block p-6 rounded-lg border border-border bg-card hover:bg-accent transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <ImageIcon className="w-8 h-8 text-primary" />
+                  <div>
+                    <h3 className="font-medium group-hover:text-primary transition-colors">Mallorca 2024</h3>
+                    <p className="text-sm text-muted-foreground">Google Photos album</p>
+                  </div>
+                </div>
+              </a>
+            </div>
+          </div>
+
           {loading ? (
             <div className="flex justify-center py-12">
               <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
