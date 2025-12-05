@@ -1,26 +1,70 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { z } from "zod";
 import logoDark from "@/assets/logo-horizontal-dark.png";
+
+const loginSchema = z.object({
+  email: z.string().email("Neplatný formát emailu"),
+  password: z.string().min(6, "Heslo musí mít alespoň 6 znaků"),
+});
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { signIn, user } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user) {
+      navigate("/dashboard");
+    }
+  }, [user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    const validation = loginSchema.safeParse({ email, password });
+    if (!validation.success) {
+      toast({
+        variant: "destructive",
+        title: "Chyba",
+        description: validation.error.errors[0].message,
+      });
+      return;
+    }
+
     setLoading(true);
     
-    toast({
-      title: "Přihlášení",
-      description: "Pro funkční přihlášení je potřeba propojit Lovable Cloud.",
-    });
+    const { error } = await signIn(email, password);
+    
+    if (error) {
+      let message = "Nepodařilo se přihlásit";
+      if (error.message.includes("Invalid login credentials")) {
+        message = "Nesprávný email nebo heslo";
+      } else if (error.message.includes("Email not confirmed")) {
+        message = "Email nebyl potvrzen";
+      }
+      
+      toast({
+        variant: "destructive",
+        title: "Chyba přihlášení",
+        description: message,
+      });
+    } else {
+      toast({
+        title: "Přihlášení úspěšné",
+        description: "Vítej zpět!",
+      });
+      navigate("/dashboard");
+    }
     
     setLoading(false);
   };
