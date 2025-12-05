@@ -6,6 +6,8 @@ import { useUserRole } from "@/hooks/useUserRole";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import EditEventDialog from "@/components/events/EditEventDialog";
+import PhotoGrid from "@/components/gallery/PhotoGrid";
+import PhotoUpload from "@/components/gallery/PhotoUpload";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,7 +23,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Calendar, MapPin, ExternalLink, ArrowLeft, Users, Trash2 } from "lucide-react";
+import { Calendar, MapPin, ExternalLink, ArrowLeft, Users, Trash2, ImageIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
 import { toast } from "sonner";
@@ -46,14 +48,27 @@ interface Participant {
   } | null;
 }
 
+interface Photo {
+  id: string;
+  file_url: string;
+  file_name: string;
+  caption: string | null;
+  created_at: string;
+  user_id: string;
+  profile?: {
+    full_name: string | null;
+  } | null;
+}
+
 const EventDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { isAdmin } = useUserRole();
+  const { isAdmin, isMember } = useUserRole();
 
   const [event, setEvent] = useState<EventData | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
+  const [photos, setPhotos] = useState<Photo[]>([]);
   const [isParticipating, setIsParticipating] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -109,8 +124,29 @@ const EventDetail = () => {
     }
   };
 
+  const fetchPhotos = async () => {
+    if (!id) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("gallery_items")
+        .select(`
+          *,
+          profile:profiles(full_name)
+        `)
+        .eq("event_id", id)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setPhotos(data || []);
+    } catch (error) {
+      console.error("Error fetching photos:", error);
+    }
+  };
+
   useEffect(() => {
     fetchEvent();
+    fetchPhotos();
   }, [id, user]);
 
   const handleJoin = async () => {
@@ -334,6 +370,24 @@ const EventDetail = () => {
                   ))}
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          {/* Gallery Section */}
+          <Card className="mt-6">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <ImageIcon className="w-5 h-5" />
+                  Fotky ({photos.length})
+                </CardTitle>
+                {user && isMember && (
+                  <PhotoUpload eventId={id} onUploadComplete={fetchPhotos} />
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              <PhotoGrid photos={photos} onPhotoDeleted={fetchPhotos} />
             </CardContent>
           </Card>
         </div>

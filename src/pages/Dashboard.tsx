@@ -120,7 +120,7 @@ const Dashboard = () => {
             </Link>
 
             <Link
-              to="/"
+              to="/gallery"
               className="group p-6 rounded-2xl border border-border/40 hover:border-border transition-colors"
             >
               <Image className="w-8 h-8 mb-4 text-muted-foreground group-hover:text-foreground transition-colors" />
