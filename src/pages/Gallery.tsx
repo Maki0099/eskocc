@@ -8,7 +8,9 @@ import PhotoGrid from "@/components/gallery/PhotoGrid";
 import PhotoUpload from "@/components/gallery/PhotoUpload";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ImageIcon, Loader2 } from "lucide-react";
+import { ExternalLink, ImageIcon, Loader2 } from "lucide-react";
+import mallorca2025 from "@/assets/albums/mallorca-2025.jpg";
+import mallorca2024 from "@/assets/albums/mallorca-2024.jpg";
 
 interface Photo {
   id: string;
@@ -82,28 +84,42 @@ const Gallery = () => {
                 href="https://photos.app.goo.gl/Ma8bocoTRLdCebndA"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group block p-6 rounded-lg border border-border bg-card hover:bg-accent transition-colors"
+                className="group block rounded-lg overflow-hidden border border-border bg-card hover:border-primary transition-all"
               >
-                <div className="flex items-center gap-3">
-                  <ImageIcon className="w-8 h-8 text-primary" />
+                <div className="aspect-video overflow-hidden">
+                  <img 
+                    src={mallorca2025} 
+                    alt="Mallorca 2025" 
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                </div>
+                <div className="p-4 flex items-center justify-between">
                   <div>
                     <h3 className="font-medium group-hover:text-primary transition-colors">Mallorca 2025</h3>
                     <p className="text-sm text-muted-foreground">Google Photos album</p>
                   </div>
+                  <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
                 </div>
               </a>
               <a
                 href="https://photos.app.goo.gl/RTPTPpkc1kPtMMgBA"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group block p-6 rounded-lg border border-border bg-card hover:bg-accent transition-colors"
+                className="group block rounded-lg overflow-hidden border border-border bg-card hover:border-primary transition-all"
               >
-                <div className="flex items-center gap-3">
-                  <ImageIcon className="w-8 h-8 text-primary" />
+                <div className="aspect-video overflow-hidden">
+                  <img 
+                    src={mallorca2024} 
+                    alt="Mallorca 2024" 
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                </div>
+                <div className="p-4 flex items-center justify-between">
                   <div>
                     <h3 className="font-medium group-hover:text-primary transition-colors">Mallorca 2024</h3>
                     <p className="text-sm text-muted-foreground">Google Photos album</p>
                   </div>
+                  <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
                 </div>
               </a>
             </div>
