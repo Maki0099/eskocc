@@ -16,12 +16,12 @@ const Header = () => {
             <img 
               src={logoDark} 
               alt="ESKO.cc" 
-              className="h-6 dark:hidden"
+              className="h-8 dark:hidden"
             />
             <img 
               src={logoWhite} 
               alt="ESKO.cc" 
-              className="h-6 hidden dark:block"
+              className="h-8 hidden dark:block"
             />
           </Link>
 
