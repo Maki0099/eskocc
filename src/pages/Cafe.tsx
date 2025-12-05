@@ -29,28 +29,40 @@ interface MenuItem {
   is_available: boolean;
 }
 
+interface GalleryPhoto {
+  id: string;
+  file_url: string;
+  file_name: string;
+  caption: string | null;
+}
+
 const dayNames = ["Neděle", "Pondělí", "Úterý", "Středa", "Čtvrtek", "Pátek", "Sobota"];
+
+// Static default photos
+const defaultPhotos = [cafeInterior1, cafeInterior2, cafeInterior3, cafeTerrace];
 
 const Cafe = () => {
   const [openingHours, setOpeningHours] = useState<OpeningHour[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [galleryPhotos, setGalleryPhotos] = useState<GalleryPhoto[]>([]);
   const [loading, setLoading] = useState(true);
-
-  const cafePhotos = [cafeInterior1, cafeInterior2, cafeInterior3, cafeTerrace];
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [hoursRes, menuRes] = await Promise.all([
+        const [hoursRes, menuRes, galleryRes] = await Promise.all([
           supabase.from("cafe_opening_hours").select("*").order("day_of_week"),
           supabase.from("cafe_menu_items").select("*").eq("is_available", true).order("sort_order"),
+          supabase.from("cafe_gallery").select("*").order("sort_order"),
         ]);
 
         if (hoursRes.error) throw hoursRes.error;
         if (menuRes.error) throw menuRes.error;
+        if (galleryRes.error) throw galleryRes.error;
 
         setOpeningHours(hoursRes.data || []);
         setMenuItems(menuRes.data || []);
+        setGalleryPhotos(galleryRes.data || []);
       } catch (error) {
         console.error("Error fetching cafe data:", error);
         toast.error("Nepodařilo se načíst data kavárny");
@@ -215,18 +227,34 @@ const Cafe = () => {
           <div className="mt-12">
             <h2 className="text-2xl font-bold mb-6">Fotogalerie</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {cafePhotos.map((photo, index) => (
-                <div
-                  key={index}
-                  className="aspect-square overflow-hidden rounded-xl group"
-                >
-                  <img
-                    src={photo}
-                    alt={`ESKO Kafe ${index + 1}`}
-                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  />
-                </div>
-              ))}
+              {/* Show uploaded photos first, then default photos if no uploads */}
+              {galleryPhotos.length > 0 ? (
+                galleryPhotos.map((photo) => (
+                  <div
+                    key={photo.id}
+                    className="aspect-square overflow-hidden rounded-xl group"
+                  >
+                    <img
+                      src={photo.file_url}
+                      alt={photo.caption || photo.file_name}
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                  </div>
+                ))
+              ) : (
+                defaultPhotos.map((photo, index) => (
+                  <div
+                    key={index}
+                    className="aspect-square overflow-hidden rounded-xl group"
+                  >
+                    <img
+                      src={photo}
+                      alt={`ESKO Kafe ${index + 1}`}
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
