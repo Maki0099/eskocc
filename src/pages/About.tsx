@@ -112,9 +112,10 @@ const About = () => {
                   <div className="flex items-start gap-4">
                     <MapPin className="w-5 h-5 mt-1 text-primary shrink-0" />
                     <div>
-                      <h3 className="font-medium mb-1">Sraz</h3>
+                      <h3 className="font-medium mb-1">Adresa</h3>
                       <p className="text-muted-foreground">
-                        Místo srazu se liší dle aktuální vyjížďky
+                        Vsetínská 85<br />
+                        756 05 Karolinka
                       </p>
                     </div>
                   </div>
