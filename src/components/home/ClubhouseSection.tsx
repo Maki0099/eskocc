@@ -1,5 +1,6 @@
 import { MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import ClubLocationMap from "@/components/map/ClubLocationMap";
 
 const ClubhouseSection = () => {
   return (
@@ -10,37 +11,30 @@ const ClubhouseSection = () => {
           <div className="max-w-md">
             <p className="text-sm text-muted-foreground mb-4">Naše základna</p>
             <h2 className="text-display font-semibold mb-6">
-              Esko kafe
+              Kde nás najdete
             </h2>
+            <p className="text-muted-foreground mb-4">
+              Vsetínská 85<br />
+              756 05 Karolinka
+            </p>
             <p className="text-muted-foreground mb-8">
-              Místo, kde se scházíme před každou vyjížďkou. Skvělá káva, přátelská atmosféra.
+              Místo, kde se scházíme a plánujeme společné vyjížďky.
             </p>
 
             <a
-              href="https://maps.google.com/?q=Esko+kafe+Brno"
+              href="https://maps.google.com/?q=Vsetínská+85,+Karolinka"
               target="_blank"
               rel="noopener noreferrer"
             >
               <Button variant="appleOutline">
                 <MapPin className="w-4 h-4 mr-2" />
-                Otevřít v mapách
+                Otevřít v Google Maps
               </Button>
             </a>
           </div>
 
           {/* Map */}
-          <div className="rounded-2xl overflow-hidden bg-secondary aspect-video">
-            <iframe
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2607.6!2d16.6!3d49.2!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zNDnCsDEyJzAwLjAiTiAxNsKwMzYnMDAuMCJF!5e0!3m2!1scs!2scz!4v1"
-              width="100%"
-              height="100%"
-              style={{ border: 0 }}
-              allowFullScreen
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-              className="grayscale"
-            />
-          </div>
+          <ClubLocationMap className="rounded-2xl overflow-hidden aspect-video shadow-lg" />
         </div>
       </div>
     </section>
