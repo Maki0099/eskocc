@@ -7,7 +7,7 @@ interface ClubLocationMapProps {
 }
 
 // Mapbox public token - safe to expose in frontend
-const MAPBOX_TOKEN = "pk.eyJ1IjoiZXNrb2NjIiwiYSI6ImNtNWRhNHRhdjBzNGsya3F2bng5eGl0ajQifQ.placeholder";
+const MAPBOX_TOKEN = "pk.eyJ1IjoibWFraTA5OSIsImEiOiJjbWdydmlmYTgwN3NvMnNyNXg0NjgzYW5iIn0.AiNtdl1RlCCszZnRDT8zUw";
 
 const ClubLocationMap = ({ className }: ClubLocationMapProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
@@ -21,10 +21,9 @@ const ClubLocationMap = ({ className }: ClubLocationMapProps) => {
   useEffect(() => {
     if (!mapContainer.current) return;
 
-    // Try env variable first, then fallback
-    const token = import.meta.env.VITE_MAPBOX_PUBLIC_TOKEN || MAPBOX_TOKEN;
+    const token = MAPBOX_TOKEN;
     
-    if (!token || token.includes("placeholder")) {
+    if (!token) {
       setError("Mapbox token není nakonfigurován");
       return;
     }
