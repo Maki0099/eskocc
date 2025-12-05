@@ -7,15 +7,19 @@ export default {
   theme: {
     container: {
       center: true,
-      padding: "2rem",
+      padding: "1.5rem",
       screens: {
-        "2xl": "1400px",
+        "2xl": "1200px",
       },
     },
     extend: {
       fontFamily: {
-        heading: ['Oswald', 'sans-serif'],
-        body: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
+      },
+      fontSize: {
+        'hero': ['clamp(3rem, 8vw, 5.5rem)', { lineHeight: '1.05', letterSpacing: '-0.02em' }],
+        'display': ['clamp(2.5rem, 5vw, 4rem)', { lineHeight: '1.1', letterSpacing: '-0.02em' }],
+        'title': ['clamp(1.5rem, 3vw, 2rem)', { lineHeight: '1.2', letterSpacing: '-0.01em' }],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -76,26 +80,10 @@ export default {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
-        "fade-in": {
-          from: { opacity: "0" },
-          to: { opacity: "1" },
-        },
-        "slide-in-right": {
-          from: { transform: "translateX(100%)", opacity: "0" },
-          to: { transform: "translateX(0)", opacity: "1" },
-        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
-        "fade-in": "fade-in 0.5s ease-out",
-        "slide-in-right": "slide-in-right 0.5s ease-out",
-      },
-      backgroundImage: {
-        'gradient-hero': 'linear-gradient(135deg, hsl(32, 100%, 50%) 0%, hsl(45, 100%, 51%) 100%)',
-        'gradient-dark': 'linear-gradient(180deg, hsl(0, 0%, 7%) 0%, hsl(0, 0%, 4%) 100%)',
-        'gradient-card': 'linear-gradient(145deg, hsl(0, 0%, 12%) 0%, hsl(0, 0%, 8%) 100%)',
-        'gradient-radial': 'radial-gradient(circle at center, hsl(32, 100%, 50%, 0.1) 0%, transparent 70%)',
       },
     },
   },
