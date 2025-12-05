@@ -41,8 +41,13 @@ const Footer = () => {
           <div>
             <h4 className="text-sm font-medium mb-4">Kontakt</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>Esko kafe, Brno</li>
-              <li>info@esko.cc</li>
+              <li>Vsetínská 85</li>
+              <li>756 05 Karolinka</li>
+              <li>
+                <a href="mailto:info@eskocc.cz" className="hover:text-foreground transition-colors">
+                  info@eskocc.cz
+                </a>
+              </li>
             </ul>
           </div>
 
