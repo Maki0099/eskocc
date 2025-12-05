@@ -29,19 +29,19 @@ const Header = () => {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-8">
-            <Link to="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <Link to="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors" onClick={() => window.scrollTo(0, 0)}>
               Domů
             </Link>
-            <Link to="/events" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <Link to="/events" className="text-sm text-muted-foreground hover:text-foreground transition-colors" onClick={() => window.scrollTo(0, 0)}>
               Vyjížďky
             </Link>
-            <Link to="/cafe" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <Link to="/cafe" className="text-sm text-muted-foreground hover:text-foreground transition-colors" onClick={() => window.scrollTo(0, 0)}>
               Kavárna
             </Link>
-            <Link to="/gallery" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <Link to="/gallery" className="text-sm text-muted-foreground hover:text-foreground transition-colors" onClick={() => window.scrollTo(0, 0)}>
               Galerie
             </Link>
-            <Link to="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <Link to="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors" onClick={() => window.scrollTo(0, 0)}>
               O klubu
             </Link>
           </nav>
@@ -81,19 +81,19 @@ const Header = () => {
         {isMenuOpen && (
           <div className="md:hidden py-6 border-t border-border/50 animate-fade-in">
             <nav className="flex flex-col gap-4">
-              <Link to="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors" onClick={() => setIsMenuOpen(false)}>
+              <Link to="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors" onClick={() => { setIsMenuOpen(false); window.scrollTo(0, 0); }}>
                 Domů
               </Link>
-              <Link to="/events" className="text-sm text-muted-foreground hover:text-foreground transition-colors" onClick={() => setIsMenuOpen(false)}>
+              <Link to="/events" className="text-sm text-muted-foreground hover:text-foreground transition-colors" onClick={() => { setIsMenuOpen(false); window.scrollTo(0, 0); }}>
                 Vyjížďky
               </Link>
-              <Link to="/cafe" className="text-sm text-muted-foreground hover:text-foreground transition-colors" onClick={() => setIsMenuOpen(false)}>
+              <Link to="/cafe" className="text-sm text-muted-foreground hover:text-foreground transition-colors" onClick={() => { setIsMenuOpen(false); window.scrollTo(0, 0); }}>
                 Kavárna
               </Link>
-              <Link to="/gallery" className="text-sm text-muted-foreground hover:text-foreground transition-colors" onClick={() => setIsMenuOpen(false)}>
+              <Link to="/gallery" className="text-sm text-muted-foreground hover:text-foreground transition-colors" onClick={() => { setIsMenuOpen(false); window.scrollTo(0, 0); }}>
                 Galerie
               </Link>
-              <Link to="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors" onClick={() => setIsMenuOpen(false)}>
+              <Link to="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors" onClick={() => { setIsMenuOpen(false); window.scrollTo(0, 0); }}>
                 O klubu
               </Link>
               <div className="flex gap-3 pt-4 border-t border-border/50">
