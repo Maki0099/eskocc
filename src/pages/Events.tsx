@@ -85,11 +85,11 @@ const Events = () => {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
-      <main className="flex-1 container mx-auto px-4 py-12">
+      <main className="flex-1 container mx-auto px-4 pt-20 pb-12">
         <div className="max-w-4xl mx-auto">
-          <div className="flex items-start justify-between gap-4 mb-8">
-            <div>
-              <h1 className="text-4xl font-bold mb-2">Nadcházející vyjížďky</h1>
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8">
+            <div className="min-w-0">
+              <h1 className="text-3xl sm:text-4xl font-bold mb-2">Nadcházející vyjížďky</h1>
               <p className="text-muted-foreground">
                 Přehled plánovaných cyklistických vyjížděk klubu Eskocc
               </p>
