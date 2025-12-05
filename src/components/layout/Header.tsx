@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X } from "lucide-react";
+import { Menu, X, User } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 import logoWhite from "@/assets/logo-horizontal-white.png";
 import logoDark from "@/assets/logo-horizontal-dark.png";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { user, loading } = useAuth();
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
@@ -42,12 +44,25 @@ const Header = () => {
           </nav>
 
           <div className="hidden md:flex items-center gap-3">
-            <Link to="/login">
-              <Button variant="ghost" size="sm">Přihlásit se</Button>
-            </Link>
-            <Link to="/register">
-              <Button variant="apple" size="sm">Registrace</Button>
-            </Link>
+            {loading ? (
+              <div className="w-20 h-8 bg-muted animate-pulse rounded-lg"></div>
+            ) : user ? (
+              <Link to="/dashboard">
+                <Button variant="ghost" size="sm" className="gap-2">
+                  <User className="w-4 h-4" />
+                  Dashboard
+                </Button>
+              </Link>
+            ) : (
+              <>
+                <Link to="/login">
+                  <Button variant="ghost" size="sm">Přihlásit se</Button>
+                </Link>
+                <Link to="/register">
+                  <Button variant="apple" size="sm">Registrace</Button>
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -76,12 +91,23 @@ const Header = () => {
                 O klubu
               </Link>
               <div className="flex gap-3 pt-4 border-t border-border/50">
-                <Link to="/login" className="flex-1">
-                  <Button variant="ghost" className="w-full">Přihlásit se</Button>
-                </Link>
-                <Link to="/register" className="flex-1">
-                  <Button variant="apple" className="w-full">Registrace</Button>
-                </Link>
+                {user ? (
+                  <Link to="/dashboard" className="flex-1">
+                    <Button variant="apple" className="w-full gap-2">
+                      <User className="w-4 h-4" />
+                      Dashboard
+                    </Button>
+                  </Link>
+                ) : (
+                  <>
+                    <Link to="/login" className="flex-1">
+                      <Button variant="ghost" className="w-full">Přihlásit se</Button>
+                    </Link>
+                    <Link to="/register" className="flex-1">
+                      <Button variant="apple" className="w-full">Registrace</Button>
+                    </Link>
+                  </>
+                )}
               </div>
             </nav>
           </div>
