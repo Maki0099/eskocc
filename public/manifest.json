@@ -1,0 +1,17 @@
+{
+  "name": "EskoCC - Cyklistický klub",
+  "short_name": "EskoCC",
+  "description": "Cyklistický klub z Brna. Společné vyjížďky a komunita cyklistů.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#121212",
+  "theme_color": "#ff8c00",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64",
+      "type": "image/x-icon"
+    }
+  ]
+}
