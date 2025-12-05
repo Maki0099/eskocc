@@ -4,10 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import CafeAdmin from "@/components/admin/CafeAdmin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -23,7 +25,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Users, Shield, Loader2 } from "lucide-react";
+import { Users, Shield, Loader2, Coffee } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
@@ -170,158 +172,177 @@ const Admin = () => {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
-      <main className="flex-1 container mx-auto px-4 py-12">
+      <main className="flex-1 container mx-auto px-4 pt-20 pb-12">
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center gap-3 mb-8">
             <Shield className="w-8 h-8 text-primary" />
             <div>
               <h1 className="text-3xl font-bold">Admin Panel</h1>
-              <p className="text-muted-foreground">Správa uživatelů a jejich rolí</p>
+              <p className="text-muted-foreground">Správa uživatelů a kavárny</p>
             </div>
           </div>
 
-          <div className="grid gap-6 md:grid-cols-4 mb-8">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Celkem uživatelů
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{users.length}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Čeká na schválení
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-orange-500">{pendingCount}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Aktivní členové
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {users.filter((u) => u.role === "active_member").length}
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Administrátoři
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {users.filter((u) => u.role === "admin").length}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          <Tabs defaultValue="users" className="space-y-6">
+            <TabsList>
+              <TabsTrigger value="users" className="gap-2">
+                <Users className="w-4 h-4" />
+                Uživatelé
+              </TabsTrigger>
+              <TabsTrigger value="cafe" className="gap-2">
+                <Coffee className="w-4 h-4" />
+                Kavárna
+              </TabsTrigger>
+            </TabsList>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="w-5 h-5" />
-                Seznam uživatelů
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="flex justify-center py-8">
-                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-                </div>
-              ) : users.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">
-                  Žádní uživatelé
-                </p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Uživatel</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Registrace</TableHead>
-                        <TableHead>Role</TableHead>
-                        <TableHead className="text-right">Akce</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {users.map((user) => (
-                        <TableRow key={user.id}>
-                          <TableCell>
-                            <div className="flex items-center gap-3">
-                              <Avatar className="h-8 w-8">
-                                <AvatarFallback className="text-xs">
-                                  {getInitials(user.full_name, user.email)}
-                                </AvatarFallback>
-                              </Avatar>
-                              <span className="font-medium">
-                                {user.full_name || "Bez jména"}
-                              </span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {user.email}
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {format(new Date(user.created_at), "d. M. yyyy", {
-                              locale: cs,
-                            })}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={roleBadgeVariants[user.role]}>
-                              {roleLabels[user.role]}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Select
-                              value={user.role}
-                              onValueChange={(value) =>
-                                handleRoleChange(user.id, value as AppRole)
-                              }
-                              disabled={updatingUserId === user.id}
-                            >
-                              <SelectTrigger className="w-[180px]">
-                                {updatingUserId === user.id ? (
-                                  <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                  <SelectValue />
-                                )}
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="pending">
-                                  {roleLabels.pending}
-                                </SelectItem>
-                                <SelectItem value="member">
-                                  {roleLabels.member}
-                                </SelectItem>
-                                <SelectItem value="active_member">
-                                  {roleLabels.active_member}
-                                </SelectItem>
-                                <SelectItem value="admin">
-                                  {roleLabels.admin}
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+            <TabsContent value="users" className="space-y-6">
+              <div className="grid gap-6 md:grid-cols-4">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">
+                      Celkem uživatelů
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{users.length}</div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">
+                      Čeká na schválení
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-orange-500">{pendingCount}</div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">
+                      Aktivní členové
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {users.filter((u) => u.role === "active_member").length}
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">
+                      Administrátoři
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {users.filter((u) => u.role === "admin").length}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="w-5 h-5" />
+                    Seznam uživatelů
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {loading ? (
+                    <div className="flex justify-center py-8">
+                      <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : users.length === 0 ? (
+                    <p className="text-center text-muted-foreground py-8">
+                      Žádní uživatelé
+                    </p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Uživatel</TableHead>
+                            <TableHead>Email</TableHead>
+                            <TableHead>Registrace</TableHead>
+                            <TableHead>Role</TableHead>
+                            <TableHead className="text-right">Akce</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {users.map((user) => (
+                            <TableRow key={user.id}>
+                              <TableCell>
+                                <div className="flex items-center gap-3">
+                                  <Avatar className="h-8 w-8">
+                                    <AvatarFallback className="text-xs">
+                                      {getInitials(user.full_name, user.email)}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <span className="font-medium">
+                                    {user.full_name || "Bez jména"}
+                                  </span>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-muted-foreground">
+                                {user.email}
+                              </TableCell>
+                              <TableCell className="text-muted-foreground">
+                                {format(new Date(user.created_at), "d. M. yyyy", {
+                                  locale: cs,
+                                })}
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant={roleBadgeVariants[user.role]}>
+                                  {roleLabels[user.role]}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <Select
+                                  value={user.role}
+                                  onValueChange={(value) =>
+                                    handleRoleChange(user.id, value as AppRole)
+                                  }
+                                  disabled={updatingUserId === user.id}
+                                >
+                                  <SelectTrigger className="w-[180px]">
+                                    {updatingUserId === user.id ? (
+                                      <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                      <SelectValue />
+                                    )}
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="pending">
+                                      {roleLabels.pending}
+                                    </SelectItem>
+                                    <SelectItem value="member">
+                                      {roleLabels.member}
+                                    </SelectItem>
+                                    <SelectItem value="active_member">
+                                      {roleLabels.active_member}
+                                    </SelectItem>
+                                    <SelectItem value="admin">
+                                      {roleLabels.admin}
+                                    </SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="cafe">
+              <CafeAdmin />
+            </TabsContent>
+          </Tabs>
         </div>
       </main>
       <Footer />
