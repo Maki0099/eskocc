@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -6,9 +7,8 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import CreateEventDialog from "@/components/events/CreateEventDialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, MapPin, Users, ExternalLink } from "lucide-react";
+import { Calendar, MapPin, Users, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
 import { toast } from "sonner";
@@ -82,49 +82,6 @@ const Events = () => {
     fetchEvents();
   }, [user]);
 
-  const handleJoin = async (eventId: string) => {
-    if (!user) {
-      toast.error("Pro přihlášení na vyjížďku se musíte přihlásit");
-      return;
-    }
-
-    try {
-      const { error } = await supabase.from("event_participants").insert({
-        event_id: eventId,
-        user_id: user.id,
-        status: "going",
-      });
-
-      if (error) throw error;
-
-      toast.success("Úspěšně přihlášeno na vyjížďku");
-      fetchEvents();
-    } catch (error: any) {
-      console.error("Error joining event:", error);
-      toast.error(error.message || "Nepodařilo se přihlásit na vyjížďku");
-    }
-  };
-
-  const handleLeave = async (eventId: string) => {
-    if (!user) return;
-
-    try {
-      const { error } = await supabase
-        .from("event_participants")
-        .delete()
-        .eq("event_id", eventId)
-        .eq("user_id", user.id);
-
-      if (error) throw error;
-
-      toast.success("Odhlášeno z vyjížďky");
-      fetchEvents();
-    } catch (error: any) {
-      console.error("Error leaving event:", error);
-      toast.error("Nepodařilo se odhlásit z vyjížďky");
-    }
-  };
-
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
@@ -166,68 +123,48 @@ const Events = () => {
           ) : (
             <div className="space-y-4">
               {events.map((event) => (
-                <Card key={event.id} className="hover:shadow-md transition-shadow">
-                  <CardHeader>
-                    <div className="flex items-start justify-between gap-4">
-                      <CardTitle className="text-xl">{event.title}</CardTitle>
-                      <Badge variant="secondary" className="shrink-0">
-                        <Users className="w-3 h-3 mr-1" />
-                        {event.participant_count}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {event.description && (
-                      <p className="text-muted-foreground">{event.description}</p>
-                    )}
-
-                    <div className="flex flex-wrap gap-4 text-sm">
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Calendar className="w-4 h-4" />
-                        <span>
-                          {format(new Date(event.event_date), "EEEE d. MMMM yyyy, HH:mm", {
-                            locale: cs,
-                          })}
-                        </span>
+                <Link key={event.id} to={`/events/${event.id}`}>
+                  <Card className="hover:shadow-md transition-shadow cursor-pointer group">
+                    <CardHeader>
+                      <div className="flex items-start justify-between gap-4">
+                        <CardTitle className="text-xl group-hover:text-primary transition-colors">
+                          {event.title}
+                        </CardTitle>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary" className="shrink-0">
+                            <Users className="w-3 h-3 mr-1" />
+                            {event.participant_count}
+                          </Badge>
+                          <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <MapPin className="w-4 h-4" />
-                        <span>{event.location}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-3 pt-2">
-                      {event.route_link && (
-                        <Button variant="outline" size="sm" asChild>
-                          <a
-                            href={event.route_link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            <ExternalLink className="w-4 h-4 mr-2" />
-                            Zobrazit trasu
-                          </a>
-                        </Button>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {event.description && (
+                        <p className="text-muted-foreground line-clamp-2">{event.description}</p>
                       )}
 
-                      {user && (
-                        event.is_participating ? (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleLeave(event.id)}
-                          >
-                            Odhlásit se
-                          </Button>
-                        ) : (
-                          <Button size="sm" onClick={() => handleJoin(event.id)}>
-                            Přihlásit se
-                          </Button>
-                        )
+                      <div className="flex flex-wrap gap-4 text-sm">
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <Calendar className="w-4 h-4" />
+                          <span>
+                            {format(new Date(event.event_date), "EEEE d. MMMM yyyy, HH:mm", {
+                              locale: cs,
+                            })}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <MapPin className="w-4 h-4" />
+                          <span>{event.location}</span>
+                        </div>
+                      </div>
+
+                      {event.is_participating && (
+                        <Badge variant="default" className="mt-2">Přihlášen/a</Badge>
                       )}
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                </Link>
               ))}
             </div>
           )}
