@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { LogOut, User, Calendar, Image } from "lucide-react";
+import { LogOut, User, Calendar, Image, Shield } from "lucide-react";
 import logoDark from "@/assets/logo-horizontal-dark.png";
 
 type AppRole = "pending" | "member" | "active_member" | "admin";
@@ -109,7 +109,7 @@ const Dashboard = () => {
           {/* Quick actions */}
           <div className="grid gap-4 md:grid-cols-2">
             <Link
-              to="/"
+              to="/events"
               className="group p-6 rounded-2xl border border-border/40 hover:border-border transition-colors"
             >
               <Calendar className="w-8 h-8 mb-4 text-muted-foreground group-hover:text-foreground transition-colors" />
@@ -129,6 +129,19 @@ const Dashboard = () => {
                 Prohlédnout fotky z akcí
               </p>
             </Link>
+
+            {role === "admin" && (
+              <Link
+                to="/admin"
+                className="group p-6 rounded-2xl border border-primary/20 hover:border-primary/40 bg-primary/5 transition-colors md:col-span-2"
+              >
+                <Shield className="w-8 h-8 mb-4 text-primary" />
+                <h3 className="font-medium mb-1">Admin Panel</h3>
+                <p className="text-sm text-muted-foreground">
+                  Správa uživatelů a jejich rolí
+                </p>
+              </Link>
+            )}
           </div>
 
           {/* Profile info */}
