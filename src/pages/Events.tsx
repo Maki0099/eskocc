@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUserRole } from "@/hooks/useUserRole";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import CreateEventDialog from "@/components/events/CreateEventDialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +26,7 @@ interface Event {
 
 const Events = () => {
   const { user } = useAuth();
+  const { canCreateEvents } = useUserRole();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -127,10 +130,15 @@ const Events = () => {
       <Header />
       <main className="flex-1 container mx-auto px-4 py-12">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-4xl font-bold mb-2">Nadcházející vyjížďky</h1>
-          <p className="text-muted-foreground mb-8">
-            Přehled plánovaných cyklistických vyjížděk klubu Eskocc
-          </p>
+          <div className="flex items-start justify-between gap-4 mb-8">
+            <div>
+              <h1 className="text-4xl font-bold mb-2">Nadcházející vyjížďky</h1>
+              <p className="text-muted-foreground">
+                Přehled plánovaných cyklistických vyjížděk klubu Eskocc
+              </p>
+            </div>
+            {canCreateEvents && <CreateEventDialog onEventCreated={fetchEvents} />}
+          </div>
 
           {loading ? (
             <div className="space-y-4">
