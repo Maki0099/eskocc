@@ -15,8 +15,8 @@ const ClubLocationMap = ({ className }: ClubLocationMapProps) => {
   const marker = useRef<mapboxgl.Marker | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Karolinka, Vsetínská 85 coordinates
-  const CLUB_COORDINATES: [number, number] = [18.2392, 49.3564];
+  // Karolinka, Vsetínská 85 coordinates (longitude, latitude)
+  const CLUB_COORDINATES: [number, number] = [18.2401, 49.3513];
 
   useEffect(() => {
     if (!mapContainer.current) return;
