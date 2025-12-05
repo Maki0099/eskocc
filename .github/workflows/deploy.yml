@@ -24,7 +24,7 @@ jobs:
 
       - name: Build project
         run: npm run build
-
+        
       - name: Deploy via FTP to Active24
         uses: SamKirkland/FTP-Deploy-Action@v4.3.6
         with:
@@ -34,6 +34,5 @@ jobs:
           protocol: ftps
           port: 21
           local-dir: ./dist/
-          server-dir: /web/
+          server-dir: /
           dangerous-clean-slate: true
-
