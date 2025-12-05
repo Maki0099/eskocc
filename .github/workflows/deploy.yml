@@ -34,6 +34,6 @@ jobs:
           protocol: ftps
           port: 21
           local-dir: ./dist/
-          server-dir: ${{ secrets.SFTP_TARGET }}
+          server-dir: /web/
           dangerous-clean-slate: true
 
