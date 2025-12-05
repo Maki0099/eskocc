@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Clock, Coffee, Plus, Pencil, Trash2, Loader2 } from "lucide-react";
+import { Clock, Coffee, Plus, Pencil, Trash2, Loader2, Image, Upload } from "lucide-react";
 import { toast } from "sonner";
 
 interface OpeningHour {
@@ -41,15 +42,27 @@ interface MenuItem {
   sort_order: number;
 }
 
+interface GalleryPhoto {
+  id: string;
+  file_url: string;
+  file_name: string;
+  caption: string | null;
+  sort_order: number;
+}
+
 const dayNames = ["Neděle", "Pondělí", "Úterý", "Středa", "Čtvrtek", "Pátek", "Sobota"];
 
 const CafeAdmin = () => {
+  const { user } = useAuth();
   const [openingHours, setOpeningHours] = useState<OpeningHour[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [galleryPhotos, setGalleryPhotos] = useState<GalleryPhoto[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [menuDialogOpen, setMenuDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [menuForm, setMenuForm] = useState({
     name: "",
     description: "",
@@ -60,16 +73,19 @@ const CafeAdmin = () => {
 
   const fetchData = async () => {
     try {
-      const [hoursRes, menuRes] = await Promise.all([
+      const [hoursRes, menuRes, galleryRes] = await Promise.all([
         supabase.from("cafe_opening_hours").select("*").order("day_of_week"),
         supabase.from("cafe_menu_items").select("*").order("sort_order"),
+        supabase.from("cafe_gallery").select("*").order("sort_order"),
       ]);
 
       if (hoursRes.error) throw hoursRes.error;
       if (menuRes.error) throw menuRes.error;
+      if (galleryRes.error) throw galleryRes.error;
 
       setOpeningHours(hoursRes.data || []);
       setMenuItems(menuRes.data || []);
+      setGalleryPhotos(galleryRes.data || []);
     } catch (error) {
       console.error("Error fetching cafe data:", error);
       toast.error("Nepodařilo se načíst data kavárny");
@@ -187,6 +203,75 @@ const CafeAdmin = () => {
     } catch (error) {
       console.error("Error toggling availability:", error);
       toast.error("Nepodařilo se změnit dostupnost");
+    }
+  };
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0 || !user) return;
+
+    setUploading(true);
+
+    try {
+      for (const file of Array.from(files)) {
+        const fileExt = file.name.split(".").pop();
+        const fileName = `cafe/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+        // Upload to storage
+        const { error: uploadError } = await supabase.storage
+          .from("gallery")
+          .upload(fileName, file);
+
+        if (uploadError) throw uploadError;
+
+        // Get public URL
+        const { data: urlData } = supabase.storage
+          .from("gallery")
+          .getPublicUrl(fileName);
+
+        // Insert into cafe_gallery table
+        const { error: insertError } = await supabase.from("cafe_gallery").insert({
+          file_url: urlData.publicUrl,
+          file_name: file.name,
+          sort_order: galleryPhotos.length,
+        });
+
+        if (insertError) throw insertError;
+      }
+
+      toast.success("Fotky nahrány");
+      fetchData();
+    } catch (error) {
+      console.error("Error uploading photos:", error);
+      toast.error("Nepodařilo se nahrát fotky");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  const handleDeletePhoto = async (photo: GalleryPhoto) => {
+    if (!confirm("Opravdu chcete smazat tuto fotku?")) return;
+
+    try {
+      // Extract file path from URL
+      const urlParts = photo.file_url.split("/gallery/");
+      if (urlParts.length > 1) {
+        const filePath = urlParts[1];
+        await supabase.storage.from("gallery").remove([filePath]);
+      }
+
+      // Delete from database
+      const { error } = await supabase.from("cafe_gallery").delete().eq("id", photo.id);
+      if (error) throw error;
+
+      toast.success("Fotka smazána");
+      fetchData();
+    } catch (error) {
+      console.error("Error deleting photo:", error);
+      toast.error("Nepodařilo se smazat fotku");
     }
   };
 
@@ -380,6 +465,67 @@ const CafeAdmin = () => {
               </TableBody>
             </Table>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Photo Gallery */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Image className="w-5 h-5" />
+            Fotogalerie
+          </CardTitle>
+          <div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handlePhotoUpload}
+              className="hidden"
+              id="photo-upload"
+            />
+            <Button
+              size="sm"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+            >
+              {uploading ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Upload className="w-4 h-4 mr-2" />
+              )}
+              Nahrát fotky
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {galleryPhotos.length === 0 ? (
+            <p className="text-center text-muted-foreground py-8">
+              Žádné fotky v galerii
+            </p>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {galleryPhotos.map((photo) => (
+                <div key={photo.id} className="relative group aspect-square">
+                  <img
+                    src={photo.file_url}
+                    alt={photo.caption || photo.file_name}
+                    className="w-full h-full object-cover rounded-lg"
+                  />
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      onClick={() => handleDeletePhoto(photo)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
