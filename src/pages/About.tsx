@@ -1,8 +1,9 @@
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import ClubLocationMap from "@/components/map/ClubLocationMap";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MapPin, Mail, Users, Calendar, Trophy, Heart } from "lucide-react";
+import { MapPin, Mail, Users, Calendar, Heart } from "lucide-react";
 
 const About = () => {
   return (
@@ -130,6 +131,12 @@ const About = () => {
               <Button asChild>
                 <a href="/register">Registrovat se</a>
               </Button>
+            </div>
+
+            {/* Map Section */}
+            <div className="mt-12">
+              <h3 className="text-lg font-semibold mb-4 text-center">Kde nás najdete</h3>
+              <ClubLocationMap className="h-[400px] rounded-xl overflow-hidden shadow-lg" />
             </div>
           </div>
         </section>
