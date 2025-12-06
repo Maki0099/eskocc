@@ -1,12 +1,18 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
+import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 
 const CTASection = () => {
+  const { ref, isVisible } = useScrollAnimation();
+
   return (
     <section className="py-32 bg-secondary/30">
       <div className="container mx-auto">
-        <div className="max-w-2xl mx-auto text-center">
+        <div 
+          ref={ref}
+          className={`max-w-2xl mx-auto text-center animate-on-scroll scale-in ${isVisible ? 'is-visible' : ''}`}
+        >
           <h2 className="text-display font-semibold mb-6">
             Připraven na další vyjížďku?
           </h2>
