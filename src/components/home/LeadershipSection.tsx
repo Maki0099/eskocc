@@ -1,3 +1,5 @@
+import { useScrollAnimation } from "@/hooks/useScrollAnimation";
+
 const leaders = [
   {
     name: "Pavel Stráský",
@@ -17,21 +19,31 @@ const leaders = [
 ];
 
 const LeadershipSection = () => {
+  const { ref: headerRef, isVisible: headerVisible } = useScrollAnimation();
+  const { ref: gridRef, isVisible: gridVisible } = useScrollAnimation();
+
   return (
     <section className="py-32 bg-background">
       <div className="container mx-auto">
-        <div className="text-center mb-20">
+        <div 
+          ref={headerRef}
+          className={`text-center mb-20 animate-on-scroll slide-up ${headerVisible ? 'is-visible' : ''}`}
+        >
           <p className="text-sm text-muted-foreground mb-4">Náš tým</p>
           <h2 className="text-display font-semibold">
             Vedení klubu
           </h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 max-w-4xl mx-auto">
-          {leaders.map((leader) => (
+        <div 
+          ref={gridRef}
+          className="grid grid-cols-1 md:grid-cols-3 gap-12 max-w-4xl mx-auto"
+        >
+          {leaders.map((leader, index) => (
             <div
               key={leader.name}
-              className="text-center"
+              className={`text-center animate-on-scroll slide-up ${gridVisible ? 'is-visible' : ''}`}
+              style={{ transitionDelay: `${index * 150}ms` }}
             >
               <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-secondary flex items-center justify-center">
                 <span className="text-2xl font-medium text-muted-foreground">

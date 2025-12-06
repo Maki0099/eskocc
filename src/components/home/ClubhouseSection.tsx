@@ -1,14 +1,21 @@
 import { MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ClubLocationMap from "@/components/map/ClubLocationMap";
+import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 
 const ClubhouseSection = () => {
+  const { ref: contentRef, isVisible: contentVisible } = useScrollAnimation();
+  const { ref: mapRef, isVisible: mapVisible } = useScrollAnimation();
+
   return (
     <section className="py-32 bg-background">
       <div className="container mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           {/* Content */}
-          <div className="max-w-md">
+          <div 
+            ref={contentRef}
+            className={`max-w-md animate-on-scroll slide-in-left ${contentVisible ? 'is-visible' : ''}`}
+          >
             <p className="text-sm text-muted-foreground mb-4">Naše základna</p>
             <h2 className="text-display font-semibold mb-6">
               Kde nás najdete
@@ -34,7 +41,12 @@ const ClubhouseSection = () => {
           </div>
 
           {/* Map */}
-          <ClubLocationMap className="rounded-2xl overflow-hidden aspect-video shadow-lg" />
+          <div
+            ref={mapRef}
+            className={`animate-on-scroll slide-in-right ${mapVisible ? 'is-visible' : ''}`}
+          >
+            <ClubLocationMap className="rounded-2xl overflow-hidden aspect-video shadow-lg" />
+          </div>
         </div>
       </div>
     </section>
