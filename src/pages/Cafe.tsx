@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Clock, Coffee, MapPin } from "lucide-react";
 import { toast } from "sonner";
+import { useScrollAnimation } from "@/hooks/useScrollAnimation";
+import { useParallax } from "@/hooks/useParallax";
 
 import cafeInterior1 from "@/assets/cafe/cafe-interior-1.jpg";
 import cafeTerrace from "@/assets/cafe/cafe-terrace.jpg";
@@ -46,6 +48,10 @@ const Cafe = () => {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [galleryPhotos, setGalleryPhotos] = useState<GalleryPhoto[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const { ref: parallaxRef, offset } = useParallax({ speed: 0.3 });
+  const { ref: contentRef, isVisible: contentVisible } = useScrollAnimation();
+  const { ref: galleryRef, isVisible: galleryVisible } = useScrollAnimation();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -98,13 +104,21 @@ const Cafe = () => {
     return time.slice(0, 5);
   };
 
+  const photosToShow = galleryPhotos.length > 0 
+    ? galleryPhotos.map(p => ({ src: p.file_url, alt: p.caption || p.file_name }))
+    : defaultPhotos.map((photo, i) => ({ src: photo, alt: `ESKO Kafe ${i + 1}` }));
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
       
-      {/* Hero Section */}
+      {/* Hero Section with Parallax */}
       <section className="relative h-[50vh] min-h-[400px] flex items-center justify-center overflow-hidden pt-14">
-        <div className="absolute inset-0">
+        <div 
+          ref={parallaxRef}
+          className="absolute inset-0 will-change-transform"
+          style={{ transform: `translateY(${offset}px) scale(1.1)` }}
+        >
           <img
             src={cafeInterior1}
             alt="ESKO Kafe interiér"
@@ -113,8 +127,8 @@ const Cafe = () => {
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
         </div>
         <div className="relative z-10 text-center px-4">
-          <h1 className="text-5xl md:text-6xl font-bold mb-4">ESKO Kafe</h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+          <h1 className="text-5xl md:text-6xl font-bold mb-4 opacity-0 animate-fade-up animation-delay-100">ESKO Kafe</h1>
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto opacity-0 animate-fade-up animation-delay-200">
             Kavárna s výběrovou kávou Vergnano v srdci Karolinky
           </p>
         </div>
@@ -122,9 +136,14 @@ const Cafe = () => {
 
       <main className="flex-1 container mx-auto px-4 py-12">
         <div className="max-w-6xl mx-auto">
-          <div className="grid gap-8 lg:grid-cols-3">
+          <div 
+            ref={contentRef}
+            className="grid gap-8 lg:grid-cols-3"
+          >
             {/* Opening Hours */}
-            <Card className="lg:col-span-1">
+            <Card 
+              className={`lg:col-span-1 animate-on-scroll slide-in-left ${contentVisible ? 'is-visible' : ''}`}
+            >
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Clock className="w-5 h-5" />
@@ -174,7 +193,9 @@ const Cafe = () => {
             </Card>
 
             {/* Menu */}
-            <Card className="lg:col-span-2">
+            <Card 
+              className={`lg:col-span-2 animate-on-scroll slide-in-right ${contentVisible ? 'is-visible' : ''}`}
+            >
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Coffee className="w-5 h-5" />
@@ -224,37 +245,25 @@ const Cafe = () => {
           </div>
 
           {/* Photo Gallery */}
-          <div className="mt-12">
+          <div 
+            ref={galleryRef}
+            className={`mt-12 animate-on-scroll slide-up ${galleryVisible ? 'is-visible' : ''}`}
+          >
             <h2 className="text-2xl font-bold mb-6">Fotogalerie</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {/* Show uploaded photos first, then default photos if no uploads */}
-              {galleryPhotos.length > 0 ? (
-                galleryPhotos.map((photo) => (
-                  <div
-                    key={photo.id}
-                    className="aspect-square overflow-hidden rounded-xl group"
-                  >
-                    <img
-                      src={photo.file_url}
-                      alt={photo.caption || photo.file_name}
-                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    />
-                  </div>
-                ))
-              ) : (
-                defaultPhotos.map((photo, index) => (
-                  <div
-                    key={index}
-                    className="aspect-square overflow-hidden rounded-xl group"
-                  >
-                    <img
-                      src={photo}
-                      alt={`ESKO Kafe ${index + 1}`}
-                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    />
-                  </div>
-                ))
-              )}
+              {photosToShow.map((photo, index) => (
+                <div
+                  key={index}
+                  className={`aspect-square overflow-hidden rounded-xl group animate-on-scroll scale-in ${galleryVisible ? 'is-visible' : ''}`}
+                  style={{ transitionDelay: `${index * 100}ms` }}
+                >
+                  <img
+                    src={photo.src}
+                    alt={photo.alt}
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                </div>
+              ))}
             </div>
           </div>
         </div>
