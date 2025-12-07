@@ -261,6 +261,10 @@
   transform: translateY(60px);
 }
 
+.animate-on-scroll.fade-up {
+  transform: translateY(30px);
+}
+
 .animate-on-scroll.slide-in-left {
   transform: translateX(-60px);
 }
