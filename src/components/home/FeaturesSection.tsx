@@ -82,14 +82,13 @@ const FeatureCard = ({
   return (
     <div
       className={`
-        group relative overflow-hidden
+        group relative overflow-hidden w-full
         p-6 md:p-8 rounded-2xl
         bg-background border border-border/50
         transition-all duration-500 ease-out
         hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5
         hover:-translate-y-1
         animate-on-scroll fade-up ${isVisible ? 'is-visible' : ''}
-        ${sizeClasses[feature.size]}
       `}
       style={{ transitionDelay: `${delay}ms` }}
     >
@@ -170,24 +169,24 @@ const FeaturesSection = () => {
           className="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-6 max-w-6xl mx-auto"
         >
           {/* Row 1: Large + Medium */}
-          <div className="md:col-span-2">
+          <div className="md:col-span-2 flex">
             <FeatureCard feature={features[0]} index={0} isVisible={gridVisible} />
           </div>
-          <div className="md:col-span-2">
+          <div className="md:col-span-2 flex">
             <FeatureCard feature={features[1]} index={1} isVisible={gridVisible} />
           </div>
           
-          {/* Row 2: 3 small cards */}
-          <div className="md:col-span-1">
+          {/* Row 2: 4 small cards */}
+          <div className="md:col-span-1 flex">
             <FeatureCard feature={features[2]} index={2} isVisible={gridVisible} />
           </div>
-          <div className="md:col-span-1">
+          <div className="md:col-span-1 flex">
             <FeatureCard feature={features[3]} index={3} isVisible={gridVisible} />
           </div>
-          <div className="md:col-span-1">
+          <div className="md:col-span-1 flex">
             <FeatureCard feature={features[4]} index={4} isVisible={gridVisible} />
           </div>
-          <div className="md:col-span-1">
+          <div className="md:col-span-1 flex">
             <FeatureCard feature={features[5]} index={5} isVisible={gridVisible} />
           </div>
         </div>
