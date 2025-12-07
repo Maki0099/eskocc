@@ -19,41 +19,35 @@ const leaders = [
 ];
 
 const LeadershipSection = () => {
-  const { ref: headerRef, isVisible: headerVisible } = useScrollAnimation();
-  const { ref: gridRef, isVisible: gridVisible } = useScrollAnimation();
+  const { ref, isVisible } = useScrollAnimation();
 
   return (
-    <section className="py-32 bg-background">
+    <section className="py-16 bg-secondary/30 border-t border-border/50">
       <div className="container mx-auto">
         <div 
-          ref={headerRef}
-          className={`text-center mb-20 animate-on-scroll slide-up ${headerVisible ? 'is-visible' : ''}`}
+          ref={ref}
+          className={`flex flex-col md:flex-row items-center justify-center gap-8 md:gap-16 animate-on-scroll fade-up ${isVisible ? 'is-visible' : ''}`}
         >
-          <p className="text-sm text-muted-foreground mb-4">Náš tým</p>
-          <h2 className="text-display font-semibold">
-            Vedení klubu
-          </h2>
-        </div>
-
-        <div 
-          ref={gridRef}
-          className="grid grid-cols-1 md:grid-cols-3 gap-12 max-w-4xl mx-auto"
-        >
-          {leaders.map((leader, index) => (
-            <div
-              key={leader.name}
-              className={`text-center animate-on-scroll slide-up ${gridVisible ? 'is-visible' : ''}`}
-              style={{ transitionDelay: `${index * 150}ms` }}
-            >
-              <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-secondary flex items-center justify-center">
-                <span className="text-2xl font-medium text-muted-foreground">
-                  {leader.initials}
-                </span>
+          <p className="text-sm text-muted-foreground">Vedení klubu</p>
+          
+          <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12">
+            {leaders.map((leader) => (
+              <div
+                key={leader.name}
+                className="flex items-center gap-3"
+              >
+                <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
+                  <span className="text-sm font-medium text-muted-foreground">
+                    {leader.initials}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-sm font-medium">{leader.name}</p>
+                  <p className="text-xs text-muted-foreground">{leader.role}</p>
+                </div>
               </div>
-              <h3 className="text-lg font-medium mb-1">{leader.name}</h3>
-              <p className="text-sm text-muted-foreground">{leader.role}</p>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     </section>
