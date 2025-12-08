@@ -24,19 +24,18 @@ import {
 } from "lucide-react";
 import type { AppRole } from "@/lib/types";
 import type { ChallengeSettings } from "@/lib/types";
-import { getInitials, calculateAge } from "@/lib/user-utils";
+import { getInitials } from "@/lib/user-utils";
 
 interface MemberStats {
   id: string;
   full_name: string | null;
   nickname: string | null;
   avatar_url: string | null;
-  birth_date: string | null;
   strava_id: string | null;
   role: AppRole;
   ytd_distance: number;
   target: number;
-  age: number | null;
+  age_category: string;
 }
 
 const Statistics = () => {
@@ -51,15 +50,9 @@ const Statistics = () => {
 
   const currentYear = new Date().getFullYear();
 
-  const calculateAgeLocal = (birthDate: string | null): number | null => {
-    if (!birthDate) return null;
-    return calculateAge(birthDate);
-  };
-
-  const getTargetForAge = (age: number | null, settings: ChallengeSettings): number => {
-    if (age === null) return settings.target_under_40;
-    if (age >= 60) return settings.target_over_60;
-    if (age >= 40) return settings.target_under_60;
+  const getTargetForAgeCategory = (ageCategory: string, settings: ChallengeSettings): number => {
+    if (ageCategory === 'over_60') return settings.target_over_60;
+    if (ageCategory === 'under_60') return settings.target_under_60;
     return settings.target_under_40;
   };
 
@@ -94,28 +87,21 @@ const Statistics = () => {
         const typedSettings = settingsData as ChallengeSettings | null;
         setSettings(typedSettings);
 
-        // Fetch all approved members (not pending)
-        const { data: profiles, error: profilesError } = await supabase
-          .from("profiles")
-          .select("id, full_name, nickname, avatar_url, birth_date, strava_id");
+        // Fetch member statistics using secure RPC function (no birth_date exposed)
+        const { data: memberData, error: memberError } = await supabase
+          .rpc("get_member_statistics");
 
-        if (profilesError) throw profilesError;
+        if (memberError) throw memberError;
 
-        // Fetch roles
+        // Fetch roles for members
         const { data: roles, error: rolesError } = await supabase
           .from("user_roles")
           .select("user_id, role");
 
         if (rolesError) throw rolesError;
 
-        // Filter to only approved members
-        const approvedProfiles = (profiles || []).filter((profile) => {
-          const role = roles?.find((r) => r.user_id === profile.id);
-          return role && role.role !== "pending";
-        });
-
-        // Get all user IDs for batch request
-        const userIds = approvedProfiles.map(p => p.id);
+        // Get all user IDs for batch Strava stats request
+        const userIds = (memberData || []).map((p: any) => p.id);
 
         // Fetch Strava stats in one batch request
         let statsMap: Record<string, { ytd_distance: number; ytd_count: number }> = {};
@@ -138,23 +124,21 @@ const Statistics = () => {
         }
 
         // Build member stats with the batch results
-        const memberStats: MemberStats[] = approvedProfiles.map((profile) => {
+        const memberStats: MemberStats[] = (memberData || []).map((profile: any) => {
           const role = roles?.find((r) => r.user_id === profile.id);
-          const age = calculateAge(profile.birth_date);
-          const target = typedSettings ? getTargetForAge(age, typedSettings) : 0;
-          const ytd_distance = statsMap[profile.id]?.ytd_distance || 0;
+          const target = typedSettings ? getTargetForAgeCategory(profile.age_category, typedSettings) : 0;
+          const ytd_distance = statsMap[profile.id]?.ytd_distance || profile.strava_ytd_distance || 0;
 
           return {
             id: profile.id,
             full_name: profile.full_name,
             nickname: profile.nickname,
             avatar_url: profile.avatar_url,
-            birth_date: profile.birth_date,
             strava_id: profile.strava_id,
             role: (role?.role as AppRole) || "member",
             ytd_distance,
             target,
-            age,
+            age_category: profile.age_category,
           };
         });
 
@@ -204,10 +188,9 @@ const Statistics = () => {
     }
   };
 
-  const getAgeCategory = (age: number | null): string => {
-    if (age === null) return "Pod 40";
-    if (age >= 60) return "Nad 60";
-    if (age >= 40) return "40–60";
+  const getAgeCategoryLabel = (ageCategory: string): string => {
+    if (ageCategory === 'over_60') return "Nad 60";
+    if (ageCategory === 'under_60') return "40–60";
     return "Pod 40";
   };
 
@@ -423,7 +406,7 @@ const Statistics = () => {
                                     )}
                                   </p>
                                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                    <span>{getAgeCategory(member.age)}</span>
+                                    <span>{getAgeCategoryLabel(member.age_category)}</span>
                                     {!member.strava_id && (
                                       <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4">
                                         Bez Stravy
