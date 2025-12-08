@@ -403,21 +403,32 @@ const Account = () => {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => {
+                    onClick={async () => {
+                      if (!user) return;
                       setStravaId("");
-                      // Also clear in database
-                      if (user) {
-                        supabase
-                          .from("profiles")
-                          .update({ strava_id: null })
-                          .eq("id", user.id)
-                          .then(() => {
-                            setProfile(prev => prev ? { ...prev, strava_id: null } : null);
-                            toast({
-                              title: "Odpojeno",
-                              description: "Strava účet byl odpojen",
-                            });
-                          });
+                      // Clear strava_id and all OAuth tokens from database
+                      const { error } = await supabase
+                        .from("profiles")
+                        .update({ 
+                          strava_id: null,
+                          strava_access_token: null,
+                          strava_refresh_token: null,
+                          strava_token_expires_at: null
+                        })
+                        .eq("id", user.id);
+                      
+                      if (error) {
+                        toast({
+                          variant: "destructive",
+                          title: "Chyba",
+                          description: "Nepodařilo se odpojit Strava účet",
+                        });
+                      } else {
+                        setProfile(prev => prev ? { ...prev, strava_id: null } : null);
+                        toast({
+                          title: "Odpojeno",
+                          description: "Strava účet byl úspěšně odpojen",
+                        });
                       }
                     }}
                     className="text-muted-foreground hover:text-destructive"
