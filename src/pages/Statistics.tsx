@@ -15,8 +15,9 @@ import {
   Award,
   Loader2,
   Users,
-  TrendingUp,
-  AlertCircle
+  Bike,
+  AlertCircle,
+  CheckCircle2
 } from "lucide-react";
 
 type AppRole = "pending" | "member" | "active_member" | "admin";
@@ -175,20 +176,36 @@ const Statistics = () => {
   const getRankIcon = (index: number) => {
     switch (index) {
       case 0:
-        return <Trophy className="w-5 h-5 text-yellow-500" />;
+        return (
+          <div className="w-8 h-8 rounded-full bg-yellow-500/20 flex items-center justify-center">
+            <Trophy className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
+          </div>
+        );
       case 1:
-        return <Medal className="w-5 h-5 text-gray-400" />;
+        return (
+          <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+            <Medal className="w-4 h-4 text-muted-foreground" />
+          </div>
+        );
       case 2:
-        return <Award className="w-5 h-5 text-amber-600" />;
+        return (
+          <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center">
+            <Award className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+          </div>
+        );
       default:
-        return <span className="w-5 h-5 flex items-center justify-center text-sm text-muted-foreground">{index + 1}</span>;
+        return (
+          <div className="w-8 h-8 rounded-full bg-muted/50 flex items-center justify-center">
+            <span className="text-sm font-medium text-muted-foreground">{index + 1}</span>
+          </div>
+        );
     }
   };
 
   const getAgeCategory = (age: number | null): string => {
     if (age === null) return "Pod 40";
     if (age >= 60) return "Nad 60";
-    if (age >= 40) return "40-60";
+    if (age >= 40) return "40–60";
     return "Pod 40";
   };
 
@@ -197,7 +214,10 @@ const Statistics = () => {
       <div className="min-h-screen flex flex-col bg-background">
         <Header />
         <main className="flex-1 flex items-center justify-center">
-          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+          <div className="flex flex-col items-center gap-3">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <p className="text-sm text-muted-foreground">Načítám statistiky...</p>
+          </div>
         </main>
         <Footer />
       </div>
@@ -210,146 +230,182 @@ const Statistics = () => {
   const clubRemaining = settings?.club_total_target 
     ? Math.max(settings.club_total_target - clubTotal, 0) 
     : 0;
+  const clubCompleted = clubProgress >= 100;
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
       <main className="flex-1 container mx-auto px-4 pt-24 pb-12">
-        <div className="max-w-4xl mx-auto">
-          {/* Title */}
-          <div className="flex items-center gap-3 mb-8">
-            <Target className="w-8 h-8 text-primary" />
-            <div>
-              <h1 className="text-3xl font-bold">Statistiky klubu</h1>
-              <p className="text-muted-foreground">Výzva roku {currentYear}</p>
+        <div className="max-w-4xl mx-auto space-y-8">
+          {/* Header */}
+          <div className="text-center space-y-2">
+            <div className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary mb-4">
+              <Target className="w-4 h-4" />
+              <span className="text-sm font-medium">Výzva {currentYear}</span>
             </div>
+            <h1 className="text-display font-bold">Statistiky klubu</h1>
+            <p className="text-lg text-muted-foreground max-w-md mx-auto">
+              Sleduj pokrok členů a celého klubu ve splnění ročního cíle
+            </p>
           </div>
 
           {error ? (
-            <Card>
+            <Card className="border-destructive/20">
               <CardContent className="py-12 text-center">
-                <AlertCircle className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                <AlertCircle className="w-12 h-12 mx-auto mb-4 text-destructive" />
                 <p className="text-muted-foreground">{error}</p>
               </CardContent>
             </Card>
           ) : (
-            <div className="space-y-8">
+            <div className="space-y-6">
               {/* Club Goal Card */}
               {settings && (
-                <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Users className="w-5 h-5" />
-                      Klubový cíl {currentYear}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex items-center justify-between text-lg">
-                      <span className="font-semibold">
-                        {clubTotal.toLocaleString()} km
-                      </span>
-                      <span className="text-muted-foreground">
-                        / {settings.club_total_target.toLocaleString()} km
-                      </span>
+                <Card className="overflow-hidden border-0 shadow-lg">
+                  <div className="bg-gradient-to-br from-accent to-secondary p-6 md:p-8 text-accent-foreground">
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="w-12 h-12 rounded-full bg-accent-foreground/20 flex items-center justify-center">
+                        <Users className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h2 className="text-xl font-semibold">Klubový cíl</h2>
+                        <p className="text-accent-foreground/80 text-sm">Společně za {settings.club_total_target.toLocaleString()} km</p>
+                      </div>
                     </div>
-                    <Progress 
-                      value={clubProgress} 
-                      className={`h-4 ${clubProgress >= 100 ? '[&>div]:bg-green-500' : ''}`}
-                    />
-                    <div className="flex justify-between text-sm text-muted-foreground">
-                      <span>{Math.round(clubProgress)}% splněno</span>
-                      <span>Zbývá: {clubRemaining.toLocaleString()} km</span>
+                    
+                    <div className="space-y-4">
+                      <div className="flex items-baseline justify-between">
+                        <span className="text-4xl md:text-5xl font-bold tracking-tight">
+                          {clubTotal.toLocaleString()}
+                          <span className="text-lg font-normal ml-1 opacity-80">km</span>
+                        </span>
+                        <span className="text-lg opacity-80">
+                          z {settings.club_total_target.toLocaleString()} km
+                        </span>
+                      </div>
+                      
+                      <div className="h-3 bg-accent-foreground/20 rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full rounded-full transition-all duration-500 ${
+                            clubCompleted 
+                              ? 'bg-green-400' 
+                              : 'bg-accent-foreground'
+                          }`}
+                          style={{ width: `${clubProgress}%` }}
+                        />
+                      </div>
+                      
+                      <div className="flex justify-between text-sm">
+                        <span className="flex items-center gap-1.5">
+                          {clubCompleted ? (
+                            <>
+                              <CheckCircle2 className="w-4 h-4" />
+                              Cíl splněn!
+                            </>
+                          ) : (
+                            <>{Math.round(clubProgress)}% splněno</>
+                          )}
+                        </span>
+                        <span className="opacity-80">
+                          Zbývá {clubRemaining.toLocaleString()} km
+                        </span>
+                      </div>
                     </div>
-                  </CardContent>
+                  </div>
                 </Card>
               )}
 
               {/* Age Category Targets */}
               {settings && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <TrendingUp className="w-5 h-5" />
-                      Cíle podle věkových kategorií
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid gap-4 md:grid-cols-3">
-                      <div className="p-4 rounded-lg bg-muted/50">
-                        <p className="text-sm text-muted-foreground">Pod 40 let</p>
-                        <p className="text-2xl font-bold">{settings.target_under_40.toLocaleString()} km</p>
+                <div className="grid gap-4 md:grid-cols-3">
+                  <Card className="text-center">
+                    <CardContent className="pt-6 pb-5">
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
+                        <Bike className="w-5 h-5 text-primary" />
                       </div>
-                      <div className="p-4 rounded-lg bg-muted/50">
-                        <p className="text-sm text-muted-foreground">40-60 let</p>
-                        <p className="text-2xl font-bold">{settings.target_under_60.toLocaleString()} km</p>
+                      <p className="text-sm text-muted-foreground mb-1">Pod 40 let</p>
+                      <p className="text-2xl font-bold">{settings.target_under_40.toLocaleString()} km</p>
+                    </CardContent>
+                  </Card>
+                  <Card className="text-center">
+                    <CardContent className="pt-6 pb-5">
+                      <div className="w-10 h-10 rounded-full bg-secondary/20 flex items-center justify-center mx-auto mb-3">
+                        <Bike className="w-5 h-5 text-secondary" />
                       </div>
-                      <div className="p-4 rounded-lg bg-muted/50">
-                        <p className="text-sm text-muted-foreground">Nad 60 let</p>
-                        <p className="text-2xl font-bold">{settings.target_over_60.toLocaleString()} km</p>
+                      <p className="text-sm text-muted-foreground mb-1">40–60 let</p>
+                      <p className="text-2xl font-bold">{settings.target_under_60.toLocaleString()} km</p>
+                    </CardContent>
+                  </Card>
+                  <Card className="text-center">
+                    <CardContent className="pt-6 pb-5">
+                      <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-3">
+                        <Bike className="w-5 h-5 text-accent" />
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                      <p className="text-sm text-muted-foreground mb-1">Nad 60 let</p>
+                      <p className="text-2xl font-bold">{settings.target_over_60.toLocaleString()} km</p>
+                    </CardContent>
+                  </Card>
+                </div>
               )}
 
               {/* Leaderboard */}
               <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Trophy className="w-5 h-5" />
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <Trophy className="w-5 h-5 text-primary" />
                     Pořadí členů
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="px-4 pb-4">
                   {members.length === 0 ? (
                     <p className="text-center text-muted-foreground py-8">
                       Zatím nejsou k dispozici žádná data
                     </p>
                   ) : (
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       {members.map((member, index) => {
                         const progress = member.target > 0 
                           ? Math.min((member.ytd_distance / member.target) * 100, 100) 
                           : 0;
-                        const isCompleted = member.ytd_distance >= member.target;
+                        const isCompleted = member.ytd_distance >= member.target && member.target > 0;
                         const isCurrentUser = user?.id === member.id;
 
                         return (
                           <div 
                             key={member.id}
-                            className={`p-4 rounded-xl border transition-colors ${
+                            className={`p-3 md:p-4 rounded-xl transition-all ${
                               isCurrentUser 
-                                ? "border-primary/30 bg-primary/5" 
-                                : "border-border/50 hover:border-border"
+                                ? "bg-primary/10 ring-1 ring-primary/20" 
+                                : "bg-card hover:bg-muted/50"
                             }`}
                           >
-                            <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-3 md:gap-4">
                               {/* Rank */}
-                              <div className="flex-shrink-0 w-8 flex justify-center">
+                              <div className="flex-shrink-0">
                                 {getRankIcon(index)}
                               </div>
 
                               {/* Avatar & Name */}
                               <Link 
                                 to={`/member/${member.id}`}
-                                className="flex items-center gap-3 flex-shrink-0 hover:opacity-80 transition-opacity"
+                                className="flex items-center gap-3 min-w-0 flex-shrink-0 hover:opacity-80 transition-opacity"
                               >
-                                <Avatar className="w-10 h-10">
+                                <Avatar className="w-10 h-10 border-2 border-background shadow-sm">
                                   <AvatarImage src={member.avatar_url || undefined} />
-                                  <AvatarFallback>
+                                  <AvatarFallback className="bg-muted text-muted-foreground text-sm">
                                     {getInitials(member.full_name, member.nickname)}
                                   </AvatarFallback>
                                 </Avatar>
-                                <div>
-                                  <p className="font-medium">
+                                <div className="min-w-0">
+                                  <p className="font-medium truncate">
                                     {member.nickname || member.full_name || "Bez jména"}
+                                    {isCurrentUser && (
+                                      <span className="text-xs text-muted-foreground ml-1.5">(ty)</span>
+                                    )}
                                   </p>
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-xs text-muted-foreground">
-                                      {getAgeCategory(member.age)}
-                                    </span>
+                                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                    <span>{getAgeCategory(member.age)}</span>
                                     {!member.strava_id && (
-                                      <Badge variant="outline" className="text-xs px-1.5 py-0">
+                                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4">
                                         Bez Stravy
                                       </Badge>
                                     )}
@@ -357,10 +413,10 @@ const Statistics = () => {
                                 </div>
                               </Link>
 
-                              {/* Progress */}
-                              <div className="flex-1 ml-4">
-                                <div className="flex justify-between text-sm mb-1">
-                                  <span className="font-medium">
+                              {/* Progress - Desktop */}
+                              <div className="flex-1 hidden md:block ml-4">
+                                <div className="flex justify-between text-sm mb-1.5">
+                                  <span className="font-semibold">
                                     {member.ytd_distance.toLocaleString()} km
                                   </span>
                                   <span className="text-muted-foreground">
@@ -374,17 +430,29 @@ const Statistics = () => {
                               </div>
 
                               {/* Status */}
-                              <div className="flex-shrink-0 w-16 text-right">
+                              <div className="flex-shrink-0 text-right ml-auto">
                                 {isCompleted ? (
-                                  <Badge className="bg-green-500/20 text-green-600 dark:text-green-400 hover:bg-green-500/20">
-                                    ✓ {Math.round(progress)}%
+                                  <Badge className="bg-green-500/15 text-green-600 dark:text-green-400 hover:bg-green-500/20 border-0">
+                                    <CheckCircle2 className="w-3 h-3 mr-1" />
+                                    {Math.round(progress)}%
                                   </Badge>
                                 ) : (
-                                  <span className="text-sm text-muted-foreground">
-                                    {Math.round(progress)}%
-                                  </span>
+                                  <div className="text-right">
+                                    <span className="text-sm font-medium">{Math.round(progress)}%</span>
+                                    <p className="text-xs text-muted-foreground md:hidden">
+                                      {member.ytd_distance.toLocaleString()} km
+                                    </p>
+                                  </div>
                                 )}
                               </div>
+                            </div>
+
+                            {/* Progress - Mobile */}
+                            <div className="mt-3 md:hidden">
+                              <Progress 
+                                value={progress} 
+                                className={`h-1.5 ${isCompleted ? '[&>div]:bg-green-500' : ''}`}
+                              />
                             </div>
                           </div>
                         );
