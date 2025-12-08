@@ -44,7 +44,7 @@ const externalAlbums = [
     image: mallorca2024,
   },
   {
-    title: "Výjezd 2024",
+    title: "Mallorca 2023",
     url: "https://photos.app.goo.gl/EsoeTbv4AudTPitD9",
     image: vyjezd2024,
   },
