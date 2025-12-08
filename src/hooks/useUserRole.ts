@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-
-type AppRole = "pending" | "member" | "active_member" | "admin";
+import type { AppRole } from "@/lib/types";
 
 export const useUserRole = () => {
   const { user } = useAuth();

@@ -21,16 +21,9 @@ import {
   AlertCircle,
   CheckCircle2
 } from "lucide-react";
-
-type AppRole = "pending" | "member" | "active_member" | "admin";
-
-interface ChallengeSettings {
-  year: number;
-  target_under_40: number;
-  target_under_60: number;
-  target_over_60: number;
-  club_total_target: number;
-}
+import type { AppRole } from "@/lib/types";
+import type { ChallengeSettings } from "@/lib/types";
+import { getInitials, calculateAge } from "@/lib/user-utils";
 
 interface MemberStats {
   id: string;
@@ -56,16 +49,9 @@ const Statistics = () => {
 
   const currentYear = new Date().getFullYear();
 
-  const calculateAge = (birthDate: string | null): number | null => {
+  const calculateAgeLocal = (birthDate: string | null): number | null => {
     if (!birthDate) return null;
-    const birth = new Date(birthDate);
-    const today = new Date();
-    let age = today.getFullYear() - birth.getFullYear();
-    const monthDiff = today.getMonth() - birth.getMonth();
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
-      age--;
-    }
-    return age;
+    return calculateAge(birthDate);
   };
 
   const getTargetForAge = (age: number | null, settings: ChallengeSettings): number => {
@@ -170,18 +156,6 @@ const Statistics = () => {
     fetchData();
   }, [currentYear]);
 
-  const getInitials = (name: string | null, nickname: string | null) => {
-    const displayName = nickname || name;
-    if (displayName) {
-      return displayName
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2);
-    }
-    return "?";
-  };
 
   const getRankIcon = (index: number) => {
     switch (index) {
