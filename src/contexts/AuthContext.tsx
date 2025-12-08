@@ -50,6 +50,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signUp = async (email: string, password: string, fullName: string, nickname?: string, birthDate?: Date, phone?: string) => {
     const redirectUrl = `${window.location.origin}/`;
     
+    // Store additional profile data in user metadata - will be processed after profile exists
+    const additionalData: { birth_date?: string; phone?: string } = {};
+    if (birthDate) additionalData.birth_date = format(birthDate, "yyyy-MM-dd");
+    if (phone) additionalData.phone = phone;
+    
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -58,21 +63,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         data: {
           full_name: fullName,
           nickname: nickname || null,
+          ...additionalData,
         },
       },
     });
-
-    // If signup successful and we have additional profile data, update profile
-    if (!error && data.user && (birthDate || phone)) {
-      const updateData: { birth_date?: string; phone?: string } = {};
-      if (birthDate) updateData.birth_date = format(birthDate, "yyyy-MM-dd");
-      if (phone) updateData.phone = phone;
-      
-      await supabase
-        .from("profiles")
-        .update(updateData)
-        .eq("id", data.user.id);
-    }
 
     return { error: error as Error | null };
   };
