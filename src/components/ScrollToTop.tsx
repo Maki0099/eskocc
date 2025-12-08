@@ -1,18 +1,20 @@
-import { useLayoutEffect } from "react";
+import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 
 const ScrollToTop = () => {
   const { pathname, key } = useLocation();
 
-  // useLayoutEffect ensures scroll happens before paint
-  useLayoutEffect(() => {
-    // Force immediate scroll to top using multiple methods for cross-browser compatibility
-    window.scrollTo(0, 0);
-    document.documentElement.scrollTop = 0;
-    document.body.scrollTop = 0;
-    
-    // Dispatch a scroll event so parallax hooks recalculate their position
-    window.dispatchEvent(new Event('scroll'));
+  useEffect(() => {
+    // Use requestAnimationFrame to ensure DOM is ready
+    requestAnimationFrame(() => {
+      // Force immediate scroll to top
+      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+      
+      // Dispatch scroll event so parallax hooks recalculate
+      requestAnimationFrame(() => {
+        window.dispatchEvent(new Event('scroll'));
+      });
+    });
   }, [pathname, key]);
 
   return null;
