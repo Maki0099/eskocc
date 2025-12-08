@@ -1,9 +1,12 @@
 import { Link } from "react-router-dom";
+import { useTheme } from "next-themes";
 import logoRoundDark from "@/assets/logo-round-dark.png";
 import logoRound from "@/assets/logo-round.png";
 import DecreeModal from "./DecreeModal";
 
 const Footer = () => {
+  const { resolvedTheme } = useTheme();
+  const stravaWidgetUrl = `https://www.strava.com/clubs/1860524/latest-rides/66a685c4f0e28a76273a2be113608f98a113075b?show_rides=false${resolvedTheme === 'dark' ? '&style=dark' : ''}`;
   return <footer className="border-t border-border/50 bg-card">
       <div className="container mx-auto py-12 px-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
@@ -63,11 +66,12 @@ pro všechny nadšence.</p>
               </a>
             </div>
             <iframe 
+              key={resolvedTheme}
               allowTransparency={true}
               frameBorder="0" 
               height="160" 
               scrolling="no" 
-              src="https://www.strava.com/clubs/1860524/latest-rides/66a685c4f0e28a76273a2be113608f98a113075b?show_rides=false" 
+              src={stravaWidgetUrl}
               width="300"
               className="rounded-lg"
               title="Strava Club Widget"
