@@ -73,56 +73,56 @@
 
   .dark {
     /* Esko.cc Dark Mode - Based on logo color #2F333A */
-    --background: 218 11% 11%;
-    --foreground: 30 15% 92%;
+    --background: 218 11% 10%;
+    --foreground: 30 12% 90%;
 
-    --card: 218 11% 16%;
-    --card-foreground: 30 15% 92%;
+    --card: 218 11% 14%;
+    --card-foreground: 30 12% 90%;
 
-    --popover: 218 11% 18%;
-    --popover-foreground: 30 15% 92%;
+    --popover: 218 11% 16%;
+    --popover-foreground: 30 12% 90%;
 
-    --primary: 30 17% 66%;
-    --primary-foreground: 218 11% 11%;
+    --primary: 30 20% 70%;
+    --primary-foreground: 218 11% 10%;
 
-    --secondary: 28 16% 48%;
-    --secondary-foreground: 30 15% 92%;
+    --secondary: 218 10% 22%;
+    --secondary-foreground: 30 12% 90%;
 
-    --muted: 218 11% 25%;
-    --muted-foreground: 30 12% 70%;
+    --muted: 218 10% 20%;
+    --muted-foreground: 30 10% 65%;
 
-    --accent: 31 18% 51%;
-    --accent-foreground: 218 11% 11%;
+    --accent: 30 18% 55%;
+    --accent-foreground: 218 11% 10%;
 
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 85% 97%;
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 218 11% 25%;
-    --input: 218 11% 25%;
-    --ring: 30 17% 66%;
+    --border: 218 10% 22%;
+    --input: 218 10% 22%;
+    --ring: 30 20% 70%;
 
     --sidebar-background: 218 11% 8%;
-    --sidebar-foreground: 30 15% 92%;
-    --sidebar-primary: 30 17% 66%;
-    --sidebar-primary-foreground: 218 11% 11%;
-    --sidebar-accent: 31 18% 51%;
-    --sidebar-accent-foreground: 218 11% 11%;
-    --sidebar-border: 218 11% 25%;
-    --sidebar-ring: 30 17% 66%;
-    --chart-1: 30 17% 66%;
+    --sidebar-foreground: 30 12% 90%;
+    --sidebar-primary: 30 20% 70%;
+    --sidebar-primary-foreground: 218 11% 10%;
+    --sidebar-accent: 30 18% 55%;
+    --sidebar-accent-foreground: 218 11% 10%;
+    --sidebar-border: 218 10% 22%;
+    --sidebar-ring: 30 20% 70%;
+    --chart-1: 30 20% 70%;
     --chart-2: 28 16% 58%;
-    --chart-3: 31 18% 51%;
-    --chart-4: 30 15% 80%;
-    --chart-5: 30 12% 70%;
-    --sidebar: 218 11% 16%;
-    --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.1);
-    --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.1);
-    --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.15), 0 1px 2px -1px hsl(0 0% 0% / 0.15);
-    --shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.2), 0 1px 2px -1px hsl(0 0% 0% / 0.2);
-    --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.2), 0 2px 4px -2px hsl(0 0% 0% / 0.2);
-    --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.2), 0 4px 6px -4px hsl(0 0% 0% / 0.2);
-    --shadow-xl: 0 20px 25px -5px hsl(0 0% 0% / 0.2), 0 8px 10px -6px hsl(0 0% 0% / 0.2);
-    --shadow-2xl: 0 25px 50px -12px hsl(0 0% 0% / 0.35);
+    --chart-3: 30 18% 55%;
+    --chart-4: 30 12% 80%;
+    --chart-5: 30 10% 65%;
+    --sidebar: 218 11% 14%;
+    --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.15);
+    --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.15);
+    --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.2), 0 1px 2px -1px hsl(0 0% 0% / 0.2);
+    --shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.25), 0 1px 2px -1px hsl(0 0% 0% / 0.25);
+    --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.25), 0 2px 4px -2px hsl(0 0% 0% / 0.25);
+    --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.25), 0 4px 6px -4px hsl(0 0% 0% / 0.25);
+    --shadow-xl: 0 20px 25px -5px hsl(0 0% 0% / 0.25), 0 8px 10px -6px hsl(0 0% 0% / 0.25);
+    --shadow-2xl: 0 25px 50px -12px hsl(0 0% 0% / 0.4);
   }
 }
 

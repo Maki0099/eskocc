@@ -84,7 +84,7 @@ const FeatureCard = ({
       className={`
         group relative overflow-hidden w-full
         p-6 md:p-8 rounded-2xl
-        bg-background border border-border/50
+        bg-card border border-border/50
         transition-all duration-500 ease-out
         hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5
         hover:-translate-y-1
@@ -138,7 +138,7 @@ const FeaturesSection = () => {
   return (
     <section className="py-32 relative overflow-hidden">
       {/* Subtle background pattern */}
-      <div className="absolute inset-0 bg-secondary/30" />
+      <div className="absolute inset-0 bg-muted/50" />
       <div 
         className="absolute inset-0 opacity-[0.03]"
         style={{

@@ -1,18 +1,24 @@
 import { Link } from "react-router-dom";
-import logoRound from "@/assets/logo-round-dark.png";
+import logoRoundDark from "@/assets/logo-round-dark.png";
+import logoRound from "@/assets/logo-round.png";
 import DecreeModal from "./DecreeModal";
 
 const Footer = () => {
-  return <footer className="border-t border-border/50 bg-secondary/30">
-      <div className="container mx-auto py-12">
+  return <footer className="border-t border-border/50 bg-card">
+      <div className="container mx-auto py-12 px-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand */}
           <div className="md:col-span-1">
             <Link to="/" className="inline-block mb-4">
               <img 
+                src={logoRoundDark} 
+                alt="ESKO.cc" 
+                className="h-16 w-16 dark:hidden" 
+              />
+              <img 
                 src={logoRound} 
                 alt="ESKO.cc" 
-                className="h-16 w-16 dark:invert dark:brightness-200" 
+                className="h-16 w-16 hidden dark:block" 
               />
             </Link>
             <p className="text-sm text-muted-foreground mb-4">Cyklistický klub 
