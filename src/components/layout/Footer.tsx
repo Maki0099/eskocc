@@ -38,6 +38,7 @@ const Footer = () => {
               <li><Link to="/events" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Vyjížďky</Link></li>
               <li><Link to="/gallery" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Galerie</Link></li>
               <li><Link to="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">O klubu</Link></li>
+              <li><Link to="/install" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Nainstalovat aplikaci</Link></li>
             </ul>
           </div>
 

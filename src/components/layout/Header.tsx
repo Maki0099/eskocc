@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, User, ChevronRight, Moon, Sun } from "lucide-react";
+import { Menu, X, User, ChevronRight, Moon, Sun, Download } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/components/ThemeProvider";
 import logoWhite from "@/assets/logo-horizontal-white.png";
@@ -160,6 +160,17 @@ const Header = () => {
 
           {/* Mobile Theme Toggle & Auth Buttons */}
           <div className="p-6 border-t border-border/50 bg-muted/30 space-y-4">
+            <Link
+              to="/install"
+              className="flex items-center justify-between w-full px-4 py-3 rounded-xl bg-background hover:bg-muted/50 transition-colors"
+            >
+              <span className="text-sm font-medium flex items-center gap-2">
+                <Download className="w-4 h-4" />
+                Nainstalovat aplikaci
+              </span>
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
+            </Link>
+            
             <button
               onClick={toggleTheme}
               className="flex items-center justify-between w-full px-4 py-3 rounded-xl bg-background hover:bg-muted/50 transition-colors"
