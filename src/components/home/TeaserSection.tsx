@@ -63,54 +63,23 @@ const TeaserSection = () => {
   useEffect(() => {
     const fetchTeaserData = async () => {
       try {
-        // Fetch club challenge settings
-        const currentYear = new Date().getFullYear();
-        const { data: settings } = await supabase
-          .from("yearly_challenge_settings")
-          .select("club_total_target")
-          .eq("year", currentYear)
-          .maybeSingle();
+        // Use RPC function to get club stats (works for anonymous users)
+        const { data: stats, error: statsError } = await supabase.rpc('get_club_teaser_stats');
+        
+        if (statsError) {
+          console.error("Error fetching club stats:", statsError);
+        } else if (stats) {
+          const parsedStats = stats as { total_distance: number; target_distance: number; member_count: number };
+          setClubStats({
+            totalDistance: parsedStats.total_distance || 0,
+            targetDistance: parsedStats.target_distance || 70000,
+            memberCount: parsedStats.member_count || 0,
+          });
+        }
 
-        // Fetch approved member count
-        const { data: roles } = await supabase
-          .from("user_roles")
-          .select("user_id, role")
-          .neq("role", "pending");
-
-        const memberCount = roles?.length || 0;
-
-        // Fetch profiles with Strava data for top 3
-        const { data: profiles } = await supabase
-          .from("profiles")
-          .select("id, full_name, nickname, avatar_url, strava_ytd_distance")
-          .order("strava_ytd_distance", { ascending: false, nullsFirst: false })
-          .limit(10);
-
-        // Filter to only approved members and take top 3
-        const approvedIds = new Set(roles?.map(r => r.user_id) || []);
-        const topThree = (profiles || [])
-          .filter(p => approvedIds.has(p.id) && p.strava_ytd_distance && p.strava_ytd_distance > 0)
-          .slice(0, 3)
-          .map(p => ({
-            id: p.id,
-            full_name: p.full_name,
-            nickname: p.nickname,
-            avatar_url: p.avatar_url,
-            ytd_distance: p.strava_ytd_distance || 0,
-          }));
-
-        setTopMembers(topThree);
-
-        // Calculate total distance
-        const totalDistance = (profiles || [])
-          .filter(p => approvedIds.has(p.id))
-          .reduce((sum, p) => sum + (p.strava_ytd_distance || 0), 0);
-
-        setClubStats({
-          totalDistance,
-          targetDistance: settings?.club_total_target || 70000,
-          memberCount,
-        });
+        // Top members will remain hidden for anonymous (profiles table is protected)
+        // We'll show placeholder text instead
+        setTopMembers([]);
 
         // Fetch upcoming events (limited info)
         const { data: events } = await supabase

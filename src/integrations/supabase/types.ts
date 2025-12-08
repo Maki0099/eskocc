@@ -351,6 +351,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_club_teaser_stats: { Args: never; Returns: Json }
       get_cron_jobs: {
         Args: never
         Returns: {
