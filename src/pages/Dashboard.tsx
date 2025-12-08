@@ -8,6 +8,7 @@ import logoDark from "@/assets/logo-horizontal-dark.png";
 import { StravaWidget } from "@/components/dashboard/StravaWidget";
 import { ChallengeWidget } from "@/components/dashboard/ChallengeWidget";
 import PendingMembershipWidget from "@/components/dashboard/PendingMembershipWidget";
+import StravaConnectPrompt from "@/components/dashboard/StravaConnectPrompt";
 
 type AppRole = "pending" | "member" | "active_member" | "admin";
 
@@ -22,6 +23,7 @@ interface Profile {
   full_name: string | null;
   avatar_url: string | null;
   nickname: string | null;
+  strava_id: string | null;
 }
 
 const Dashboard = () => {
@@ -37,7 +39,7 @@ const Dashboard = () => {
       // Fetch profile
       const { data: profileData } = await supabase
         .from("profiles")
-        .select("full_name, avatar_url, nickname")
+        .select("full_name, avatar_url, nickname, strava_id")
         .eq("id", user.id)
         .maybeSingle();
 
@@ -106,6 +108,13 @@ const Dashboard = () => {
               )}
             </p>
           </div>
+
+          {/* Strava connect prompt from registration */}
+          {user && profile && (
+            <div className="mb-6">
+              <StravaConnectPrompt userId={user.id} hasStrava={!!profile.strava_id} />
+            </div>
+          )}
 
           {/* Pending membership widget */}
           {role === "pending" && (
