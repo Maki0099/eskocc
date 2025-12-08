@@ -189,6 +189,14 @@ const Admin = () => {
               <TabsTrigger value="users" className="gap-2">
                 <Users className="w-4 h-4" />
                 Uživatelé
+                {pendingCount > 0 && (
+                  <Badge 
+                    variant="destructive" 
+                    className="ml-1 h-5 min-w-5 px-1.5 text-xs font-bold"
+                  >
+                    {pendingCount}
+                  </Badge>
+                )}
               </TabsTrigger>
               <TabsTrigger value="cafe" className="gap-2">
                 <Coffee className="w-4 h-4" />
