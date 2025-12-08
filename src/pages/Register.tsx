@@ -1,18 +1,15 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ArrowLeft, CalendarIcon } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { z } from "zod";
-import { format } from "date-fns";
-import { cs } from "date-fns/locale";
-import { cn } from "@/lib/utils";
 import logoDark from "@/assets/logo-horizontal-dark.png";
+import RegistrationSteps from "@/components/register/RegistrationSteps";
+import PersonalDetailsStep from "@/components/register/PersonalDetailsStep";
+import StravaConnectStep from "@/components/register/StravaConnectStep";
+import TermsAndConditions from "@/components/register/TermsAndConditions";
 
 const registerSchema = z.object({
   fullName: z.string().min(2, "Jméno musí mít alespoň 2 znaky").max(100),
@@ -20,18 +17,23 @@ const registerSchema = z.object({
   password: z.string().min(6, "Heslo musí mít alespoň 6 znaků"),
   confirmPassword: z.string(),
   nickname: z.string().max(50).optional(),
+  termsAccepted: z.literal(true, {
+    errorMap: () => ({ message: "Musíš souhlasit s podmínkami členství" }),
+  }),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Hesla se neshodují",
   path: ["confirmPassword"],
 });
 
 const Register = () => {
+  const [step, setStep] = useState(1);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [nickname, setNickname] = useState("");
   const [birthDate, setBirthDate] = useState<Date | undefined>();
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const { signUp, user } = useAuth();
@@ -43,10 +45,28 @@ const Register = () => {
     }
   }, [user, navigate]);
 
+  const handleStravaConnect = () => {
+    localStorage.setItem("stravaConnectPending", "true");
+    setStep(3);
+  };
+
+  const handleStravaSkip = () => {
+    localStorage.removeItem("stravaConnectPending");
+    setStep(3);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const validation = registerSchema.safeParse({ fullName, email, password, confirmPassword, nickname });
+    const validation = registerSchema.safeParse({ 
+      fullName, 
+      email, 
+      password, 
+      confirmPassword, 
+      nickname,
+      termsAccepted 
+    });
+    
     if (!validation.success) {
       toast({
         variant: "destructive",
@@ -84,120 +104,89 @@ const Register = () => {
     setLoading(false);
   };
 
+  const handleBack = () => {
+    if (step > 1) {
+      setStep(step - 1);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
-        <Link to="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-8">
-          <ArrowLeft className="w-4 h-4" />
-          Zpět
-        </Link>
-
-        <div className="mb-8">
-          <img src={logoDark} alt="ESKO.cc" className="h-6 mb-8" />
-          <h1 className="text-2xl font-semibold mb-2">Registrace</h1>
-          <p className="text-sm text-muted-foreground">Staň se členem ESKO.cc</p>
+        <div className="flex items-center justify-between mb-8">
+          {step === 1 ? (
+            <Link to="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <ArrowLeft className="w-4 h-4" />
+              Zpět
+            </Link>
+          ) : (
+            <button 
+              onClick={handleBack}
+              className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Zpět
+            </button>
+          )}
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="fullName" className="text-sm">Celé jméno *</Label>
-            <Input
-              id="fullName"
-              type="text"
-              placeholder="Jan Novák"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              className="h-12 rounded-xl"
-              required
+        <div className="mb-6">
+          <img src={logoDark} alt="ESKO.cc" className="h-6 mb-6" />
+          <RegistrationSteps currentStep={step} totalSteps={3} />
+          <h1 className="text-2xl font-semibold mb-2">
+            {step === 1 && "Registrace"}
+            {step === 2 && "Strava"}
+            {step === 3 && "Podmínky"}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {step === 1 && "Staň se členem ESKO.cc"}
+            {step === 2 && "Propoj svůj sportovní profil"}
+            {step === 3 && "Poslední krok před odesláním"}
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit}>
+          {step === 1 && (
+            <PersonalDetailsStep
+              fullName={fullName}
+              setFullName={setFullName}
+              nickname={nickname}
+              setNickname={setNickname}
+              birthDate={birthDate}
+              setBirthDate={setBirthDate}
+              email={email}
+              setEmail={setEmail}
+              password={password}
+              setPassword={setPassword}
+              confirmPassword={confirmPassword}
+              setConfirmPassword={setConfirmPassword}
+              onNext={() => setStep(2)}
             />
-          </div>
+          )}
 
-          <div className="space-y-2">
-            <Label htmlFor="nickname" className="text-sm">Přezdívka</Label>
-            <Input
-              id="nickname"
-              type="text"
-              placeholder="Honza"
-              value={nickname}
-              onChange={(e) => setNickname(e.target.value)}
-              className="h-12 rounded-xl"
+          {step === 2 && (
+            <StravaConnectStep
+              onConnect={handleStravaConnect}
+              onSkip={handleStravaSkip}
             />
-          </div>
+          )}
 
-          <div className="space-y-2">
-            <Label className="text-sm">Datum narození</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  type="button"
-                  className={cn(
-                    "w-full h-12 rounded-xl justify-start text-left font-normal",
-                    !birthDate && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {birthDate ? format(birthDate, "d. MMMM yyyy", { locale: cs }) : "Vyber datum"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={birthDate}
-                  onSelect={setBirthDate}
-                  disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
-                  initialFocus
-                  className="pointer-events-auto"
-                  captionLayout="dropdown-buttons"
-                  fromYear={1940}
-                  toYear={new Date().getFullYear()}
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="email" className="text-sm">Email *</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="vas@email.cz"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="h-12 rounded-xl"
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="password" className="text-sm">Heslo *</Label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="h-12 rounded-xl"
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="confirmPassword" className="text-sm">Potvrdit heslo *</Label>
-            <Input
-              id="confirmPassword"
-              type="password"
-              placeholder="••••••••"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="h-12 rounded-xl"
-              required
-            />
-          </div>
-
-          <Button type="submit" variant="apple" className="w-full h-12 mt-6" disabled={loading}>
-            {loading ? "Registrace..." : "Zaregistrovat se"}
-          </Button>
+          {step === 3 && (
+            <div className="space-y-6">
+              <TermsAndConditions
+                accepted={termsAccepted}
+                onAcceptedChange={setTermsAccepted}
+              />
+              <Button 
+                type="submit" 
+                variant="apple" 
+                className="w-full h-12" 
+                disabled={loading || !termsAccepted}
+              >
+                {loading ? "Registrace..." : "Zaregistrovat se"}
+              </Button>
+            </div>
+          )}
         </form>
 
         <p className="text-center text-sm text-muted-foreground mt-8">
