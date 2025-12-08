@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.strava-stats]
 verify_jwt = true
+
+[functions.strava-stats-batch]
+verify_jwt = true

@@ -250,7 +250,10 @@ export type Database = {
           strava_access_token: string | null
           strava_id: string | null
           strava_refresh_token: string | null
+          strava_stats_cached_at: string | null
           strava_token_expires_at: string | null
+          strava_ytd_count: number | null
+          strava_ytd_distance: number | null
           updated_at: string
         }
         Insert: {
@@ -264,7 +267,10 @@ export type Database = {
           strava_access_token?: string | null
           strava_id?: string | null
           strava_refresh_token?: string | null
+          strava_stats_cached_at?: string | null
           strava_token_expires_at?: string | null
+          strava_ytd_count?: number | null
+          strava_ytd_distance?: number | null
           updated_at?: string
         }
         Update: {
@@ -278,7 +284,10 @@ export type Database = {
           strava_access_token?: string | null
           strava_id?: string | null
           strava_refresh_token?: string | null
+          strava_stats_cached_at?: string | null
           strava_token_expires_at?: string | null
+          strava_ytd_count?: number | null
+          strava_ytd_distance?: number | null
           updated_at?: string
         }
         Relationships: []
