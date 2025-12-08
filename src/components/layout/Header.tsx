@@ -1,125 +1,179 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, User } from "lucide-react";
+import { Menu, X, User, ChevronRight } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import logoWhite from "@/assets/logo-horizontal-white.png";
 import logoDark from "@/assets/logo-horizontal-dark.png";
 
+const navItems = [
+  { to: "/", label: "Domů" },
+  { to: "/events", label: "Vyjížďky" },
+  { to: "/cafe", label: "Kavárna" },
+  { to: "/gallery", label: "Galerie" },
+  { to: "/about", label: "O klubu" },
+];
+
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, loading } = useAuth();
+  const location = useLocation();
+
+  // Close menu on route change
+  useEffect(() => {
+    setIsMenuOpen(false);
+  }, [location.pathname]);
+
+  // Prevent body scroll when menu is open
+  useEffect(() => {
+    if (isMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isMenuOpen]);
+
+  const isActive = (path: string) => {
+    if (path === "/") return location.pathname === "/";
+    return location.pathname.startsWith(path);
+  };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
-      <div className="container mx-auto">
-        <div className="flex items-center justify-between h-14">
-          <Link to="/" className="flex items-center" onClick={() => window.scrollTo(0, 0)}>
-            <img 
-              src={logoDark} 
-              alt="ESKO.cc" 
-              className="h-8 dark:hidden"
-            />
-            <img 
-              src={logoWhite} 
-              alt="ESKO.cc" 
-              className="h-8 hidden dark:block"
-            />
-          </Link>
+    <>
+      <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-between h-16">
+            <Link to="/" className="flex items-center" onClick={() => window.scrollTo(0, 0)}>
+              <img 
+                src={logoDark} 
+                alt="ESKO.cc" 
+                className="h-8 dark:hidden"
+              />
+              <img 
+                src={logoWhite} 
+                alt="ESKO.cc" 
+                className="h-8 hidden dark:block"
+              />
+            </Link>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-8">
-            <Link to="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors" onClick={() => window.scrollTo(0, 0)}>
-              Domů
-            </Link>
-            <Link to="/events" className="text-sm text-muted-foreground hover:text-foreground transition-colors" onClick={() => window.scrollTo(0, 0)}>
-              Vyjížďky
-            </Link>
-            <Link to="/cafe" className="text-sm text-muted-foreground hover:text-foreground transition-colors" onClick={() => window.scrollTo(0, 0)}>
-              Kavárna
-            </Link>
-            <Link to="/gallery" className="text-sm text-muted-foreground hover:text-foreground transition-colors" onClick={() => window.scrollTo(0, 0)}>
-              Galerie
-            </Link>
-            <Link to="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors" onClick={() => window.scrollTo(0, 0)}>
-              O klubu
-            </Link>
-          </nav>
+            {/* Desktop Navigation */}
+            <nav className="hidden md:flex items-center gap-8">
+              {navItems.map((item) => (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  className={`text-sm transition-colors ${
+                    isActive(item.to)
+                      ? "text-foreground font-medium"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                  onClick={() => window.scrollTo(0, 0)}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
 
-          <div className="hidden md:flex items-center gap-3">
+            <div className="hidden md:flex items-center gap-3">
+              {loading ? (
+                <div className="w-20 h-8 bg-muted animate-pulse rounded-lg"></div>
+              ) : user ? (
+                <Link to="/dashboard">
+                  <Button variant="ghost" size="sm" className="gap-2">
+                    <User className="w-4 h-4" />
+                    Dashboard
+                  </Button>
+                </Link>
+              ) : (
+                <>
+                  <Link to="/login">
+                    <Button variant="ghost" size="sm">Přihlásit se</Button>
+                  </Link>
+                  <Link to="/register">
+                    <Button variant="apple" size="sm">Registrace</Button>
+                  </Link>
+                </>
+              )}
+            </div>
+
+            {/* Mobile Menu Button */}
+            <button
+              className="md:hidden p-2 -mr-2 text-foreground rounded-lg hover:bg-muted/50 transition-colors"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              aria-label={isMenuOpen ? "Zavřít menu" : "Otevřít menu"}
+            >
+              {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Mobile Menu Overlay */}
+      <div
+        className={`fixed inset-0 z-40 bg-background/80 backdrop-blur-sm md:hidden transition-opacity duration-300 ${
+          isMenuOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+        }`}
+        onClick={() => setIsMenuOpen(false)}
+      />
+
+      {/* Mobile Menu Panel */}
+      <div
+        className={`fixed top-16 left-0 right-0 bottom-0 z-40 bg-background md:hidden transition-transform duration-300 ease-out ${
+          isMenuOpen ? "translate-y-0" : "-translate-y-full"
+        }`}
+      >
+        <nav className="flex flex-col h-full">
+          <div className="flex-1 overflow-y-auto py-4">
+            {navItems.map((item, index) => (
+              <Link
+                key={item.to}
+                to={item.to}
+                className={`flex items-center justify-between px-6 py-4 text-lg transition-all ${
+                  isActive(item.to)
+                    ? "text-foreground font-medium bg-muted/50"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
+                }`}
+                style={{ animationDelay: `${index * 50}ms` }}
+                onClick={() => window.scrollTo(0, 0)}
+              >
+                <span>{item.label}</span>
+                <ChevronRight className={`w-5 h-5 transition-opacity ${isActive(item.to) ? "opacity-100" : "opacity-0"}`} />
+              </Link>
+            ))}
+          </div>
+
+          {/* Mobile Auth Buttons */}
+          <div className="p-6 border-t border-border/50 bg-muted/30">
             {loading ? (
-              <div className="w-20 h-8 bg-muted animate-pulse rounded-lg"></div>
+              <div className="h-12 bg-muted animate-pulse rounded-xl"></div>
             ) : user ? (
-              <Link to="/dashboard">
-                <Button variant="ghost" size="sm" className="gap-2">
-                  <User className="w-4 h-4" />
+              <Link to="/dashboard" className="block">
+                <Button variant="apple" className="w-full h-12 gap-2 text-base rounded-xl">
+                  <User className="w-5 h-5" />
                   Dashboard
                 </Button>
               </Link>
             ) : (
-              <>
-                <Link to="/login">
-                  <Button variant="ghost" size="sm">Přihlásit se</Button>
+              <div className="flex flex-col gap-3">
+                <Link to="/register" className="block">
+                  <Button variant="apple" className="w-full h-12 text-base rounded-xl">
+                    Registrace
+                  </Button>
                 </Link>
-                <Link to="/register">
-                  <Button variant="apple" size="sm">Registrace</Button>
+                <Link to="/login" className="block">
+                  <Button variant="outline" className="w-full h-12 text-base rounded-xl">
+                    Přihlásit se
+                  </Button>
                 </Link>
-              </>
+              </div>
             )}
           </div>
-
-          {/* Mobile Menu Button */}
-          <button
-            className="md:hidden p-2 text-foreground"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-          >
-            {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
-        </div>
-
-        {/* Mobile Menu */}
-        {isMenuOpen && (
-          <div className="md:hidden py-6 border-t border-border/50 animate-fade-in">
-            <nav className="flex flex-col gap-4">
-              <Link to="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors" onClick={() => { setIsMenuOpen(false); window.scrollTo(0, 0); }}>
-                Domů
-              </Link>
-              <Link to="/events" className="text-sm text-muted-foreground hover:text-foreground transition-colors" onClick={() => { setIsMenuOpen(false); window.scrollTo(0, 0); }}>
-                Vyjížďky
-              </Link>
-              <Link to="/cafe" className="text-sm text-muted-foreground hover:text-foreground transition-colors" onClick={() => { setIsMenuOpen(false); window.scrollTo(0, 0); }}>
-                Kavárna
-              </Link>
-              <Link to="/gallery" className="text-sm text-muted-foreground hover:text-foreground transition-colors" onClick={() => { setIsMenuOpen(false); window.scrollTo(0, 0); }}>
-                Galerie
-              </Link>
-              <Link to="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors" onClick={() => { setIsMenuOpen(false); window.scrollTo(0, 0); }}>
-                O klubu
-              </Link>
-              <div className="flex gap-3 pt-4 border-t border-border/50">
-                {user ? (
-                  <Link to="/dashboard" className="flex-1">
-                    <Button variant="apple" className="w-full gap-2">
-                      <User className="w-4 h-4" />
-                      Dashboard
-                    </Button>
-                  </Link>
-                ) : (
-                  <>
-                    <Link to="/login" className="flex-1">
-                      <Button variant="ghost" className="w-full">Přihlásit se</Button>
-                    </Link>
-                    <Link to="/register" className="flex-1">
-                      <Button variant="apple" className="w-full">Registrace</Button>
-                    </Link>
-                  </>
-                )}
-              </div>
-            </nav>
-          </div>
-        )}
+        </nav>
       </div>
-    </header>
+    </>
   );
 };
 
