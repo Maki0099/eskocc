@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Target, ChevronRight, Loader2, AlertCircle } from "lucide-react";
+import { Target, ChevronRight, Loader2, AlertCircle, PartyPopper } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 
 interface ChallengeWidgetProps {
   userId: string;
@@ -23,6 +24,7 @@ export const ChallengeWidget = ({ userId }: ChallengeWidgetProps) => {
   const [userAge, setUserAge] = useState<number | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const notificationShownRef = useRef(false);
 
   const currentYear = new Date().getFullYear();
 
@@ -148,7 +150,24 @@ export const ChallengeWidget = ({ userId }: ChallengeWidgetProps) => {
 
   const progress = target > 0 ? Math.min((ytdDistance / target) * 100, 100) : 0;
   const remaining = Math.max(target - ytdDistance, 0);
-  const isCompleted = ytdDistance >= target;
+  const isCompleted = ytdDistance >= target && target > 0;
+
+  // Show celebration notification when goal is completed
+  useEffect(() => {
+    if (isCompleted && !notificationShownRef.current && !loading) {
+      const storageKey = `challenge_completed_${currentYear}_${userId}`;
+      const alreadyNotified = localStorage.getItem(storageKey);
+      
+      if (!alreadyNotified) {
+        localStorage.setItem(storageKey, "true");
+        toast({
+          title: "🎉 Gratulujeme!",
+          description: `Splnil jsi svůj cíl ${target.toLocaleString()} km pro rok ${currentYear}!`,
+        });
+      }
+      notificationShownRef.current = true;
+    }
+  }, [isCompleted, loading, currentYear, userId, target]);
 
   return (
     <Card className="overflow-hidden">
