@@ -241,28 +241,34 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          birth_date: string | null
           created_at: string
           email: string
           full_name: string | null
           id: string
+          nickname: string | null
           strava_id: string | null
           updated_at: string
         }
         Insert: {
           avatar_url?: string | null
+          birth_date?: string | null
           created_at?: string
           email: string
           full_name?: string | null
           id: string
+          nickname?: string | null
           strava_id?: string | null
           updated_at?: string
         }
         Update: {
           avatar_url?: string | null
+          birth_date?: string | null
           created_at?: string
           email?: string
           full_name?: string | null
           id?: string
+          nickname?: string | null
           strava_id?: string | null
           updated_at?: string
         }

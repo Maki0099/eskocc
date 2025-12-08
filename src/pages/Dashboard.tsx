@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { LogOut, User, Calendar, Image, Shield } from "lucide-react";
+import { LogOut, User, Calendar, Image, Shield, Settings } from "lucide-react";
 import logoDark from "@/assets/logo-horizontal-dark.png";
 
 type AppRole = "pending" | "member" | "active_member" | "admin";
@@ -15,9 +15,15 @@ const roleLabels: Record<AppRole, string> = {
   admin: "Administrátor",
 };
 
+interface Profile {
+  full_name: string | null;
+  avatar_url: string | null;
+  nickname: string | null;
+}
+
 const Dashboard = () => {
   const { user, signOut } = useAuth();
-  const [profile, setProfile] = useState<{ full_name: string | null } | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -28,7 +34,7 @@ const Dashboard = () => {
       // Fetch profile
       const { data: profileData } = await supabase
         .from("profiles")
-        .select("full_name")
+        .select("full_name, avatar_url, nickname")
         .eq("id", user.id)
         .maybeSingle();
 
@@ -54,6 +60,8 @@ const Dashboard = () => {
   const handleSignOut = async () => {
     await signOut();
   };
+
+  const displayName = profile?.nickname || profile?.full_name || user?.email?.split("@")[0];
 
   if (loading) {
     return (
@@ -84,7 +92,7 @@ const Dashboard = () => {
           {/* Welcome section */}
           <div className="mb-12">
             <h1 className="text-3xl font-semibold mb-2">
-              Ahoj, {profile?.full_name || user?.email?.split("@")[0]}!
+              Ahoj, {displayName}!
             </h1>
             <p className="text-muted-foreground">
               {role && (
@@ -130,10 +138,21 @@ const Dashboard = () => {
               </p>
             </Link>
 
+            <Link
+              to="/account"
+              className="group p-6 rounded-2xl border border-border/40 hover:border-border transition-colors"
+            >
+              <Settings className="w-8 h-8 mb-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+              <h3 className="font-medium mb-1">Můj účet</h3>
+              <p className="text-sm text-muted-foreground">
+                Upravit profil a nastavení
+              </p>
+            </Link>
+
             {role === "admin" && (
               <Link
                 to="/admin"
-                className="group p-6 rounded-2xl border border-primary/20 hover:border-primary/40 bg-primary/5 transition-colors md:col-span-2"
+                className="group p-6 rounded-2xl border border-primary/20 hover:border-primary/40 bg-primary/5 transition-colors"
               >
                 <Shield className="w-8 h-8 mb-4 text-primary" />
                 <h3 className="font-medium mb-1">Admin Panel</h3>
@@ -146,15 +165,25 @@ const Dashboard = () => {
 
           {/* Profile info */}
           <div className="mt-12 p-6 rounded-2xl border border-border/40">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
-                <User className="w-6 h-6 text-muted-foreground" />
+            <Link to="/account" className="flex items-center gap-4 group">
+              <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center overflow-hidden">
+                {profile?.avatar_url ? (
+                  <img
+                    src={profile.avatar_url}
+                    alt="Avatar"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <User className="w-6 h-6 text-muted-foreground" />
+                )}
               </div>
-              <div>
-                <p className="font-medium">{profile?.full_name || "Bez jména"}</p>
+              <div className="flex-1">
+                <p className="font-medium group-hover:text-primary transition-colors">
+                  {profile?.full_name || "Bez jména"}
+                </p>
                 <p className="text-sm text-muted-foreground">{user?.email}</p>
               </div>
-            </div>
+            </Link>
           </div>
         </div>
       </main>
