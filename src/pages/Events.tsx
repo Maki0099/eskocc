@@ -7,6 +7,7 @@ import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import CreateEventDialog from "@/components/events/CreateEventDialog";
+import MemberOnlyContent from "@/components/MemberOnlyContent";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SkeletonEventCard } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -28,7 +29,7 @@ interface Event {
 
 const Events = () => {
   const { user } = useAuth();
-  const { canCreateEvents } = useUserRole();
+  const { canCreateEvents, isMember, loading: roleLoading } = useUserRole();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -102,77 +103,84 @@ const Events = () => {
                 Přehled plánovaných cyklistických vyjížděk klubu Eskocc
               </p>
             </div>
-            {canCreateEvents && <CreateEventDialog onEventCreated={fetchEvents} />}
+            {isMember && canCreateEvents && <CreateEventDialog onEventCreated={fetchEvents} />}
           </div>
 
-          <div ref={listRef}>
-            {loading ? (
-              <div className="space-y-4">
-                {[1, 2, 3].map((i) => (
-                  <SkeletonEventCard key={i} />
-                ))}
-              </div>
-            ) : events.length === 0 ? (
-              <Card className={`animate-on-scroll scale-in ${listVisible ? 'is-visible' : ''}`}>
-                <CardContent className="py-12 text-center">
-                  <Calendar className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-muted-foreground">
-                    Žádné nadcházející vyjížďky
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-4">
-                {events.map((event, index) => (
-                  <Link key={event.id} to={`/events/${event.id}`}>
-                    <Card 
-                      className={`hover:shadow-md transition-all cursor-pointer group hover:-translate-y-1 animate-on-scroll slide-up ${listVisible ? 'is-visible' : ''}`}
-                      style={{ transitionDelay: `${index * 100}ms` }}
-                    >
-                      <CardHeader>
-                        <div className="flex items-start justify-between gap-4">
-                          <CardTitle className="text-xl group-hover:text-primary transition-colors">
-                            {event.title}
-                          </CardTitle>
-                          <div className="flex items-center gap-2">
-                            <Badge variant="secondary" className="shrink-0">
-                              <Users className="w-3 h-3 mr-1" />
-                              {event.participant_count}
-                            </Badge>
-                            <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+          {!isMember && !roleLoading ? (
+            <MemberOnlyContent 
+              title="Vyjížďky pro členy"
+              description="Pro zobrazení plánovaných vyjížděk a účast na nich se staň členem klubu."
+            />
+          ) : (
+            <div ref={listRef}>
+              {loading ? (
+                <div className="space-y-4">
+                  {[1, 2, 3].map((i) => (
+                    <SkeletonEventCard key={i} />
+                  ))}
+                </div>
+              ) : events.length === 0 ? (
+                <Card className={`animate-on-scroll scale-in ${listVisible ? 'is-visible' : ''}`}>
+                  <CardContent className="py-12 text-center">
+                    <Calendar className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                    <p className="text-muted-foreground">
+                      Žádné nadcházející vyjížďky
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-4">
+                  {events.map((event, index) => (
+                    <Link key={event.id} to={`/events/${event.id}`}>
+                      <Card 
+                        className={`hover:shadow-md transition-all cursor-pointer group hover:-translate-y-1 animate-on-scroll slide-up ${listVisible ? 'is-visible' : ''}`}
+                        style={{ transitionDelay: `${index * 100}ms` }}
+                      >
+                        <CardHeader>
+                          <div className="flex items-start justify-between gap-4">
+                            <CardTitle className="text-xl group-hover:text-primary transition-colors">
+                              {event.title}
+                            </CardTitle>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="secondary" className="shrink-0">
+                                <Users className="w-3 h-3 mr-1" />
+                                {event.participant_count}
+                              </Badge>
+                              <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                            </div>
                           </div>
-                        </div>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        {event.description && (
-                          <p className="text-muted-foreground line-clamp-2">{event.description}</p>
-                        )}
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          {event.description && (
+                            <p className="text-muted-foreground line-clamp-2">{event.description}</p>
+                          )}
 
-                        <div className="flex flex-wrap gap-4 text-sm">
-                          <div className="flex items-center gap-2 text-muted-foreground">
-                            <Calendar className="w-4 h-4" />
-                            <span>
-                              {format(new Date(event.event_date), "EEEE d. MMMM yyyy, HH:mm", {
-                                locale: cs,
-                              })}
-                            </span>
+                          <div className="flex flex-wrap gap-4 text-sm">
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                              <Calendar className="w-4 h-4" />
+                              <span>
+                                {format(new Date(event.event_date), "EEEE d. MMMM yyyy, HH:mm", {
+                                  locale: cs,
+                                })}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                              <MapPin className="w-4 h-4" />
+                              <span>{event.location}</span>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2 text-muted-foreground">
-                            <MapPin className="w-4 h-4" />
-                            <span>{event.location}</span>
-                          </div>
-                        </div>
 
-                        {event.is_participating && (
-                          <Badge variant="default" className="mt-2">Přihlášen/a</Badge>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
+                          {event.is_participating && (
+                            <Badge variant="default" className="mt-2">Přihlášen/a</Badge>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </main>
       <Footer />
