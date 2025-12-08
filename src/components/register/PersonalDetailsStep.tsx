@@ -1,9 +1,10 @@
+import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Eye, EyeOff, Check, X } from "lucide-react";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -43,7 +44,12 @@ const PersonalDetailsStep = ({
   setConfirmPassword,
   onNext,
 }: PersonalDetailsStepProps) => {
-  const isValid = fullName.length >= 2 && email.includes("@") && password.length >= 6 && password === confirmPassword;
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const isPasswordLongEnough = password.length >= 6;
+  const passwordsMatch = password === confirmPassword && confirmPassword.length > 0;
+  const isValid = fullName.length >= 2 && email.includes("@") && isPasswordLongEnough && passwordsMatch;
 
   return (
     <div className="space-y-4">
@@ -131,28 +137,72 @@ const PersonalDetailsStep = ({
 
       <div className="space-y-2">
         <Label htmlFor="password" className="text-sm">Heslo *</Label>
-        <Input
-          id="password"
-          type="password"
-          placeholder="••••••••"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="h-12 rounded-xl"
-          required
-        />
+        <div className="relative">
+          <Input
+            id="password"
+            type={showPassword ? "text" : "password"}
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="h-12 rounded-xl pr-10"
+            required
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+          </button>
+        </div>
+        {password.length > 0 && (
+          <div className={cn(
+            "flex items-center gap-1.5 text-xs",
+            isPasswordLongEnough ? "text-green-600" : "text-muted-foreground"
+          )}>
+            {isPasswordLongEnough ? (
+              <Check className="w-3 h-3" />
+            ) : (
+              <X className="w-3 h-3" />
+            )}
+            Minimálně 6 znaků
+          </div>
+        )}
       </div>
 
       <div className="space-y-2">
         <Label htmlFor="confirmPassword" className="text-sm">Potvrdit heslo *</Label>
-        <Input
-          id="confirmPassword"
-          type="password"
-          placeholder="••••••••"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          className="h-12 rounded-xl"
-          required
-        />
+        <div className="relative">
+          <Input
+            id="confirmPassword"
+            type={showConfirmPassword ? "text" : "password"}
+            placeholder="••••••••"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            className="h-12 rounded-xl pr-10"
+            required
+          />
+          <button
+            type="button"
+            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+          </button>
+        </div>
+        {confirmPassword.length > 0 && (
+          <div className={cn(
+            "flex items-center gap-1.5 text-xs",
+            passwordsMatch ? "text-green-600" : "text-destructive"
+          )}>
+            {passwordsMatch ? (
+              <Check className="w-3 h-3" />
+            ) : (
+              <X className="w-3 h-3" />
+            )}
+            {passwordsMatch ? "Hesla se shodují" : "Hesla se neshodují"}
+          </div>
+        )}
       </div>
 
       <Button
