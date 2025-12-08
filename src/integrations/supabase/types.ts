@@ -304,6 +304,39 @@ export type Database = {
         }
         Relationships: []
       }
+      yearly_challenge_settings: {
+        Row: {
+          club_total_target: number
+          created_at: string | null
+          id: string
+          target_over_60: number
+          target_under_40: number
+          target_under_60: number
+          updated_at: string | null
+          year: number
+        }
+        Insert: {
+          club_total_target?: number
+          created_at?: string | null
+          id?: string
+          target_over_60?: number
+          target_under_40?: number
+          target_under_60?: number
+          updated_at?: string | null
+          year: number
+        }
+        Update: {
+          club_total_target?: number
+          created_at?: string | null
+          id?: string
+          target_over_60?: number
+          target_under_40?: number
+          target_under_60?: number
+          updated_at?: string | null
+          year?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
