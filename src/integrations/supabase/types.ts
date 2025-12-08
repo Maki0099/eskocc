@@ -468,6 +468,20 @@ export type Database = {
           username: string
         }[]
       }
+      get_member_statistics: {
+        Args: never
+        Returns: {
+          age_category: string
+          avatar_url: string
+          created_at: string
+          full_name: string
+          id: string
+          nickname: string
+          strava_id: string
+          strava_ytd_count: number
+          strava_ytd_distance: number
+        }[]
+      }
       get_top_members: { Args: { limit_count?: number }; Returns: Json }
       has_role: {
         Args: {

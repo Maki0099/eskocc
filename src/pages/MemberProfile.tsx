@@ -49,9 +49,9 @@ const MemberProfile = () => {
       if (!userId) return;
 
       try {
-        // Fetch profile - only public fields
+        // Fetch profile from secure public view - excludes sensitive data
         const { data: profileData, error: profileError } = await supabase
-          .from("profiles")
+          .from("member_profiles_public")
           .select("full_name, nickname, avatar_url, strava_id, created_at")
           .eq("id", userId)
           .maybeSingle();
