@@ -54,14 +54,24 @@ pro všechny nadšence.</p>
           {/* Social */}
           <div>
             <h4 className="text-sm font-medium mb-4">Sledujte nás</h4>
-            <div className="flex gap-4">
+            <div className="flex gap-4 mb-4">
               <a href="https://www.facebook.com/eskokafe" target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Facebook
               </a>
-              <a href="https://www.strava.com" target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <a href="https://www.strava.com/clubs/1860524" target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Strava
               </a>
             </div>
+            <iframe 
+              allowTransparency={true}
+              frameBorder="0" 
+              height="160" 
+              scrolling="no" 
+              src="https://www.strava.com/clubs/1860524/latest-rides/66a685c4f0e28a76273a2be113608f98a113075b?show_rides=false" 
+              width="300"
+              className="rounded-lg"
+              title="Strava Club Widget"
+            />
           </div>
         </div>
 
