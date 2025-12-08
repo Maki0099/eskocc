@@ -80,6 +80,30 @@
       stroke: #B7A99A;
     }
   </style>
+  <script>
+    // Detect OAuth callback and redirect properly
+    (function() {
+      var url = window.location.href;
+      var hash = window.location.hash;
+      
+      // Check if this is an OAuth callback (has access_token in hash or code in query)
+      if (hash.includes('access_token=') || url.includes('code=') || url.includes('error=')) {
+        // This is an OAuth callback - reload to let the app handle it
+        // The service worker update should allow this through
+        window.location.reload();
+        return;
+      }
+      
+      // Check if we actually have network connectivity
+      if (navigator.onLine) {
+        // We're online but got this page - likely a service worker issue
+        // Try reloading after a short delay
+        setTimeout(function() {
+          window.location.reload();
+        }, 1000);
+      }
+    })();
+  </script>
 </head>
 <body>
   <div class="container">
