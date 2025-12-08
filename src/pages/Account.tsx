@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Camera, CalendarIcon, Loader2 } from "lucide-react";
+import { ArrowLeft, Camera, CalendarIcon, Loader2, Link as LinkIcon, Check, X } from "lucide-react";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -27,17 +27,52 @@ const Account = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [connectingStrava, setConnectingStrava] = useState(false);
 
   const [fullName, setFullName] = useState("");
   const [nickname, setNickname] = useState("");
   const [stravaId, setStravaId] = useState("");
   const [birthDate, setBirthDate] = useState<Date | undefined>();
+
+  // Handle Strava OAuth callback
+  useEffect(() => {
+    const stravaStatus = searchParams.get('strava');
+    if (stravaStatus === 'success') {
+      toast({
+        title: "Strava propojena",
+        description: "Tvůj Strava účet byl úspěšně propojen",
+      });
+      // Refresh profile to get new strava_id
+      if (user) {
+        supabase
+          .from("profiles")
+          .select("strava_id")
+          .eq("id", user.id)
+          .maybeSingle()
+          .then(({ data }) => {
+            if (data?.strava_id) {
+              setStravaId(data.strava_id);
+              setProfile(prev => prev ? { ...prev, strava_id: data.strava_id } : null);
+            }
+          });
+      }
+      setSearchParams({});
+    } else if (stravaStatus === 'error') {
+      toast({
+        variant: "destructive",
+        title: "Chyba propojení",
+        description: "Nepodařilo se propojit Strava účet",
+      });
+      setSearchParams({});
+    }
+  }, [searchParams, toast, setSearchParams, user]);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -347,18 +382,90 @@ const Account = () => {
               </Popover>
             </div>
 
+            {/* Strava connection */}
             <div className="space-y-2">
-              <Label htmlFor="stravaId">Strava profil</Label>
-              <Input
-                id="stravaId"
-                type="text"
-                placeholder="ID nebo URL (např. 12345678 nebo strava.com/athletes/12345678)"
-                value={stravaId}
-                onChange={(e) => setStravaId(e.target.value)}
-                className="h-12 rounded-xl"
-              />
+              <Label>Strava propojení</Label>
+              {stravaId ? (
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-green-500/10 border border-green-500/20">
+                  <Check className="w-5 h-5 text-green-500" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-green-700 dark:text-green-400">Propojeno</p>
+                    <a 
+                      href={`https://www.strava.com/athletes/${stravaId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      strava.com/athletes/{stravaId}
+                    </a>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setStravaId("");
+                      // Also clear in database
+                      if (user) {
+                        supabase
+                          .from("profiles")
+                          .update({ strava_id: null })
+                          .eq("id", user.id)
+                          .then(() => {
+                            setProfile(prev => prev ? { ...prev, strava_id: null } : null);
+                            toast({
+                              title: "Odpojeno",
+                              description: "Strava účet byl odpojen",
+                            });
+                          });
+                      }
+                    }}
+                    className="text-muted-foreground hover:text-destructive"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  variant="outline"
+                  onClick={async () => {
+                    if (!user) return;
+                    setConnectingStrava(true);
+                    try {
+                      const { data, error } = await supabase.functions.invoke('strava-auth', {
+                        body: { userId: user.id }
+                      });
+                      if (error) throw error;
+                      if (data?.authUrl) {
+                        window.location.href = data.authUrl;
+                      }
+                    } catch (err) {
+                      console.error('Strava auth error:', err);
+                      toast({
+                        variant: "destructive",
+                        title: "Chyba",
+                        description: "Nepodařilo se spustit propojení se Stravou",
+                      });
+                      setConnectingStrava(false);
+                    }
+                  }}
+                  disabled={connectingStrava}
+                  className="w-full h-12 rounded-xl"
+                >
+                  {connectingStrava ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Přesměrovávám...
+                    </>
+                  ) : (
+                    <>
+                      <LinkIcon className="w-4 h-4 mr-2" />
+                      Propojit se Stravou
+                    </>
+                  )}
+                </Button>
+              )}
               <p className="text-xs text-muted-foreground">
-                Zadej své Strava ID nebo celou URL profilu
+                Propoj svůj Strava účet pro automatické načítání aktivit
               </p>
             </div>
 

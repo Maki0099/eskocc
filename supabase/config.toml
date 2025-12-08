@@ -1,1 +1,7 @@
 project_id = "mtlycegceaeueuyymkyv"
+
+[functions.strava-auth]
+verify_jwt = true
+
+[functions.strava-callback]
+verify_jwt = false
