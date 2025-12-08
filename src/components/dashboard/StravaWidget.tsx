@@ -47,14 +47,18 @@ const formatMonth = (monthStr: string): string => {
   return monthNames[parseInt(month) - 1] || month;
 };
 
-const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number; payload: MonthlyStats }>; label?: string }) => {
+const CustomTooltip = ({ active, payload, label, metric }: { active?: boolean; payload?: Array<{ value: number; payload: MonthlyStats }>; label?: string; metric: 'distance' | 'count' }) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (
       <div className="bg-background/95 backdrop-blur border border-border rounded-lg px-3 py-2 shadow-lg">
         <p className="text-xs text-muted-foreground mb-1">{label}</p>
-        <p className="text-sm font-medium">{data.distance} km</p>
-        <p className="text-xs text-muted-foreground">{data.count} jízd</p>
+        <p className="text-sm font-medium">
+          {metric === 'distance' ? `${data.distance} km` : `${data.count} jízd`}
+        </p>
+        <p className="text-xs text-muted-foreground">
+          {metric === 'distance' ? `${data.count} jízd` : `${data.distance} km`}
+        </p>
       </div>
     );
   }
@@ -66,7 +70,7 @@ export const StravaWidget = ({ userId }: StravaWidgetProps) => {
   const [loading, setLoading] = useState(true);
   const [isConnected, setIsConnected] = useState(false);
   const [stravaId, setStravaId] = useState<string | null>(null);
-
+  const [chartMetric, setChartMetric] = useState<'distance' | 'count'>('distance');
   useEffect(() => {
     const checkStravaAndFetchStats = async () => {
       // First check if user has Strava connected
@@ -206,7 +210,41 @@ export const StravaWidget = ({ userId }: StravaWidgetProps) => {
       {/* Monthly chart */}
       {chartData.length > 0 && (
         <div className="mb-4">
-          <p className="text-xs text-muted-foreground mb-2">Vzdálenost za posledních 12 měsíců (km)</p>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs text-muted-foreground">
+              {chartMetric === 'distance' ? 'Vzdálenost (km)' : 'Počet jízd'} za posledních 12 měsíců
+            </p>
+            <div className="flex gap-1">
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setChartMetric('distance');
+                }}
+                className={`px-2 py-0.5 text-xs rounded transition-colors ${
+                  chartMetric === 'distance' 
+                    ? 'bg-orange-500/20 text-orange-600 dark:text-orange-400' 
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                km
+              </button>
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setChartMetric('count');
+                }}
+                className={`px-2 py-0.5 text-xs rounded transition-colors ${
+                  chartMetric === 'count' 
+                    ? 'bg-orange-500/20 text-orange-600 dark:text-orange-400' 
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                jízdy
+              </button>
+            </div>
+          </div>
           <div className="h-24">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
@@ -218,9 +256,9 @@ export const StravaWidget = ({ userId }: StravaWidgetProps) => {
                   interval={1}
                 />
                 <YAxis hide />
-                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'hsl(var(--muted) / 0.3)' }} />
+                <Tooltip content={<CustomTooltip metric={chartMetric} />} cursor={{ fill: 'hsl(var(--muted) / 0.3)' }} />
                 <Bar 
-                  dataKey="distance" 
+                  dataKey={chartMetric} 
                   fill="hsl(24.6 95% 53.1%)" 
                   radius={[2, 2, 0, 0]}
                   className="hover:opacity-80 transition-opacity"
