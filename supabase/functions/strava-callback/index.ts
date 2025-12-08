@@ -5,20 +5,35 @@ serve(async (req) => {
   try {
     const url = new URL(req.url);
     const code = url.searchParams.get('code');
-    const state = url.searchParams.get('state'); // This is the user ID
+    const stateParam = url.searchParams.get('state');
     const error = url.searchParams.get('error');
 
-    // Get the frontend URL for redirects
-    const frontendUrl = Deno.env.get('FRONTEND_URL') || 'https://eskocc.cz';
+    // Default fallback URL
+    let frontendUrl = 'https://eskocc.cz/account';
+    let userId = '';
+
+    // Parse state to get userId and redirectUrl
+    if (stateParam) {
+      try {
+        const stateData = JSON.parse(atob(stateParam));
+        userId = stateData.userId || '';
+        frontendUrl = stateData.redirectUrl || frontendUrl;
+      } catch (e) {
+        // Legacy: state might just be userId
+        userId = stateParam;
+      }
+    }
+
+    console.log('Callback received - userId:', userId, 'frontendUrl:', frontendUrl);
 
     if (error) {
       console.error('Strava OAuth error:', error);
-      return Response.redirect(`${frontendUrl}/account?strava=error&message=${encodeURIComponent(error)}`, 302);
+      return Response.redirect(`${frontendUrl}?strava=error&message=${encodeURIComponent(error)}`, 302);
     }
 
-    if (!code || !state) {
-      console.error('Missing code or state');
-      return Response.redirect(`${frontendUrl}/account?strava=error&message=missing_params`, 302);
+    if (!code || !userId) {
+      console.error('Missing code or userId');
+      return Response.redirect(`${frontendUrl}?strava=error&message=missing_params`, 302);
     }
 
     const clientId = Deno.env.get('STRAVA_CLIENT_ID');
@@ -28,7 +43,7 @@ serve(async (req) => {
 
     if (!clientId || !clientSecret || !supabaseUrl || !supabaseServiceKey) {
       console.error('Missing required environment variables');
-      return Response.redirect(`${frontendUrl}/account?strava=error&message=config_error`, 302);
+      return Response.redirect(`${frontendUrl}?strava=error&message=config_error`, 302);
     }
 
     // Exchange code for tokens
@@ -47,7 +62,7 @@ serve(async (req) => {
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text();
       console.error('Token exchange failed:', errorText);
-      return Response.redirect(`${frontendUrl}/account?strava=error&message=token_error`, 302);
+      return Response.redirect(`${frontendUrl}?strava=error&message=token_error`, 302);
     }
 
     const tokenData = await tokenResponse.json();
@@ -56,7 +71,7 @@ serve(async (req) => {
     const athleteId = tokenData.athlete?.id?.toString();
     if (!athleteId) {
       console.error('No athlete ID in response');
-      return Response.redirect(`${frontendUrl}/account?strava=error&message=no_athlete`, 302);
+      return Response.redirect(`${frontendUrl}?strava=error&message=no_athlete`, 302);
     }
 
     // Update user profile with Strava ID and tokens
@@ -72,19 +87,18 @@ serve(async (req) => {
         strava_refresh_token: tokenData.refresh_token,
         strava_token_expires_at: expiresAt,
       })
-      .eq('id', state);
+      .eq('id', userId);
 
     if (updateError) {
       console.error('Failed to update profile:', updateError);
-      return Response.redirect(`${frontendUrl}/account?strava=error&message=update_error`, 302);
+      return Response.redirect(`${frontendUrl}?strava=error&message=update_error`, 302);
     }
 
-    console.log('Successfully linked Strava account for user:', state);
-    return Response.redirect(`${frontendUrl}/account?strava=success`, 302);
+    console.log('Successfully linked Strava account for user:', userId);
+    return Response.redirect(`${frontendUrl}?strava=success`, 302);
 
   } catch (error) {
     console.error('Error in strava-callback:', error);
-    const frontendUrl = Deno.env.get('FRONTEND_URL') || 'https://eskocc.cz';
-    return Response.redirect(`${frontendUrl}/account?strava=error&message=unknown`, 302);
+    return Response.redirect(`https://eskocc.cz/account?strava=error&message=unknown`, 302);
   }
 });
