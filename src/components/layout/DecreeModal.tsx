@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { X } from "lucide-react";
 import decreeOriginal from "@/assets/decree/ustanovujici-dekret-original.jpg";
 import decree2025 from "@/assets/decree/ustanovujici-dekret-2025.jpg";
@@ -52,24 +51,20 @@ const DecreeModal = () => {
                   </span>
                 </button>
               </DialogTrigger>
-              <DialogContent className="max-w-4xl w-[95vw] max-h-[95vh] p-0 bg-background border-border overflow-hidden">
-                <div className="relative w-full h-full">
+              <DialogContent className="max-w-[95vw] max-h-[95vh] w-auto h-auto p-0 bg-background border-border overflow-hidden">
+                <div className="relative flex items-center justify-center p-6">
                   <button
                     onClick={() => setSelectedDoc(null)}
-                    className="absolute top-4 right-4 z-10 p-2 rounded-full bg-background/80 backdrop-blur-sm border border-border hover:bg-secondary transition-colors"
+                    className="absolute top-2 right-2 z-10 p-2 rounded-full bg-background/80 backdrop-blur-sm border border-border hover:bg-secondary transition-colors"
                     aria-label="Zavřít"
                   >
                     <X className="h-5 w-5" />
                   </button>
-                  <ScrollArea className="h-[90vh] w-full">
-                    <div className="p-4 flex justify-center">
-                      <img 
-                        src={doc.image} 
-                        alt={`${doc.title} - ${doc.year}`} 
-                        className="w-full max-w-3xl object-contain rounded-lg shadow-xl"
-                      />
-                    </div>
-                  </ScrollArea>
+                  <img 
+                    src={doc.image} 
+                    alt={`${doc.title} - ${doc.year}`} 
+                    className="max-w-[90vw] max-h-[85vh] w-auto h-auto object-contain rounded-lg shadow-xl"
+                  />
                 </div>
               </DialogContent>
             </Dialog>
