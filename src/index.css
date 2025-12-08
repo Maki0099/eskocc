@@ -8,119 +8,121 @@
 
 @layer base {
   :root {
-    --background: 209 40% 96%;
-    --foreground: 222 47% 11%;
+    /* Esko.cc Brand Colors - Warm earthy tones */
+    --background: 30 15% 97%;
+    --foreground: 218 11% 21%;
 
-    --card: 210 40% 98%;
-    --card-foreground: 222 47% 11%;
+    --card: 30 12% 95%;
+    --card-foreground: 218 11% 21%;
 
-    --popover: 214 31% 91%;
-    --popover-foreground: 222 47% 11%;
+    --popover: 30 10% 93%;
+    --popover-foreground: 218 11% 21%;
 
-    --primary: 216 19% 26%;
-    --primary-foreground: 210 19% 98%;
+    --primary: 30 17% 66%;
+    --primary-foreground: 218 11% 15%;
 
-    --secondary: 215 19% 34%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 28 16% 58%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 215 20% 65%;
-    --muted-foreground: 222 47% 11%;
+    --muted: 30 10% 85%;
+    --muted-foreground: 218 11% 40%;
 
-    --accent: 210 40% 98%;
-    --accent-foreground: 215 16% 46%;
+    --accent: 31 18% 41%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 50%;
     --destructive-foreground: 0 85% 97%;
 
-    --border: 212 26% 83%;
-    --input: 212 26% 83%;
-    --ring: 216 19% 26%;
+    --border: 30 12% 82%;
+    --input: 30 12% 82%;
+    --ring: 30 17% 66%;
 
-    --radius: 0rem;
+    --radius: 0.5rem;
 
-    --font-display: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-display: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-body: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 222 47% 11%;
-    --sidebar-primary: 216 19% 26%;
-    --sidebar-primary-foreground: 210 19% 98%;
-    --sidebar-accent: 215 19% 34%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 212 26% 83%;
-    --sidebar-ring: 216 19% 26%;
-    --chart-1: 217 10% 64%;
-    --chart-2: 215 20% 65%;
-    --chart-3: 215 16% 46%;
-    --chart-4: 219 8% 46%;
-    --chart-5: 215 19% 34%;
-    --sidebar: 210 40% 98%;
+    --sidebar-background: 30 15% 97%;
+    --sidebar-foreground: 218 11% 21%;
+    --sidebar-primary: 30 17% 66%;
+    --sidebar-primary-foreground: 218 11% 15%;
+    --sidebar-accent: 31 18% 41%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 30 12% 82%;
+    --sidebar-ring: 30 17% 66%;
+    --chart-1: 30 17% 66%;
+    --chart-2: 28 16% 58%;
+    --chart-3: 31 18% 41%;
+    --chart-4: 218 11% 21%;
+    --chart-5: 30 12% 75%;
+    --sidebar: 30 12% 95%;
     --font-sans: 'DM Sans', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
     --font-serif: 'Crimson Pro', ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
     --font-mono: 'SF Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
-    --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
-    --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
-    --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
-    --shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
-    --shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 2px 4px -1px hsl(0 0% 0% / 0.1);
-    --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 4px 6px -1px hsl(0 0% 0% / 0.1);
-    --shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 8px 10px -1px hsl(0 0% 0% / 0.1);
-    --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
+    --shadow-2xs: 0 1px 3px 0px hsl(30 17% 20% / 0.05);
+    --shadow-xs: 0 1px 3px 0px hsl(30 17% 20% / 0.05);
+    --shadow-sm: 0 1px 3px 0px hsl(30 17% 20% / 0.08), 0 1px 2px -1px hsl(30 17% 20% / 0.08);
+    --shadow: 0 1px 3px 0px hsl(30 17% 20% / 0.1), 0 1px 2px -1px hsl(30 17% 20% / 0.1);
+    --shadow-md: 0 4px 6px -1px hsl(30 17% 20% / 0.1), 0 2px 4px -2px hsl(30 17% 20% / 0.1);
+    --shadow-lg: 0 10px 15px -3px hsl(30 17% 20% / 0.1), 0 4px 6px -4px hsl(30 17% 20% / 0.1);
+    --shadow-xl: 0 20px 25px -5px hsl(30 17% 20% / 0.1), 0 8px 10px -6px hsl(30 17% 20% / 0.1);
+    --shadow-2xl: 0 25px 50px -12px hsl(30 17% 20% / 0.25);
     --tracking-normal: 0em;
     --spacing: 0.25rem;
   }
 
   .dark {
-    --background: 222 47% 11%;
-    --foreground: 210 40% 98%;
+    /* Esko.cc Dark Mode - Based on logo color #2F333A */
+    --background: 218 11% 11%;
+    --foreground: 30 15% 92%;
 
-    --card: 217 32% 17%;
-    --card-foreground: 210 40% 98%;
+    --card: 218 11% 16%;
+    --card-foreground: 30 15% 92%;
 
-    --popover: 215 24% 26%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 218 11% 18%;
+    --popover-foreground: 30 15% 92%;
 
-    --primary: 212 26% 83%;
-    --primary-foreground: 228 84% 4%;
+    --primary: 30 17% 66%;
+    --primary-foreground: 218 11% 11%;
 
-    --secondary: 215 19% 34%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 28 16% 48%;
+    --secondary-foreground: 30 15% 92%;
 
-    --muted: 215 16% 46%;
-    --muted-foreground: 210 40% 98%;
+    --muted: 218 11% 25%;
+    --muted-foreground: 30 12% 70%;
 
-    --accent: 228 84% 4%;
-    --accent-foreground: 215 20% 65%;
+    --accent: 31 18% 51%;
+    --accent-foreground: 218 11% 11%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 85% 97%;
 
-    --border: 215 19% 34%;
-    --input: 215 19% 34%;
-    --ring: 212 26% 83%;
+    --border: 218 11% 25%;
+    --input: 218 11% 25%;
+    --ring: 30 17% 66%;
 
-    --sidebar-background: 0 0% 4%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 212 26% 83%;
-    --sidebar-primary-foreground: 228 84% 4%;
-    --sidebar-accent: 215 20% 65%;
-    --sidebar-accent-foreground: 228 84% 4%;
-    --sidebar-border: 215 19% 34%;
-    --sidebar-ring: 212 26% 83%;
-    --chart-1: 215 12% 83%;
-    --chart-2: 212 26% 83%;
-    --chart-3: 215 20% 65%;
-    --chart-4: 217 10% 64%;
-    --chart-5: 215 16% 46%;
-    --sidebar: 217 32% 17%;
-    --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
-    --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
-    --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
-    --shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
-    --shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 2px 4px -1px hsl(0 0% 0% / 0.1);
-    --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 4px 6px -1px hsl(0 0% 0% / 0.1);
-    --shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 8px 10px -1px hsl(0 0% 0% / 0.1);
-    --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
+    --sidebar-background: 218 11% 8%;
+    --sidebar-foreground: 30 15% 92%;
+    --sidebar-primary: 30 17% 66%;
+    --sidebar-primary-foreground: 218 11% 11%;
+    --sidebar-accent: 31 18% 51%;
+    --sidebar-accent-foreground: 218 11% 11%;
+    --sidebar-border: 218 11% 25%;
+    --sidebar-ring: 30 17% 66%;
+    --chart-1: 30 17% 66%;
+    --chart-2: 28 16% 58%;
+    --chart-3: 31 18% 51%;
+    --chart-4: 30 15% 80%;
+    --chart-5: 30 12% 70%;
+    --sidebar: 218 11% 16%;
+    --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.1);
+    --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.1);
+    --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.15), 0 1px 2px -1px hsl(0 0% 0% / 0.15);
+    --shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.2), 0 1px 2px -1px hsl(0 0% 0% / 0.2);
+    --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.2), 0 2px 4px -2px hsl(0 0% 0% / 0.2);
+    --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.2), 0 4px 6px -4px hsl(0 0% 0% / 0.2);
+    --shadow-xl: 0 20px 25px -5px hsl(0 0% 0% / 0.2), 0 8px 10px -6px hsl(0 0% 0% / 0.2);
+    --shadow-2xl: 0 25px 50px -12px hsl(0 0% 0% / 0.35);
   }
 }
 
@@ -150,14 +152,14 @@
 
 @layer components {
   .text-gradient {
-    background: linear-gradient(90deg, hsl(0, 0%, 7%) 0%, hsl(0, 0%, 40%) 100%);
+    background: linear-gradient(90deg, hsl(31, 18%, 41%) 0%, hsl(30, 17%, 66%) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
   .dark .text-gradient {
-    background: linear-gradient(90deg, hsl(0, 0%, 98%) 0%, hsl(0, 0%, 70%) 100%);
+    background: linear-gradient(90deg, hsl(30, 17%, 66%) 0%, hsl(30, 15%, 85%) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
