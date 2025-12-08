@@ -86,11 +86,11 @@ const Header = () => {
             <div className="hidden md:flex items-center gap-2">
               <button
                 onClick={toggleTheme}
-                className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                className="relative p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
                 aria-label="Přepnout tmavý/světlý režim"
               >
-                <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-                <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                <Sun className="h-5 w-5 transition-all dark:scale-0 dark:opacity-0" />
+                <Moon className="absolute inset-0 m-auto h-5 w-5 scale-0 opacity-0 transition-all dark:scale-100 dark:opacity-100" />
               </button>
               {loading ? (
                 <div className="w-20 h-8 bg-muted animate-pulse rounded-lg"></div>
