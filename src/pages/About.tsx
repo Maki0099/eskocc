@@ -2,9 +2,10 @@ import { Link } from "react-router-dom";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import ClubLocationMap from "@/components/map/ClubLocationMap";
+import DecreeModal from "@/components/layout/DecreeModal";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MapPin, Mail, Users, Calendar, Heart } from "lucide-react";
+import { MapPin, Mail, Users, Calendar, Heart, FileText } from "lucide-react";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 
 const values = [
@@ -103,6 +104,15 @@ const About = () => {
                   Vítáme každého, kdo má rád kolo a chce jezdit v dobré partě. 
                   Nerozhoduje věk ani výkonnost – důležitá je chuť do pedálů!
                 </p>
+              </div>
+
+              {/* Documents Section */}
+              <div className="mt-10 pt-8 border-t border-border/50">
+                <div className="flex items-center gap-2 mb-4">
+                  <FileText className="w-5 h-5 text-primary" />
+                  <h3 className="font-semibold">Dokumenty klubu</h3>
+                </div>
+                <DecreeModal />
               </div>
             </div>
           </div>
