@@ -8,8 +8,9 @@ import Footer from "@/components/layout/Footer";
 import PhotoGrid from "@/components/gallery/PhotoGrid";
 import PhotoUpload from "@/components/gallery/PhotoUpload";
 import { Card, CardContent } from "@/components/ui/card";
+import { SkeletonPhotoGrid } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ExternalLink, ImageIcon, Loader2 } from "lucide-react";
+import { ExternalLink, ImageIcon } from "lucide-react";
 import mallorca2025 from "@/assets/albums/mallorca-2025.jpg";
 import mallorca2024 from "@/assets/albums/mallorca-2024.jpg";
 
@@ -139,9 +140,7 @@ const Gallery = () => {
             style={{ transitionDelay: '200ms' }}
           >
             {loading ? (
-              <div className="flex justify-center py-12">
-                <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-              </div>
+              <SkeletonPhotoGrid count={8} />
             ) : photos.length === 0 ? (
               <Card>
                 <CardContent className="py-12 text-center">

@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Clock, Coffee, MapPin } from "lucide-react";
 import { toast } from "sonner";
@@ -154,7 +155,10 @@ const Cafe = () => {
                 {loading ? (
                   <div className="space-y-3">
                     {[...Array(7)].map((_, i) => (
-                      <div key={i} className="h-6 bg-muted rounded animate-pulse" />
+                      <div key={i} className="flex justify-between items-center py-2 px-3">
+                        <Skeleton className="h-5 w-20" />
+                        <Skeleton className="h-5 w-24" />
+                      </div>
                     ))}
                   </div>
                 ) : (
@@ -204,9 +208,22 @@ const Cafe = () => {
               </CardHeader>
               <CardContent>
                 {loading ? (
-                  <div className="space-y-4">
-                    {[...Array(4)].map((_, i) => (
-                      <div key={i} className="h-20 bg-muted rounded animate-pulse" />
+                  <div className="space-y-6">
+                    {[...Array(3)].map((_, categoryIndex) => (
+                      <div key={categoryIndex}>
+                        <Skeleton className="h-6 w-32 mb-3" />
+                        <div className="space-y-3">
+                          {[...Array(3)].map((_, i) => (
+                            <div key={i} className="flex justify-between items-center py-2 border-b border-border/50 last:border-0">
+                              <div className="space-y-1 flex-1">
+                                <Skeleton className="h-5 w-2/5" />
+                                <Skeleton className="h-4 w-3/5" />
+                              </div>
+                              <Skeleton className="h-5 w-16" />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     ))}
                   </div>
                 ) : (
