@@ -138,6 +138,58 @@ serve(async (req) => {
     const stats = await statsResponse.json();
     console.log('Successfully fetched Strava stats');
 
+    // Fetch activities for the last 12 months
+    const oneYearAgo = Math.floor(Date.now() / 1000) - (365 * 24 * 60 * 60);
+    console.log('Fetching activities since:', new Date(oneYearAgo * 1000).toISOString());
+    
+    const activitiesResponse = await fetch(
+      `https://www.strava.com/api/v3/athlete/activities?after=${oneYearAgo}&per_page=200`,
+      {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      }
+    );
+
+    let monthlyStats: { month: string; distance: number; count: number }[] = [];
+    
+    if (activitiesResponse.ok) {
+      const activities = await activitiesResponse.json();
+      console.log(`Fetched ${activities.length} activities for the last year`);
+      
+      // Group activities by month
+      const monthlyData: Record<string, { distance: number; count: number }> = {};
+      
+      // Initialize last 12 months
+      for (let i = 11; i >= 0; i--) {
+        const date = new Date();
+        date.setMonth(date.getMonth() - i);
+        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        monthlyData[key] = { distance: 0, count: 0 };
+      }
+      
+      // Aggregate cycling activities by month
+      for (const activity of activities) {
+        if (activity.type === 'Ride' || activity.type === 'VirtualRide' || activity.type === 'GravelRide' || activity.type === 'MountainBikeRide') {
+          const date = new Date(activity.start_date);
+          const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+          if (monthlyData[key]) {
+            monthlyData[key].distance += activity.distance || 0;
+            monthlyData[key].count += 1;
+          }
+        }
+      }
+      
+      // Convert to array sorted by date
+      monthlyStats = Object.entries(monthlyData)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([month, data]) => ({
+          month,
+          distance: Math.round(data.distance / 1000), // Convert to km
+          count: data.count,
+        }));
+    } else {
+      console.error('Failed to fetch activities:', await activitiesResponse.text());
+    }
+
     // Extract relevant cycling stats
     const result = {
       all_ride_totals: {
@@ -159,6 +211,7 @@ serve(async (req) => {
         moving_time: stats.recent_ride_totals?.moving_time || 0,
         elevation_gain: stats.recent_ride_totals?.elevation_gain || 0,
       },
+      monthly_stats: monthlyStats,
     };
 
     return new Response(

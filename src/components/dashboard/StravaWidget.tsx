@@ -2,9 +2,16 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Bike, Mountain, TrendingUp, Loader2, LinkIcon } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 
 interface StravaWidgetProps {
   userId: string;
+}
+
+interface MonthlyStats {
+  month: string;
+  distance: number;
+  count: number;
 }
 
 interface StatsData {
@@ -20,6 +27,7 @@ interface StatsData {
     moving_time: number;
     elevation_gain: number;
   };
+  monthly_stats?: MonthlyStats[];
 }
 
 const formatDistance = (meters: number): string => {
@@ -31,6 +39,26 @@ const formatElevation = (meters: number): string => {
   if (meters >= 1000000) return `${(meters / 1000000).toFixed(1)}M`;
   if (meters >= 1000) return `${(meters / 1000).toFixed(0)}k`;
   return meters.toFixed(0);
+};
+
+const formatMonth = (monthStr: string): string => {
+  const [year, month] = monthStr.split('-');
+  const monthNames = ['Led', 'Úno', 'Bře', 'Dub', 'Kvě', 'Čvn', 'Čvc', 'Srp', 'Zář', 'Říj', 'Lis', 'Pro'];
+  return monthNames[parseInt(month) - 1] || month;
+};
+
+const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number; payload: MonthlyStats }>; label?: string }) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    return (
+      <div className="bg-background/95 backdrop-blur border border-border rounded-lg px-3 py-2 shadow-lg">
+        <p className="text-xs text-muted-foreground mb-1">{label}</p>
+        <p className="text-sm font-medium">{data.distance} km</p>
+        <p className="text-xs text-muted-foreground">{data.count} jízd</p>
+      </div>
+    );
+  }
+  return null;
 };
 
 export const StravaWidget = ({ userId }: StravaWidgetProps) => {
@@ -129,6 +157,10 @@ export const StravaWidget = ({ userId }: StravaWidgetProps) => {
 
   const allTime = stats.all_ride_totals;
   const ytd = stats.ytd_ride_totals;
+  const chartData = stats.monthly_stats?.map(item => ({
+    ...item,
+    name: formatMonth(item.month),
+  })) || [];
 
   return (
     <a
@@ -170,6 +202,34 @@ export const StravaWidget = ({ userId }: StravaWidgetProps) => {
           <p className="text-xs text-muted-foreground">m převýšení</p>
         </div>
       </div>
+
+      {/* Monthly chart */}
+      {chartData.length > 0 && (
+        <div className="mb-4">
+          <p className="text-xs text-muted-foreground mb-2">Vzdálenost za posledních 12 měsíců (km)</p>
+          <div className="h-24">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+                <XAxis 
+                  dataKey="name" 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                  interval={1}
+                />
+                <YAxis hide />
+                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'hsl(var(--muted) / 0.3)' }} />
+                <Bar 
+                  dataKey="distance" 
+                  fill="hsl(24.6 95% 53.1%)" 
+                  radius={[2, 2, 0, 0]}
+                  className="hover:opacity-80 transition-opacity"
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
 
       {/* YTD summary */}
       <div className="pt-3 border-t border-border/40">
