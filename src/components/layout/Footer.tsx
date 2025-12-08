@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
 import logoDark from "@/assets/logo-horizontal-dark.png";
 import logoWhite from "@/assets/logo-horizontal-white.png";
+import DecreeModal from "./DecreeModal";
+
 const Footer = () => {
   return <footer className="border-t border-border/50 bg-secondary/30">
       <div className="container mx-auto py-12">
@@ -11,8 +13,9 @@ const Footer = () => {
               <img src={logoDark} alt="ESKO.cc" className="h-5 dark:hidden" />
               <img src={logoWhite} alt="ESKO.cc" className="h-5 hidden dark:block" />
             </Link>
-            <p className="text-sm text-muted-foreground">Cyklistický klub 
+            <p className="text-sm text-muted-foreground mb-4">Cyklistický klub 
 pro všechny nadšence.</p>
+            <DecreeModal />
           </div>
 
           {/* Links */}

@@ -44,7 +44,7 @@ interface Participant {
   status: string;
   profile: {
     full_name: string | null;
-    email: string;
+    avatar_url: string | null;
   } | null;
 }
 
@@ -353,16 +353,13 @@ const EventDetail = () => {
                         <AvatarFallback className="text-xs">
                           {getInitials(
                             participant.profile?.full_name || null,
-                            participant.profile?.email || ""
+                            null
                           )}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
                         <p className="font-medium truncate">
-                          {participant.profile?.full_name || "Bez jména"}
-                        </p>
-                        <p className="text-sm text-muted-foreground truncate">
-                          {participant.profile?.email}
+                          {participant.profile?.full_name || "Člen klubu"}
                         </p>
                       </div>
                       <Badge variant="secondary">Jede</Badge>
