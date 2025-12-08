@@ -14,6 +14,7 @@ import { cs } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import logoDark from "@/assets/logo-horizontal-dark.png";
 import { StravaStats } from "@/components/strava/StravaStats";
+import StravaClubBanner from "@/components/strava/StravaClubBanner";
 import { PushNotificationToggle } from "@/components/notifications/PushNotificationToggle";
 
 interface Profile {
@@ -484,6 +485,11 @@ const Account = () => {
               
               {/* Strava Stats */}
               {user && <StravaStats userId={user.id} isConnected={!!stravaId} />}
+              
+              {/* Strava Club Banner */}
+              <div className="mt-4">
+                <StravaClubBanner hasStravaConnected={!!stravaId} />
+              </div>
             </div>
 
             <Button

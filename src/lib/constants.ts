@@ -29,3 +29,8 @@ export const MEMBER_ROLES: AppRole[] = ["member", "active_member", "admin"];
  * Roles that can create events
  */
 export const EVENT_CREATOR_ROLES: AppRole[] = ["active_member", "admin"];
+
+/**
+ * Strava club URL for inviting members
+ */
+export const STRAVA_CLUB_URL = "https://www.strava.com/clubs/1860524";

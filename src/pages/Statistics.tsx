@@ -6,6 +6,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import MemberOnlyContent from "@/components/MemberOnlyContent";
+import StravaClubBanner from "@/components/strava/StravaClubBanner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -46,6 +47,7 @@ const Statistics = () => {
   const [members, setMembers] = useState<MemberStats[]>([]);
   const [clubTotal, setClubTotal] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [userStravaId, setUserStravaId] = useState<string | null>(null);
 
   const currentYear = new Date().getFullYear();
 
@@ -60,6 +62,22 @@ const Statistics = () => {
     if (age >= 40) return settings.target_under_60;
     return settings.target_under_40;
   };
+
+  // Fetch current user's strava_id
+  useEffect(() => {
+    const fetchUserStrava = async () => {
+      if (!user) return;
+      const { data } = await supabase
+        .from("profiles")
+        .select("strava_id")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (data?.strava_id) {
+        setUserStravaId(data.strava_id);
+      }
+    };
+    fetchUserStrava();
+  }, [user]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -257,6 +275,8 @@ const Statistics = () => {
             </Card>
           ) : (
             <div className="space-y-6">
+              {/* Strava Club Banner */}
+              <StravaClubBanner hasStravaConnected={!!userStravaId} />
               {/* Club Goal Card */}
               {settings && (
                 <Card className="overflow-hidden border-0 shadow-lg animate-fade-up">
