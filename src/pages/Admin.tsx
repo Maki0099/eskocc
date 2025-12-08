@@ -172,7 +172,7 @@ const Admin = () => {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
-      <main className="flex-1 container mx-auto px-4 pt-20 pb-12">
+      <main className="flex-1 container mx-auto px-4 pt-24 pb-12">
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center gap-3 mb-8">
             <Shield className="w-8 h-8 text-primary" />
