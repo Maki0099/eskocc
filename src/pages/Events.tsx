@@ -12,7 +12,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SkeletonEventCard } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, MapPin, Users, ChevronRight, Camera, History } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Calendar, MapPin, Users, ChevronRight, Camera, History, Loader2 } from "lucide-react";
 import { format, isSameMonth, isSameYear } from "date-fns";
 import { cs } from "date-fns/locale";
 import { toast } from "sonner";
@@ -35,6 +36,8 @@ interface GroupedEvents {
   events: Event[];
 }
 
+const EVENTS_PER_PAGE = 10;
+
 const Events = () => {
   const { user } = useAuth();
   const { canCreateEvents, isMember, loading: roleLoading } = useUserRole();
@@ -42,6 +45,8 @@ const Events = () => {
   const [pastEvents, setPastEvents] = useState<Event[]>([]);
   const [loadingUpcoming, setLoadingUpcoming] = useState(true);
   const [loadingPast, setLoadingPast] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMorePast, setHasMorePast] = useState(true);
   const [activeTab, setActiveTab] = useState("upcoming");
 
   const { ref: headerRef, isVisible: headerVisible } = useScrollAnimation();
@@ -94,16 +99,27 @@ const Events = () => {
     }
   };
 
-  const fetchPastEvents = async () => {
-    setLoadingPast(true);
+  const fetchPastEvents = async (loadMore: boolean = false) => {
+    if (loadMore) {
+      setLoadingMore(true);
+    } else {
+      setLoadingPast(true);
+    }
+    
     try {
+      const offset = loadMore ? pastEvents.length : 0;
+      
       const { data: eventsData, error: eventsError } = await supabase
         .from("events")
         .select("*")
         .lt("event_date", new Date().toISOString())
-        .order("event_date", { ascending: false });
+        .order("event_date", { ascending: false })
+        .range(offset, offset + EVENTS_PER_PAGE - 1);
 
       if (eventsError) throw eventsError;
+
+      // Check if there are more events
+      setHasMorePast((eventsData?.length || 0) === EVENTS_PER_PAGE);
 
       const eventsWithDetails = await Promise.all(
         (eventsData || []).map(async (event) => {
@@ -127,12 +143,17 @@ const Events = () => {
         })
       );
 
-      setPastEvents(eventsWithDetails);
+      if (loadMore) {
+        setPastEvents((prev) => [...prev, ...eventsWithDetails]);
+      } else {
+        setPastEvents(eventsWithDetails);
+      }
     } catch (error) {
       console.error("Error fetching past events:", error);
       toast.error("Nepodařilo se načíst historii vyjížděk");
     } finally {
       setLoadingPast(false);
+      setLoadingMore(false);
     }
   };
 
@@ -142,7 +163,7 @@ const Events = () => {
 
   useEffect(() => {
     if (activeTab === "history" && pastEvents.length === 0) {
-      fetchPastEvents();
+      fetchPastEvents(false);
     }
   }, [activeTab]);
 
@@ -318,6 +339,26 @@ const Events = () => {
                         </div>
                       </div>
                     ))}
+                    
+                    {hasMorePast && (
+                      <div className="flex justify-center pt-4">
+                        <Button
+                          variant="outline"
+                          onClick={() => fetchPastEvents(true)}
+                          disabled={loadingMore}
+                          className="min-w-[200px]"
+                        >
+                          {loadingMore ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Načítání...
+                            </>
+                          ) : (
+                            "Zobrazit další"
+                          )}
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 )}
               </TabsContent>
