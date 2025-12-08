@@ -14,7 +14,7 @@ const features: Feature[] = [
   {
     icon: Calendar,
     title: "Vyjížďky",
-    description: "Pravidelné společné výjezdy pro všechny úrovně zdatnosti. Od relaxačních projížděk po náročné tréninky.",
+    description: "Společné výjezdy pro všechny úrovně.",
     stat: "100+",
     statLabel: "ročně",
     size: "large",
@@ -22,7 +22,7 @@ const features: Feature[] = [
   {
     icon: Users,
     title: "Komunita",
-    description: "Přátelská atmosféra a podpora od zkušených cyklistů.",
+    description: "Přátelská parta zkušených cyklistů.",
     stat: "200+",
     statLabel: "členů",
     size: "medium",
@@ -38,7 +38,7 @@ const features: Feature[] = [
   {
     icon: Trophy,
     title: "Strava",
-    description: "Propojení se Strava klubem pro sledování výkonů.",
+    description: "Sledování výkonů v klubovém profilu.",
     stat: "∞",
     statLabel: "segmentů",
     size: "small",
@@ -46,7 +46,7 @@ const features: Feature[] = [
   {
     icon: Camera,
     title: "Galerie",
-    description: "Vzpomínky z akcí a společných zážitků zachycené na fotkách.",
+    description: "Fotky ze společných akcí a zážitků.",
     stat: "1000+",
     statLabel: "fotek",
     size: "medium",
