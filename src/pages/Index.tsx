@@ -6,6 +6,7 @@ import FeaturesSection from "@/components/home/FeaturesSection";
 import ClubhouseSection from "@/components/home/ClubhouseSection";
 import CTASection from "@/components/home/CTASection";
 import TeaserSection from "@/components/home/TeaserSection";
+import InstallBanner from "@/components/pwa/InstallBanner";
 
 const Index = () => {
   return (
@@ -20,6 +21,7 @@ const Index = () => {
         <LeadershipSection />
       </main>
       <Footer />
+      <InstallBanner />
     </div>
   );
 };
