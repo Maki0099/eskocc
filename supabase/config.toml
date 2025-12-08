@@ -11,3 +11,6 @@ verify_jwt = true
 
 [functions.strava-stats-batch]
 verify_jwt = true
+
+[functions.notify-admin-new-user]
+verify_jwt = false
