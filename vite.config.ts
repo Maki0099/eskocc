@@ -100,7 +100,15 @@ export default defineConfig(({ mode }) => ({
           }
         ],
         navigateFallback: "/offline.html",
-        navigateFallbackDenylist: [/^\/api/]
+        navigateFallbackDenylist: [
+          /^\/api/,
+          /^\/dashboard/,
+          /^\/login/,
+          /\?code=/,
+          /\?error=/,
+          /#access_token=/,
+          /#error=/
+        ]
       }
     })
   ].filter(Boolean),

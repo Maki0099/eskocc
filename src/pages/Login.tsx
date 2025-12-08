@@ -35,12 +35,57 @@ const Login = () => {
     }
   }, [user, navigate]);
 
+  // Handle OAuth callback - detect tokens in URL and process session
+  useEffect(() => {
+    const handleOAuthCallback = async () => {
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const accessToken = hashParams.get('access_token');
+      const error = hashParams.get('error');
+      
+      if (error) {
+        toast({
+          variant: "destructive",
+          title: "Chyba přihlášení",
+          description: hashParams.get('error_description') || "Přihlášení přes Google selhalo",
+        });
+        // Clear the hash
+        window.history.replaceState(null, '', window.location.pathname);
+        return;
+      }
+      
+      if (accessToken) {
+        // Supabase will automatically pick up the tokens from the URL
+        // Just wait for the session to be established
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          toast({
+            variant: "destructive",
+            title: "Chyba přihlášení",
+            description: "Nepodařilo se zpracovat přihlášení",
+          });
+        } else if (session) {
+          toast({
+            title: "Přihlášení úspěšné",
+            description: "Vítej zpět!",
+          });
+          navigate("/dashboard");
+        }
+        
+        // Clear the hash
+        window.history.replaceState(null, '', window.location.pathname);
+      }
+    };
+    
+    handleOAuthCallback();
+  }, [navigate, toast]);
+
   const handleGoogleSignIn = async () => {
     setLoading(true);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/dashboard`,
+        redirectTo: window.location.origin + '/login',
       },
     });
     
