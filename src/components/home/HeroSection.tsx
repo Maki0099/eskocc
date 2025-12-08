@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import heroCycling from "@/assets/hero-cycling.jpg";
+import logoRound from "@/assets/logo-round-dark.png";
 import { useParallax } from "@/hooks/useParallax";
 
 const HeroSection = () => {
@@ -28,7 +29,12 @@ const HeroSection = () => {
       {/* Content */}
       <div className="relative z-10 container mx-auto px-4 pt-14">
         <div className="max-w-3xl mx-auto text-center">
-          <p className="text-sm text-muted-foreground mb-6 opacity-0 animate-fade-up animation-delay-100">
+          <img 
+            src={logoRound} 
+            alt="ESKO.cc logo" 
+            className="w-24 h-24 mx-auto mb-6 opacity-0 animate-fade-up animation-delay-100"
+          />
+          <p className="text-sm text-muted-foreground mb-6 opacity-0 animate-fade-up animation-delay-150">
             Cyklistický klub Esko.cc
           </p>
 

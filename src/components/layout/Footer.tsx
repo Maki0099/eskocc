@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
-import logoDark from "@/assets/logo-horizontal-dark.png";
-import logoWhite from "@/assets/logo-horizontal-white.png";
+import logoRound from "@/assets/logo-round-dark.png";
 import DecreeModal from "./DecreeModal";
 
 const Footer = () => {
@@ -10,8 +9,11 @@ const Footer = () => {
           {/* Brand */}
           <div className="md:col-span-1">
             <Link to="/" className="inline-block mb-4">
-              <img src={logoDark} alt="ESKO.cc" className="h-5 dark:hidden" />
-              <img src={logoWhite} alt="ESKO.cc" className="h-5 hidden dark:block" />
+              <img 
+                src={logoRound} 
+                alt="ESKO.cc" 
+                className="h-16 w-16 dark:invert dark:brightness-200" 
+              />
             </Link>
             <p className="text-sm text-muted-foreground mb-4">Cyklistický klub 
 pro všechny nadšence.</p>
