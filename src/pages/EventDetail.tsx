@@ -100,7 +100,7 @@ const EventDetail = () => {
           id,
           user_id,
           status,
-          profile:profiles(full_name, email)
+          profile:profiles(full_name, avatar_url)
         `)
         .eq("event_id", id)
         .eq("status", "going");
