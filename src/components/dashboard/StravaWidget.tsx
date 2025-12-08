@@ -1,0 +1,182 @@
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { Bike, Mountain, TrendingUp, Loader2, LinkIcon } from "lucide-react";
+
+interface StravaWidgetProps {
+  userId: string;
+}
+
+interface StatsData {
+  all_ride_totals: {
+    count: number;
+    distance: number;
+    moving_time: number;
+    elevation_gain: number;
+  };
+  ytd_ride_totals: {
+    count: number;
+    distance: number;
+    moving_time: number;
+    elevation_gain: number;
+  };
+}
+
+const formatDistance = (meters: number): string => {
+  const km = meters / 1000;
+  return km >= 1000 ? `${(km / 1000).toFixed(1)}k` : km.toFixed(0);
+};
+
+const formatElevation = (meters: number): string => {
+  if (meters >= 1000000) return `${(meters / 1000000).toFixed(1)}M`;
+  if (meters >= 1000) return `${(meters / 1000).toFixed(0)}k`;
+  return meters.toFixed(0);
+};
+
+export const StravaWidget = ({ userId }: StravaWidgetProps) => {
+  const [stats, setStats] = useState<StatsData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [isConnected, setIsConnected] = useState(false);
+  const [stravaId, setStravaId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const checkStravaAndFetchStats = async () => {
+      // First check if user has Strava connected
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("strava_id")
+        .eq("id", userId)
+        .maybeSingle();
+
+      if (!profile?.strava_id) {
+        setIsConnected(false);
+        setLoading(false);
+        return;
+      }
+
+      setIsConnected(true);
+      setStravaId(profile.strava_id);
+
+      // Fetch stats
+      try {
+        const { data, error } = await supabase.functions.invoke('strava-stats', {
+          body: { userId }
+        });
+
+        if (!error && data && !data.error) {
+          setStats(data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch Strava stats:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkStravaAndFetchStats();
+  }, [userId]);
+
+  if (loading) {
+    return (
+      <div className="p-6 rounded-2xl border border-orange-500/20 bg-gradient-to-br from-orange-500/10 to-orange-600/5">
+        <div className="flex items-center justify-center gap-2 text-muted-foreground">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          <span className="text-sm">Načítám...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isConnected) {
+    return (
+      <Link
+        to="/account"
+        className="group p-6 rounded-2xl border border-orange-500/20 bg-gradient-to-br from-orange-500/5 to-transparent hover:from-orange-500/10 transition-colors block"
+      >
+        <div className="flex items-center gap-3 mb-3">
+          <img 
+            src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Strava_Logo.svg" 
+            alt="Strava" 
+            className="h-5 w-auto opacity-50 group-hover:opacity-100 transition-opacity"
+          />
+        </div>
+        <h3 className="font-medium mb-1 text-muted-foreground group-hover:text-foreground transition-colors">Propoj Strava</h3>
+        <p className="text-sm text-muted-foreground">
+          Zobraz své cyklistické statistiky
+        </p>
+        <div className="mt-4 flex items-center gap-2 text-xs text-orange-600 dark:text-orange-400">
+          <LinkIcon className="w-3 h-3" />
+          Propojit účet
+        </div>
+      </Link>
+    );
+  }
+
+  if (!stats) {
+    return (
+      <div className="p-6 rounded-2xl border border-orange-500/20 bg-gradient-to-br from-orange-500/10 to-orange-600/5">
+        <div className="flex items-center gap-3 mb-3">
+          <img 
+            src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Strava_Logo.svg" 
+            alt="Strava" 
+            className="h-5 w-auto"
+          />
+        </div>
+        <p className="text-sm text-muted-foreground">Statistiky nejsou k dispozici</p>
+      </div>
+    );
+  }
+
+  const allTime = stats.all_ride_totals;
+  const ytd = stats.ytd_ride_totals;
+
+  return (
+    <a
+      href={`https://www.strava.com/athletes/${stravaId}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="group p-6 rounded-2xl border border-orange-500/20 bg-gradient-to-br from-orange-500/10 to-orange-600/5 hover:border-orange-500/40 transition-colors block"
+    >
+      <div className="flex items-center gap-3 mb-4">
+        <img 
+          src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Strava_Logo.svg" 
+          alt="Strava" 
+          className="h-5 w-auto"
+        />
+        <span className="text-xs text-muted-foreground">Moje statistiky</span>
+      </div>
+
+      {/* Main stats */}
+      <div className="grid grid-cols-3 gap-3 mb-4">
+        <div className="text-center">
+          <div className="flex items-center justify-center mb-1">
+            <Bike className="w-4 h-4 text-orange-600" />
+          </div>
+          <p className="text-xl font-bold">{allTime.count}</p>
+          <p className="text-xs text-muted-foreground">jízd</p>
+        </div>
+        <div className="text-center">
+          <div className="flex items-center justify-center mb-1">
+            <TrendingUp className="w-4 h-4 text-orange-600" />
+          </div>
+          <p className="text-xl font-bold">{formatDistance(allTime.distance)}</p>
+          <p className="text-xs text-muted-foreground">km celkem</p>
+        </div>
+        <div className="text-center">
+          <div className="flex items-center justify-center mb-1">
+            <Mountain className="w-4 h-4 text-orange-600" />
+          </div>
+          <p className="text-xl font-bold">{formatElevation(allTime.elevation_gain)}</p>
+          <p className="text-xs text-muted-foreground">m převýšení</p>
+        </div>
+      </div>
+
+      {/* YTD summary */}
+      <div className="pt-3 border-t border-border/40">
+        <p className="text-xs text-muted-foreground">
+          Letos: <span className="text-foreground font-medium">{ytd.count} jízd</span> · <span className="text-foreground font-medium">{formatDistance(ytd.distance)} km</span>
+        </p>
+      </div>
+    </a>
+  );
+};

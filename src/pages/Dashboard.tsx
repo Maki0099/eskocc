@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { LogOut, User, Calendar, Image, Shield, Settings } from "lucide-react";
 import logoDark from "@/assets/logo-horizontal-dark.png";
-
+import { StravaWidget } from "@/components/dashboard/StravaWidget";
 type AppRole = "pending" | "member" | "active_member" | "admin";
 
 const roleLabels: Record<AppRole, string> = {
@@ -162,6 +162,13 @@ const Dashboard = () => {
               </Link>
             )}
           </div>
+
+          {/* Strava Widget */}
+          {user && (
+            <div className="mt-8">
+              <StravaWidget userId={user.id} />
+            </div>
+          )}
 
           {/* Profile info */}
           <div className="mt-12 p-6 rounded-2xl border border-border/40">
