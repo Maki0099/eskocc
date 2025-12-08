@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, User, ChevronRight } from "lucide-react";
+import { Menu, X, User, ChevronRight, Moon, Sun } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/components/ThemeProvider";
 import logoWhite from "@/assets/logo-horizontal-white.png";
 import logoDark from "@/assets/logo-horizontal-dark.png";
 
@@ -17,7 +18,12 @@ const navItems = [
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, loading } = useAuth();
+  const { theme, setTheme } = useTheme();
   const location = useLocation();
+
+  const toggleTheme = () => {
+    setTheme(theme === "dark" ? "light" : "dark");
+  };
 
   // Close menu on route change
   useEffect(() => {
@@ -77,7 +83,15 @@ const Header = () => {
               ))}
             </nav>
 
-            <div className="hidden md:flex items-center gap-3">
+            <div className="hidden md:flex items-center gap-2">
+              <button
+                onClick={toggleTheme}
+                className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                aria-label="Přepnout tmavý/světlý režim"
+              >
+                <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+              </button>
               {loading ? (
                 <div className="w-20 h-8 bg-muted animate-pulse rounded-lg"></div>
               ) : user ? (
@@ -145,8 +159,18 @@ const Header = () => {
             ))}
           </div>
 
-          {/* Mobile Auth Buttons */}
-          <div className="p-6 border-t border-border/50 bg-muted/30">
+          {/* Mobile Theme Toggle & Auth Buttons */}
+          <div className="p-6 border-t border-border/50 bg-muted/30 space-y-4">
+            <button
+              onClick={toggleTheme}
+              className="flex items-center justify-between w-full px-4 py-3 rounded-xl bg-background hover:bg-muted/50 transition-colors"
+            >
+              <span className="text-sm font-medium">Tmavý režim</span>
+              <div className="relative w-10 h-6 rounded-full bg-muted transition-colors">
+                <div className={`absolute top-1 w-4 h-4 rounded-full bg-foreground transition-all ${theme === "dark" ? "left-5" : "left-1"}`} />
+              </div>
+            </button>
+            
             {loading ? (
               <div className="h-12 bg-muted animate-pulse rounded-xl"></div>
             ) : user ? (
