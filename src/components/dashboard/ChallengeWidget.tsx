@@ -134,6 +134,28 @@ export const ChallengeWidget = ({ userId }: ChallengeWidgetProps) => {
     updateTarget();
   }, [userAge, currentYear]);
 
+  const progress = target > 0 ? Math.min((ytdDistance / target) * 100, 100) : 0;
+  const remaining = Math.max(target - ytdDistance, 0);
+  const isCompleted = ytdDistance >= target && target > 0;
+
+  // Show celebration notification when goal is completed
+  // This hook must be called before any conditional returns
+  useEffect(() => {
+    if (isCompleted && !notificationShownRef.current && !loading && isConnected) {
+      const storageKey = `challenge_completed_${currentYear}_${userId}`;
+      const alreadyNotified = localStorage.getItem(storageKey);
+      
+      if (!alreadyNotified) {
+        localStorage.setItem(storageKey, "true");
+        toast({
+          title: "🎉 Gratulujeme!",
+          description: `Splnil jsi svůj cíl ${target.toLocaleString()} km pro rok ${currentYear}!`,
+        });
+      }
+      notificationShownRef.current = true;
+    }
+  }, [isCompleted, loading, currentYear, userId, target, isConnected]);
+
   if (loading) {
     return (
       <Card>
@@ -147,27 +169,6 @@ export const ChallengeWidget = ({ userId }: ChallengeWidgetProps) => {
   if (!isConnected) {
     return null; // Don't show widget if Strava is not connected
   }
-
-  const progress = target > 0 ? Math.min((ytdDistance / target) * 100, 100) : 0;
-  const remaining = Math.max(target - ytdDistance, 0);
-  const isCompleted = ytdDistance >= target && target > 0;
-
-  // Show celebration notification when goal is completed
-  useEffect(() => {
-    if (isCompleted && !notificationShownRef.current && !loading) {
-      const storageKey = `challenge_completed_${currentYear}_${userId}`;
-      const alreadyNotified = localStorage.getItem(storageKey);
-      
-      if (!alreadyNotified) {
-        localStorage.setItem(storageKey, "true");
-        toast({
-          title: "🎉 Gratulujeme!",
-          description: `Splnil jsi svůj cíl ${target.toLocaleString()} km pro rok ${currentYear}!`,
-        });
-      }
-      notificationShownRef.current = true;
-    }
-  }, [isCompleted, loading, currentYear, userId, target]);
 
   return (
     <Card className="overflow-hidden">
