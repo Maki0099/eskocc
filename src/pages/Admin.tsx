@@ -27,7 +27,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Users, Shield, Loader2, Coffee, Target, Clock } from "lucide-react";
+import { Users, Shield, Loader2, Coffee, Target, Clock, KeyRound } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
@@ -49,6 +49,7 @@ const Admin = () => {
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
+  const [resettingPasswordUserId, setResettingPasswordUserId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!roleLoading && !isAdmin) {
@@ -133,6 +134,24 @@ const Admin = () => {
       toast.error(error.message || "Nepodařilo se změnit roli");
     } finally {
       setUpdatingUserId(null);
+    }
+  };
+
+  const handlePasswordReset = async (email: string, userId: string) => {
+    setResettingPasswordUserId(userId);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/account`,
+      });
+
+      if (error) throw error;
+
+      toast.success(`Email pro reset hesla byl odeslán na ${email}`);
+    } catch (error: any) {
+      console.error("Error sending password reset:", error);
+      toast.error(error.message || "Nepodařilo se odeslat reset hesla");
+    } finally {
+      setResettingPasswordUserId(null);
     }
   };
 
@@ -293,35 +312,50 @@ const Admin = () => {
                                 </Badge>
                               </TableCell>
                               <TableCell className="text-right">
-                                <Select
-                                  value={user.role}
-                                  onValueChange={(value) =>
-                                    handleRoleChange(user.id, value as AppRole)
-                                  }
-                                  disabled={updatingUserId === user.id}
-                                >
-                                  <SelectTrigger className="w-[180px]">
-                                    {updatingUserId === user.id ? (
+                                <div className="flex items-center justify-end gap-2">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handlePasswordReset(user.email, user.id)}
+                                    disabled={resettingPasswordUserId === user.id}
+                                    title="Odeslat reset hesla"
+                                  >
+                                    {resettingPasswordUserId === user.id ? (
                                       <Loader2 className="w-4 h-4 animate-spin" />
                                     ) : (
-                                      <SelectValue />
+                                      <KeyRound className="w-4 h-4" />
                                     )}
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="pending">
-                                      {ROLE_LABELS.pending}
-                                    </SelectItem>
-                                    <SelectItem value="member">
-                                      {ROLE_LABELS.member}
-                                    </SelectItem>
-                                    <SelectItem value="active_member">
-                                      {ROLE_LABELS.active_member}
-                                    </SelectItem>
-                                    <SelectItem value="admin">
-                                      {ROLE_LABELS.admin}
-                                    </SelectItem>
-                                  </SelectContent>
-                                </Select>
+                                  </Button>
+                                  <Select
+                                    value={user.role}
+                                    onValueChange={(value) =>
+                                      handleRoleChange(user.id, value as AppRole)
+                                    }
+                                    disabled={updatingUserId === user.id}
+                                  >
+                                    <SelectTrigger className="w-[180px]">
+                                      {updatingUserId === user.id ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                      ) : (
+                                        <SelectValue />
+                                      )}
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="pending">
+                                        {ROLE_LABELS.pending}
+                                      </SelectItem>
+                                      <SelectItem value="member">
+                                        {ROLE_LABELS.member}
+                                      </SelectItem>
+                                      <SelectItem value="active_member">
+                                        {ROLE_LABELS.active_member}
+                                      </SelectItem>
+                                      <SelectItem value="admin">
+                                        {ROLE_LABELS.admin}
+                                      </SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
                               </TableCell>
                             </TableRow>
                           ))}
