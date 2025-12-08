@@ -10,6 +10,7 @@ import logoDark from "@/assets/logo-horizontal-dark.png";
 const navItems = [
   { to: "/", label: "Domů" },
   { to: "/events", label: "Vyjížďky" },
+  { to: "/statistiky", label: "Statistiky" },
   { to: "/cafe", label: "Kavárna" },
   { to: "/gallery", label: "Galerie" },
   { to: "/about", label: "O klubu" },

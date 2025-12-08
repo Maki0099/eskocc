@@ -5,6 +5,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import CafeAdmin from "@/components/admin/CafeAdmin";
+import ChallengeAdmin from "@/components/admin/ChallengeAdmin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,7 +26,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Users, Shield, Loader2, Coffee } from "lucide-react";
+import { Users, Shield, Loader2, Coffee, Target } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
@@ -192,6 +193,10 @@ const Admin = () => {
                 <Coffee className="w-4 h-4" />
                 Kavárna
               </TabsTrigger>
+              <TabsTrigger value="challenge" className="gap-2">
+                <Target className="w-4 h-4" />
+                Výzva roku
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="users" className="space-y-6">
@@ -341,6 +346,10 @@ const Admin = () => {
 
             <TabsContent value="cafe">
               <CafeAdmin />
+            </TabsContent>
+
+            <TabsContent value="challenge">
+              <ChallengeAdmin />
             </TabsContent>
           </Tabs>
         </div>

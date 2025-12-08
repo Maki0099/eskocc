@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { LogOut, User, Calendar, Image, Shield, Settings } from "lucide-react";
 import logoDark from "@/assets/logo-horizontal-dark.png";
 import { StravaWidget } from "@/components/dashboard/StravaWidget";
+import { ChallengeWidget } from "@/components/dashboard/ChallengeWidget";
+
 type AppRole = "pending" | "member" | "active_member" | "admin";
 
 const roleLabels: Record<AppRole, string> = {
@@ -163,9 +165,16 @@ const Dashboard = () => {
             )}
           </div>
 
+          {/* Challenge Widget */}
+          {user && role !== "pending" && (
+            <div className="mt-8">
+              <ChallengeWidget userId={user.id} />
+            </div>
+          )}
+
           {/* Strava Widget */}
           {user && (
-            <div className="mt-8">
+            <div className="mt-4">
               <StravaWidget userId={user.id} />
             </div>
           )}

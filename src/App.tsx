@@ -19,6 +19,7 @@ import Gallery from "./pages/Gallery";
 import Cafe from "./pages/Cafe";
 import About from "./pages/About";
 import Admin from "./pages/Admin";
+import Statistics from "./pages/Statistics";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -42,6 +43,7 @@ const App = () => (
               <Route path="/events/:id" element={<EventDetail />} />
               <Route path="/gallery" element={<Gallery />} />
               <Route path="/cafe" element={<Cafe />} />
+              <Route path="/statistiky" element={<Statistics />} />
               <Route path="/member/:userId" element={<MemberProfile />} />
               <Route path="/about" element={<About />} />
               <Route
