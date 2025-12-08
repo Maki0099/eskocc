@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { LogOut, User, Calendar, Image, Shield, Settings } from "lucide-react";
 import logoDark from "@/assets/logo-horizontal-dark.png";
+import logoWhite from "@/assets/logo-horizontal-white.png";
 import { StravaWidget } from "@/components/dashboard/StravaWidget";
 import { ChallengeWidget } from "@/components/dashboard/ChallengeWidget";
 import PendingMembershipWidget from "@/components/dashboard/PendingMembershipWidget";
@@ -82,7 +83,8 @@ const Dashboard = () => {
       <header className="border-b border-border/40 bg-background/80 backdrop-blur-xl">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <Link to="/">
-            <img src={logoDark} alt="ESKO.cc" className="h-8" />
+            <img src={logoDark} alt="ESKO.cc" className="h-10 dark:hidden" />
+            <img src={logoWhite} alt="ESKO.cc" className="h-10 hidden dark:block" />
           </Link>
           <Button variant="ghost" size="sm" onClick={handleSignOut}>
             <LogOut className="w-4 h-4 mr-2" />
