@@ -260,7 +260,7 @@ const Statistics = () => {
             <div className="space-y-6">
               {/* Club Goal Card */}
               {settings && (
-                <Card className="overflow-hidden border-0 shadow-lg">
+                <Card className="overflow-hidden border-0 shadow-lg animate-fade-up">
                   <div className="bg-gradient-to-br from-accent to-secondary p-6 md:p-8 text-accent-foreground">
                     <div className="flex items-center gap-3 mb-6">
                       <div className="w-12 h-12 rounded-full bg-accent-foreground/20 flex items-center justify-center">
@@ -317,7 +317,7 @@ const Statistics = () => {
               {/* Age Category Targets */}
               {settings && (
                 <div className="grid gap-4 md:grid-cols-3">
-                  <Card className="text-center">
+                  <Card className="text-center animate-fade-up animation-delay-100">
                     <CardContent className="pt-6 pb-5">
                       <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
                         <Bike className="w-5 h-5 text-primary" />
@@ -326,7 +326,7 @@ const Statistics = () => {
                       <p className="text-2xl font-bold">{settings.target_under_40.toLocaleString()} km</p>
                     </CardContent>
                   </Card>
-                  <Card className="text-center">
+                  <Card className="text-center animate-fade-up animation-delay-200">
                     <CardContent className="pt-6 pb-5">
                       <div className="w-10 h-10 rounded-full bg-secondary/20 flex items-center justify-center mx-auto mb-3">
                         <Bike className="w-5 h-5 text-secondary" />
@@ -335,7 +335,7 @@ const Statistics = () => {
                       <p className="text-2xl font-bold">{settings.target_under_60.toLocaleString()} km</p>
                     </CardContent>
                   </Card>
-                  <Card className="text-center">
+                  <Card className="text-center animate-fade-up animation-delay-300">
                     <CardContent className="pt-6 pb-5">
                       <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-3">
                         <Bike className="w-5 h-5 text-accent" />
@@ -348,7 +348,7 @@ const Statistics = () => {
               )}
 
               {/* Leaderboard */}
-              <Card>
+              <Card className="animate-fade-up animation-delay-400">
                 <CardHeader className="pb-4">
                   <CardTitle className="flex items-center gap-2 text-lg">
                     <Trophy className="w-5 h-5 text-primary" />
@@ -372,11 +372,12 @@ const Statistics = () => {
                         return (
                           <div 
                             key={member.id}
-                            className={`p-3 md:p-4 rounded-xl transition-all ${
+                            className={`p-3 md:p-4 rounded-xl transition-all animate-fade-up ${
                               isCurrentUser 
                                 ? "bg-primary/10 ring-1 ring-primary/20" 
                                 : "bg-card hover:bg-muted/50"
                             }`}
+                            style={{ animationDelay: `${(index + 5) * 50}ms` }}
                           >
                             <div className="flex items-center gap-3 md:gap-4">
                               {/* Rank */}
