@@ -10,6 +10,7 @@ import { StravaWidget } from "@/components/dashboard/StravaWidget";
 import { ChallengeWidget } from "@/components/dashboard/ChallengeWidget";
 import PendingMembershipWidget from "@/components/dashboard/PendingMembershipWidget";
 import StravaConnectPrompt from "@/components/dashboard/StravaConnectPrompt";
+import StravaClubBanner from "@/components/strava/StravaClubBanner";
 import type { AppRole } from "@/lib/types";
 import { ROLE_LABELS } from "@/lib/constants";
 
@@ -178,6 +179,13 @@ const Dashboard = () => {
           {user && (
             <div className="mt-4">
               <StravaWidget userId={user.id} />
+            </div>
+          )}
+
+          {/* Strava Club Banner */}
+          {profile && (
+            <div className="mt-4">
+              <StravaClubBanner hasStravaConnected={!!profile.strava_id} />
             </div>
           )}
 
