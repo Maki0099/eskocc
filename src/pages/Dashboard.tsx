@@ -7,6 +7,7 @@ import { LogOut, User, Calendar, Image, Shield, Settings } from "lucide-react";
 import logoDark from "@/assets/logo-horizontal-dark.png";
 import { StravaWidget } from "@/components/dashboard/StravaWidget";
 import { ChallengeWidget } from "@/components/dashboard/ChallengeWidget";
+import PendingMembershipWidget from "@/components/dashboard/PendingMembershipWidget";
 
 type AppRole = "pending" | "member" | "active_member" | "admin";
 
@@ -106,13 +107,10 @@ const Dashboard = () => {
             </p>
           </div>
 
-          {/* Pending state message */}
+          {/* Pending membership widget */}
           {role === "pending" && (
-            <div className="bg-muted/50 rounded-2xl p-6 mb-8">
-              <h2 className="font-medium mb-2">Tvůj účet čeká na schválení</h2>
-              <p className="text-sm text-muted-foreground">
-                Administrátor klubu brzy ověří tvoji registraci. Mezitím se můžeš podívat na naše plánované vyjížďky.
-              </p>
+            <div className="mb-8">
+              <PendingMembershipWidget userEmail={user?.email} />
             </div>
           )}
 
