@@ -51,6 +51,24 @@ const PersonalDetailsStep = ({
   const passwordsMatch = password === confirmPassword && confirmPassword.length > 0;
   const isValid = fullName.length >= 2 && email.includes("@") && isPasswordLongEnough && passwordsMatch;
 
+  // Password strength calculation
+  const getPasswordStrength = (pwd: string): { level: number; label: string; color: string } => {
+    if (pwd.length === 0) return { level: 0, label: "", color: "" };
+    
+    let score = 0;
+    if (pwd.length >= 6) score++;
+    if (pwd.length >= 10) score++;
+    if (/[A-Z]/.test(pwd)) score++;
+    if (/[0-9]/.test(pwd)) score++;
+    if (/[^A-Za-z0-9]/.test(pwd)) score++;
+
+    if (score <= 1) return { level: 1, label: "Slabé", color: "bg-red-500" };
+    if (score <= 3) return { level: 2, label: "Střední", color: "bg-yellow-500" };
+    return { level: 3, label: "Silné", color: "bg-green-500" };
+  };
+
+  const passwordStrength = getPasswordStrength(password);
+
   return (
     <div className="space-y-4">
       <div className="space-y-2">
@@ -156,16 +174,34 @@ const PersonalDetailsStep = ({
           </button>
         </div>
         {password.length > 0 && (
-          <div className={cn(
-            "flex items-center gap-1.5 text-xs",
-            isPasswordLongEnough ? "text-green-600" : "text-muted-foreground"
-          )}>
-            {isPasswordLongEnough ? (
-              <Check className="w-3 h-3" />
-            ) : (
-              <X className="w-3 h-3" />
-            )}
-            Minimálně 6 znaků
+          <div className="space-y-2">
+            <div className="flex gap-1">
+              {[1, 2, 3].map((level) => (
+                <div
+                  key={level}
+                  className={cn(
+                    "h-1 flex-1 rounded-full transition-all duration-300",
+                    passwordStrength.level >= level ? passwordStrength.color : "bg-muted"
+                  )}
+                />
+              ))}
+            </div>
+            <div className="flex items-center justify-between text-xs">
+              <div className={cn(
+                "flex items-center gap-1.5",
+                isPasswordLongEnough ? "text-green-600" : "text-muted-foreground"
+              )}>
+                {isPasswordLongEnough ? (
+                  <Check className="w-3 h-3" />
+                ) : (
+                  <X className="w-3 h-3" />
+                )}
+                Minimálně 6 znaků
+              </div>
+              {passwordStrength.label && (
+                <span className="text-muted-foreground">{passwordStrength.label}</span>
+              )}
+            </div>
           </div>
         )}
       </div>
