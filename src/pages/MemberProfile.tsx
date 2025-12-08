@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { StravaStats } from "@/components/strava/StravaStats";
 import logoRound from "@/assets/logo-round-dark.png";
 
 interface MemberData {
@@ -217,6 +218,15 @@ const MemberProfile = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Strava Stats */}
+        {member.strava_id && userId && (
+          <Card className="mb-8">
+            <CardContent className="pt-6">
+              <StravaStats userId={userId} isConnected={!!member.strava_id} />
+            </CardContent>
+          </Card>
+        )}
 
         {/* Statistics */}
         <div className="grid grid-cols-2 gap-4 mb-8">
