@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUserRole } from "@/hooks/useUserRole";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import MemberOnlyContent from "@/components/MemberOnlyContent";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -45,6 +47,7 @@ interface MemberStats {
 
 const Statistics = () => {
   const { user } = useAuth();
+  const { isMember, loading: roleLoading } = useUserRole();
   const [loading, setLoading] = useState(true);
   const [settings, setSettings] = useState<ChallengeSettings | null>(null);
   const [members, setMembers] = useState<MemberStats[]>([]);
@@ -266,7 +269,12 @@ const Statistics = () => {
             </p>
           </div>
 
-          {error ? (
+          {!isMember && !roleLoading ? (
+            <MemberOnlyContent 
+              title="Statistiky pro členy"
+              description="Pro zobrazení statistik a žebříčku členů se staň členem klubu."
+            />
+          ) : error ? (
             <Card className="border-destructive/20">
               <CardContent className="py-12 text-center">
                 <AlertCircle className="w-12 h-12 mx-auto mb-4 text-destructive" />
