@@ -20,6 +20,7 @@ import Cafe from "./pages/Cafe";
 import About from "./pages/About";
 import Admin from "./pages/Admin";
 import Statistics from "./pages/Statistics";
+import Install from "./pages/Install";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -46,6 +47,7 @@ const App = () => (
               <Route path="/statistiky" element={<Statistics />} />
               <Route path="/member/:userId" element={<MemberProfile />} />
               <Route path="/about" element={<About />} />
+              <Route path="/install" element={<Install />} />
               <Route
                 path="/dashboard"
                 element={
