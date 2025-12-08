@@ -36,7 +36,7 @@ const About = () => {
       <Header />
       <main className="flex-1">
         {/* Hero Section */}
-        <section className="container mx-auto px-4 py-16 md:py-24">
+        <section className="container mx-auto px-4 pt-24 pb-16 md:pt-32 md:pb-24">
           <div 
             ref={heroRef}
             className={`max-w-3xl mx-auto text-center animate-on-scroll slide-up ${heroVisible ? 'is-visible' : ''}`}

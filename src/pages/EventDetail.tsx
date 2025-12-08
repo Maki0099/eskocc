@@ -224,7 +224,7 @@ const EventDetail = () => {
     return (
       <div className="min-h-screen flex flex-col bg-background">
         <Header />
-        <main className="flex-1 container mx-auto px-4 py-12">
+        <main className="flex-1 container mx-auto px-4 pt-24 pb-12">
           <div className="max-w-3xl mx-auto animate-pulse space-y-6">
             <div className="h-8 bg-muted rounded w-1/3" />
             <div className="h-48 bg-muted rounded" />
@@ -242,7 +242,7 @@ const EventDetail = () => {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
-      <main className="flex-1 container mx-auto px-4 py-12">
+      <main className="flex-1 container mx-auto px-4 pt-24 pb-12">
         <div className="max-w-3xl mx-auto">
           <Link
             to="/events"
