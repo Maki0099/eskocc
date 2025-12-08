@@ -8,12 +8,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { StatisticsPageSkeleton } from "@/components/statistics/StatisticsSkeletons";
 import { 
   Target, 
   Trophy, 
   Medal, 
   Award,
-  Loader2,
   Users,
   Bike,
   AlertCircle,
@@ -220,10 +220,20 @@ const Statistics = () => {
     return (
       <div className="min-h-screen flex flex-col bg-background">
         <Header />
-        <main className="flex-1 flex items-center justify-center">
-          <div className="flex flex-col items-center gap-3">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            <p className="text-sm text-muted-foreground">Načítám statistiky...</p>
+        <main className="flex-1 container mx-auto px-4 pt-24 pb-12">
+          <div className="max-w-4xl mx-auto space-y-8">
+            {/* Header */}
+            <div className="text-center space-y-2">
+              <div className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary mb-4">
+                <Target className="w-4 h-4" />
+                <span className="text-sm font-medium">Výzva {currentYear}</span>
+              </div>
+              <h1 className="text-display font-bold">Statistiky klubu</h1>
+              <p className="text-lg text-muted-foreground max-w-md mx-auto">
+                Sleduj pokrok členů a celého klubu ve splnění ročního cíle
+              </p>
+            </div>
+            <StatisticsPageSkeleton />
           </div>
         </main>
         <Footer />
