@@ -13,6 +13,7 @@ import { format } from "date-fns";
 import { cs } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import logoDark from "@/assets/logo-horizontal-dark.png";
+import { StravaStats } from "@/components/strava/StravaStats";
 
 interface Profile {
   full_name: string | null;
@@ -467,6 +468,9 @@ const Account = () => {
               <p className="text-xs text-muted-foreground">
                 Propoj svůj Strava účet pro automatické načítání aktivit
               </p>
+              
+              {/* Strava Stats */}
+              {user && <StravaStats userId={user.id} isConnected={!!stravaId} />}
             </div>
 
             <Button

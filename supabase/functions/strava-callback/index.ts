@@ -59,12 +59,19 @@ serve(async (req) => {
       return Response.redirect(`${frontendUrl}/account?strava=error&message=no_athlete`, 302);
     }
 
-    // Update user profile with Strava ID
+    // Update user profile with Strava ID and tokens
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    
+    const expiresAt = new Date(tokenData.expires_at * 1000).toISOString();
     
     const { error: updateError } = await supabase
       .from('profiles')
-      .update({ strava_id: athleteId })
+      .update({ 
+        strava_id: athleteId,
+        strava_access_token: tokenData.access_token,
+        strava_refresh_token: tokenData.refresh_token,
+        strava_token_expires_at: expiresAt,
+      })
       .eq('id', state);
 
     if (updateError) {
