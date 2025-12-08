@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ExternalLink, ImageIcon } from "lucide-react";
 import mallorca2025 from "@/assets/albums/mallorca-2025.jpg";
 import mallorca2024 from "@/assets/albums/mallorca-2024.jpg";
+import vyjezd2024 from "@/assets/albums/vyjezd-2024.jpg";
 
 interface Photo {
   id: string;
@@ -41,6 +42,11 @@ const externalAlbums = [
     title: "Mallorca 2024",
     url: "https://photos.app.goo.gl/RTPTPpkc1kPtMMgBA",
     image: mallorca2024,
+  },
+  {
+    title: "Výjezd 2024",
+    url: "https://photos.app.goo.gl/EsoeTbv4AudTPitD9",
+    image: vyjezd2024,
   },
 ];
 
