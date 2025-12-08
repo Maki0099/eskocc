@@ -107,26 +107,35 @@ const Statistics = () => {
           return role && role.role !== "pending";
         });
 
-        // Fetch Strava stats for each member with Strava connected
-        const memberStatsPromises = approvedProfiles.map(async (profile) => {
+        // Get all user IDs for batch request
+        const userIds = approvedProfiles.map(p => p.id);
+
+        // Fetch Strava stats in one batch request
+        let statsMap: Record<string, { ytd_distance: number; ytd_count: number }> = {};
+        
+        if (userIds.length > 0) {
+          try {
+            const { data: batchData, error: batchError } = await supabase.functions.invoke(
+              "strava-stats-batch",
+              { body: { userIds } }
+            );
+            
+            if (batchError) {
+              console.error("Batch stats error:", batchError);
+            } else if (batchData?.stats) {
+              statsMap = batchData.stats;
+            }
+          } catch (err) {
+            console.error("Error fetching batch stats:", err);
+          }
+        }
+
+        // Build member stats with the batch results
+        const memberStats: MemberStats[] = approvedProfiles.map((profile) => {
           const role = roles?.find((r) => r.user_id === profile.id);
           const age = calculateAge(profile.birth_date);
           const target = typedSettings ? getTargetForAge(age, typedSettings) : 0;
-
-          let ytd_distance = 0;
-          if (profile.strava_id) {
-            try {
-              const { data: statsData } = await supabase.functions.invoke(
-                "strava-stats",
-                { body: { userId: profile.id } }
-              );
-              if (statsData?.ytd_ride_totals?.distance) {
-                ytd_distance = Math.round(statsData.ytd_ride_totals.distance / 1000);
-              }
-            } catch (err) {
-              console.error(`Error fetching stats for ${profile.id}:`, err);
-            }
-          }
+          const ytd_distance = statsMap[profile.id]?.ytd_distance || 0;
 
           return {
             id: profile.id,
@@ -142,8 +151,6 @@ const Statistics = () => {
           };
         });
 
-        const memberStats = await Promise.all(memberStatsPromises);
-        
         // Sort by distance (descending)
         memberStats.sort((a, b) => b.ytd_distance - a.ytd_distance);
         
