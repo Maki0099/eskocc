@@ -8,6 +8,7 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import CreateEventDialog from "@/components/events/CreateEventDialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SkeletonEventCard } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, MapPin, Users, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
@@ -108,15 +109,7 @@ const Events = () => {
             {loading ? (
               <div className="space-y-4">
                 {[1, 2, 3].map((i) => (
-                  <Card key={i} className="animate-pulse">
-                    <CardHeader>
-                      <div className="h-6 bg-muted rounded w-1/3" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="h-4 bg-muted rounded w-2/3 mb-2" />
-                      <div className="h-4 bg-muted rounded w-1/2" />
-                    </CardContent>
-                  </Card>
+                  <SkeletonEventCard key={i} />
                 ))}
               </div>
             ) : events.length === 0 ? (

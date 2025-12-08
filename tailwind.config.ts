@@ -137,11 +137,26 @@ export default {
   				to: {
   					height: '0'
   				}
+  			},
+  			'shimmer': {
+  				'100%': {
+  					transform: 'translateX(100%)'
+  				}
+  			},
+  			'pulse-soft': {
+  				'0%, 100%': {
+  					opacity: '1'
+  				},
+  				'50%': {
+  					opacity: '0.5'
+  				}
   			}
   		},
   		animation: {
   			'accordion-down': 'accordion-down 0.2s ease-out',
-  			'accordion-up': 'accordion-up 0.2s ease-out'
+  			'accordion-up': 'accordion-up 0.2s ease-out',
+  			'shimmer': 'shimmer 2s infinite',
+  			'pulse-soft': 'pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
   		},
   		boxShadow: {
   			'2xs': 'var(--shadow-2xs)',
