@@ -432,8 +432,9 @@ const Account = () => {
                     if (!user) return;
                     setConnectingStrava(true);
                     try {
+                      const redirectUrl = `${window.location.origin}/account`;
                       const { data, error } = await supabase.functions.invoke('strava-auth', {
-                        body: { userId: user.id }
+                        body: { userId: user.id, redirectUrl }
                       });
                       if (error) throw error;
                       if (data?.authUrl) {

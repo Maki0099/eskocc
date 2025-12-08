@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { userId } = await req.json();
+    const { userId, redirectUrl } = await req.json();
     
     if (!userId) {
       return new Response(
@@ -33,18 +33,21 @@ serve(async (req) => {
     }
 
     // Build Strava OAuth URL
-    const redirectUri = `${supabaseUrl}/functions/v1/strava-callback`;
+    const callbackUri = `${supabaseUrl}/functions/v1/strava-callback`;
     const scope = 'read,activity:read';
-    const state = userId; // Pass user ID as state for callback
+    
+    // Encode userId and redirectUrl in state (base64 JSON)
+    const stateData = JSON.stringify({ userId, redirectUrl: redirectUrl || 'https://eskocc.cz/account' });
+    const state = btoa(stateData);
     
     const authUrl = new URL('https://www.strava.com/oauth/authorize');
     authUrl.searchParams.set('client_id', clientId);
-    authUrl.searchParams.set('redirect_uri', redirectUri);
+    authUrl.searchParams.set('redirect_uri', callbackUri);
     authUrl.searchParams.set('response_type', 'code');
     authUrl.searchParams.set('scope', scope);
     authUrl.searchParams.set('state', state);
 
-    console.log('Generated Strava auth URL for user:', userId);
+    console.log('Generated Strava auth URL for user:', userId, 'redirect:', redirectUrl);
 
     return new Response(
       JSON.stringify({ authUrl: authUrl.toString() }),
