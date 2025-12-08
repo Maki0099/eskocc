@@ -19,6 +19,7 @@ interface Profile {
   nickname: string | null;
   birth_date: string | null;
   avatar_url: string | null;
+  strava_id: string | null;
   email: string;
 }
 
@@ -35,6 +36,7 @@ const Account = () => {
 
   const [fullName, setFullName] = useState("");
   const [nickname, setNickname] = useState("");
+  const [stravaId, setStravaId] = useState("");
   const [birthDate, setBirthDate] = useState<Date | undefined>();
 
   useEffect(() => {
@@ -43,7 +45,7 @@ const Account = () => {
 
       const { data, error } = await supabase
         .from("profiles")
-        .select("full_name, nickname, birth_date, avatar_url, email")
+        .select("full_name, nickname, birth_date, avatar_url, strava_id, email")
         .eq("id", user.id)
         .maybeSingle();
 
@@ -51,6 +53,7 @@ const Account = () => {
         setProfile(data);
         setFullName(data.full_name || "");
         setNickname(data.nickname || "");
+        setStravaId(data.strava_id || "");
         if (data.birth_date) {
           setBirthDate(new Date(data.birth_date));
         }
@@ -65,11 +68,19 @@ const Account = () => {
     if (!user) return;
     setSaving(true);
 
+    // Extract Strava ID from URL or use as-is
+    let parsedStravaId = stravaId.trim();
+    const stravaUrlMatch = parsedStravaId.match(/strava\.com\/athletes\/(\d+)/);
+    if (stravaUrlMatch) {
+      parsedStravaId = stravaUrlMatch[1];
+    }
+
     const { error } = await supabase
       .from("profiles")
       .update({
         full_name: fullName.trim() || null,
         nickname: nickname.trim() || null,
+        strava_id: parsedStravaId || null,
         birth_date: birthDate ? format(birthDate, "yyyy-MM-dd") : null,
       })
       .eq("id", user.id);
@@ -85,10 +96,18 @@ const Account = () => {
         title: "Uloženo",
         description: "Tvoje údaje byly aktualizovány",
       });
+      // Extract Strava ID for state update
+      let parsedStravaIdForState = stravaId.trim();
+      const stravaUrlMatchForState = parsedStravaIdForState.match(/strava\.com\/athletes\/(\d+)/);
+      if (stravaUrlMatchForState) {
+        parsedStravaIdForState = stravaUrlMatchForState[1];
+        setStravaId(parsedStravaIdForState);
+      }
       setProfile((prev) => prev ? {
         ...prev,
         full_name: fullName.trim() || null,
         nickname: nickname.trim() || null,
+        strava_id: parsedStravaIdForState || null,
         birth_date: birthDate ? format(birthDate, "yyyy-MM-dd") : null,
       } : null);
     }
@@ -326,6 +345,21 @@ const Account = () => {
                   />
                 </PopoverContent>
               </Popover>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="stravaId">Strava profil</Label>
+              <Input
+                id="stravaId"
+                type="text"
+                placeholder="ID nebo URL (např. 12345678 nebo strava.com/athletes/12345678)"
+                value={stravaId}
+                onChange={(e) => setStravaId(e.target.value)}
+                className="h-12 rounded-xl"
+              />
+              <p className="text-xs text-muted-foreground">
+                Zadej své Strava ID nebo celou URL profilu
+              </p>
             </div>
 
             <Button
