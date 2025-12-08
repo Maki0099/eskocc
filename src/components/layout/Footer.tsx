@@ -2,7 +2,6 @@ import { Link } from "react-router-dom";
 import { useTheme } from "next-themes";
 import logoRoundDark from "@/assets/logo-round-dark.png";
 import logoRound from "@/assets/logo-round.png";
-import DecreeModal from "./DecreeModal";
 
 const Footer = () => {
   const { resolvedTheme } = useTheme();
@@ -26,10 +25,9 @@ const Footer = () => {
                 className="h-14 w-14 md:h-16 md:w-16 mx-auto md:mx-0 hidden dark:block" 
               />
             </Link>
-            <p className="text-sm text-muted-foreground mb-4">
+            <p className="text-sm text-muted-foreground">
               Cyklistický klub pro všechny nadšence.
             </p>
-            <DecreeModal />
           </div>
 
           {/* Links */}
