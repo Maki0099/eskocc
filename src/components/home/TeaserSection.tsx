@@ -16,7 +16,8 @@ import {
   Users, 
   Lock,
   ArrowRight,
-  Bike
+  Bike,
+  Clock
 } from "lucide-react";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
@@ -45,7 +46,7 @@ interface ClubStats {
 
 const TeaserSection = () => {
   const { user } = useAuth();
-  const { isMember } = useUserRole();
+  const { isMember, role } = useUserRole();
   const [topMembers, setTopMembers] = useState<TopMember[]>([]);
   const [upcomingEvents, setUpcomingEvents] = useState<UpcomingEvent[]>([]);
   const [clubStats, setClubStats] = useState<ClubStats | null>(null);
@@ -55,7 +56,8 @@ const TeaserSection = () => {
   const { ref: statsRef, isVisible: statsVisible } = useScrollAnimation();
   const { ref: eventsRef, isVisible: eventsVisible } = useScrollAnimation();
 
-  // Don't show teaser for members - they have full access
+  const isPending = role === "pending";
+  // Show teaser for non-members AND pending users
   const shouldShowTeaser = !isMember;
 
   useEffect(() => {
@@ -374,23 +376,43 @@ const TeaserSection = () => {
           className={`text-center mt-12 animate-on-scroll fade-up ${sectionVisible ? 'is-visible' : ''}`}
           style={{ transitionDelay: '300ms' }}
         >
-          <p className="text-muted-foreground mb-4">
-            Chceš vidět kompletní statistiky a účastnit se vyjížděk?
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button size="lg" asChild>
-              <Link to="/register">
-                Staň se členem
-              </Link>
-            </Button>
-            {!user && (
+          {isPending ? (
+            <>
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary mb-4">
+                <Clock className="w-4 h-4" />
+                <span className="text-sm font-medium">Čekáte na schválení členství</span>
+              </div>
+              <p className="text-muted-foreground mb-4 max-w-md mx-auto">
+                Vaše registrace byla přijata! Jakmile administrátor schválí vaše členství, 
+                získáte plný přístup ke statistikám, vyjížďkám a galerii.
+              </p>
               <Button size="lg" variant="outline" asChild>
-                <Link to="/login">
-                  Už mám účet
+                <Link to="/dashboard">
+                  Přejít na dashboard
                 </Link>
               </Button>
-            )}
-          </div>
+            </>
+          ) : (
+            <>
+              <p className="text-muted-foreground mb-4">
+                Chceš vidět kompletní statistiky a účastnit se vyjížděk?
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Button size="lg" asChild>
+                  <Link to="/register">
+                    Staň se členem
+                  </Link>
+                </Button>
+                {!user && (
+                  <Button size="lg" variant="outline" asChild>
+                    <Link to="/login">
+                      Už mám účet
+                    </Link>
+                  </Button>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </div>
     </section>
