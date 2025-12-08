@@ -82,7 +82,7 @@ const Gallery = () => {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
-      <main className="flex-1 container mx-auto px-4 py-12">
+      <main className="flex-1 container mx-auto px-4 pt-24 pb-12">
         <div className="max-w-6xl mx-auto">
           <div 
             ref={headerRef}
