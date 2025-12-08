@@ -17,7 +17,8 @@ import {
   Lock,
   ArrowRight,
   Bike,
-  Clock
+  Clock,
+  Eye
 } from "lucide-react";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
@@ -28,6 +29,11 @@ interface TopMember {
   nickname: string | null;
   avatar_url: string | null;
   ytd_distance: number;
+}
+
+interface AnonymizedRider {
+  initials: string;
+  distance: number;
 }
 
 interface UpcomingEvent {
@@ -42,7 +48,10 @@ interface ClubStats {
   totalDistance: number;
   targetDistance: number;
   memberCount: number;
+  topRiders: AnonymizedRider[];
 }
+
+type ViewVariant = "anonymous" | "pending" | "member";
 
 const TeaserSection = () => {
   const { user } = useAuth();
@@ -57,31 +66,51 @@ const TeaserSection = () => {
   const { ref: eventsRef, isVisible: eventsVisible } = useScrollAnimation();
 
   const isPending = role === "pending";
-  // Show teaser for non-members AND pending users
-  const shouldShowTeaser = !isMember;
+  
+  // Determine view variant
+  const getVariant = (): ViewVariant => {
+    if (isMember) return "member";
+    if (isPending) return "pending";
+    return "anonymous";
+  };
+  
+  const variant = getVariant();
 
   useEffect(() => {
     const fetchTeaserData = async () => {
       try {
-        // Use RPC function to get club stats (works for anonymous users)
+        // Use RPC function to get club stats (works for all users)
         const { data: stats, error: statsError } = await supabase.rpc('get_club_teaser_stats');
         
         if (statsError) {
           console.error("Error fetching club stats:", statsError);
         } else if (stats) {
-          const parsedStats = stats as { total_distance: number; target_distance: number; member_count: number };
+          const parsedStats = stats as unknown as { 
+            total_distance: number; 
+            target_distance: number; 
+            member_count: number;
+            top_riders: AnonymizedRider[];
+          };
           setClubStats({
             totalDistance: parsedStats.total_distance || 0,
             targetDistance: parsedStats.target_distance || 70000,
             memberCount: parsedStats.member_count || 0,
+            topRiders: parsedStats.top_riders || [],
           });
         }
 
-        // Top members will remain hidden for anonymous (profiles table is protected)
-        // We'll show placeholder text instead
-        setTopMembers([]);
+        // For members, fetch full top member data
+        if (isMember) {
+          const { data: fullMembers, error: membersError } = await supabase.rpc('get_top_members', { limit_count: 3 });
+          
+          if (membersError) {
+            console.error("Error fetching top members:", membersError);
+          } else if (fullMembers) {
+            setTopMembers(fullMembers as unknown as TopMember[]);
+          }
+        }
 
-        // Fetch upcoming events (limited info)
+        // Fetch upcoming events
         const { data: events } = await supabase
           .from("events")
           .select("id, title, event_date, location")
@@ -114,10 +143,7 @@ const TeaserSection = () => {
     };
 
     fetchTeaserData();
-  }, []);
-
-  // Don't render for members
-  if (!shouldShowTeaser) return null;
+  }, [isMember]);
 
   const getInitials = (name: string | null, nickname: string | null) => {
     const displayName = nickname || name;
@@ -136,6 +162,296 @@ const TeaserSection = () => {
     ? Math.min((clubStats.totalDistance / clubStats.targetDistance) * 100, 100) 
     : 0;
 
+  const getSectionTitle = () => {
+    if (variant === "member") return "Aktivita klubu";
+    return "Co se děje v klubu";
+  };
+
+  const getSectionDescription = () => {
+    switch (variant) {
+      case "member":
+        return "Přehled aktuálního dění v klubu Eskocc.";
+      case "pending":
+        return "Podívej se na aktuální dění v klubu. Po schválení členství uvidíš plné detaily.";
+      default:
+        return "Podívej se na aktuální dění v klubu Eskocc. Pro plný přístup se staň členem.";
+    }
+  };
+
+  const getBadgeContent = () => {
+    switch (variant) {
+      case "member":
+        return { icon: Eye, text: "Přehled klubu" };
+      case "pending":
+        return { icon: Clock, text: "Čekání na schválení" };
+      default:
+        return { icon: Lock, text: "Náhled pro členy" };
+    }
+  };
+
+  const badgeContent = getBadgeContent();
+
+  // Render top riders based on variant
+  const renderTopRiders = () => {
+    if (loading) {
+      return (
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-12 w-full" />
+          ))}
+        </div>
+      );
+    }
+
+    // For members - show full data with links
+    if (variant === "member" && topMembers.length > 0) {
+      return (
+        <div className="space-y-3">
+          <p className="text-sm font-medium text-muted-foreground">Top jezdci</p>
+          {topMembers.map((member, index) => (
+            <Link
+              key={member.id}
+              to={`/member/${member.id}`}
+              className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+            >
+              <span className="text-sm font-bold text-muted-foreground w-5">
+                {index + 1}.
+              </span>
+              <Avatar className="w-8 h-8">
+                <AvatarImage src={member.avatar_url || undefined} />
+                <AvatarFallback className="text-xs">
+                  {getInitials(member.full_name, member.nickname)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-sm truncate">
+                  {member.nickname || member.full_name || "Člen klubu"}
+                </p>
+              </div>
+              <div className="flex items-center gap-1 text-sm font-medium">
+                <Bike className="w-4 h-4 text-muted-foreground" />
+                {Math.round(member.ytd_distance).toLocaleString()} km
+              </div>
+            </Link>
+          ))}
+        </div>
+      );
+    }
+
+    // For non-members - show anonymized data with blur effect
+    if (clubStats?.topRiders && clubStats.topRiders.length > 0) {
+      return (
+        <div className="space-y-3">
+          <p className="text-sm font-medium text-muted-foreground">Top jezdci</p>
+          {clubStats.topRiders.map((rider, index) => (
+            <div 
+              key={index}
+              className="flex items-center gap-3 p-3 rounded-lg bg-muted/50"
+            >
+              <span className="text-sm font-bold text-muted-foreground w-5">
+                {index + 1}.
+              </span>
+              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                <span className="text-xs font-medium text-primary blur-[2px]">
+                  {rider.initials}
+                </span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-sm text-muted-foreground blur-[3px] select-none">
+                  Jméno člena
+                </p>
+              </div>
+              <div className="flex items-center gap-1 text-sm font-medium">
+                <Bike className="w-4 h-4 text-muted-foreground" />
+                {Math.round(rider.distance).toLocaleString()} km
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-3">
+        <p className="text-sm font-medium text-muted-foreground">Top jezdci</p>
+        <p className="text-sm text-muted-foreground text-center py-4">
+          Zatím žádná data
+        </p>
+      </div>
+    );
+  };
+
+  // Render events based on variant
+  const renderEvents = () => {
+    if (loading) {
+      return (
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-20 w-full" />
+          ))}
+        </div>
+      );
+    }
+
+    if (upcomingEvents.length === 0) {
+      return (
+        <div className="py-8 text-center">
+          <Calendar className="w-12 h-12 mx-auto mb-3 text-muted-foreground/50" />
+          <p className="text-sm text-muted-foreground">
+            Žádné nadcházející vyjížďky
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-3">
+        {upcomingEvents.map((event) => {
+          const eventContent = (
+            <div className="p-4 rounded-lg bg-muted/50 hover:bg-muted/70 transition-colors">
+              <div className="flex items-start justify-between gap-3 mb-2">
+                <h4 className="font-medium line-clamp-1">{event.title}</h4>
+                <Badge variant="secondary" className="shrink-0">
+                  <Users className="w-3 h-3 mr-1" />
+                  {event.participant_count}
+                </Badge>
+              </div>
+              <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                  <Calendar className="w-3.5 h-3.5" />
+                  {format(new Date(event.event_date), "d. MMMM", { locale: cs })}
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5" />
+                  {event.location}
+                </span>
+              </div>
+            </div>
+          );
+
+          // For members, make events clickable
+          if (variant === "member") {
+            return (
+              <Link key={event.id} to={`/events/${event.id}`}>
+                {eventContent}
+              </Link>
+            );
+          }
+
+          return <div key={event.id}>{eventContent}</div>;
+        })}
+      </div>
+    );
+  };
+
+  // Render CTA based on variant
+  const renderCTA = () => {
+    switch (variant) {
+      case "member":
+        return (
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Button size="lg" asChild>
+              <Link to="/statistics">
+                Zobrazit statistiky
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Link>
+            </Button>
+            <Button size="lg" variant="outline" asChild>
+              <Link to="/events">
+                Všechny vyjížďky
+              </Link>
+            </Button>
+          </div>
+        );
+      case "pending":
+        return (
+          <>
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary mb-4">
+              <Clock className="w-4 h-4" />
+              <span className="text-sm font-medium">Čekáte na schválení členství</span>
+            </div>
+            <p className="text-muted-foreground mb-4 max-w-md mx-auto">
+              Vaše registrace byla přijata! Jakmile administrátor schválí vaše členství, 
+              získáte plný přístup ke statistikám, vyjížďkám a galerii.
+            </p>
+            <Button size="lg" variant="outline" asChild>
+              <Link to="/dashboard">
+                Přejít na dashboard
+              </Link>
+            </Button>
+          </>
+        );
+      default:
+        return (
+          <>
+            <p className="text-muted-foreground mb-4">
+              Chceš vidět kompletní statistiky a účastnit se vyjížděk?
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Button size="lg" asChild>
+                <Link to="/register">
+                  Staň se členem
+                </Link>
+              </Button>
+              {!user && (
+                <Button size="lg" variant="outline" asChild>
+                  <Link to="/login">
+                    Už mám účet
+                  </Link>
+                </Button>
+              )}
+            </div>
+          </>
+        );
+    }
+  };
+
+  // Render stats button based on variant
+  const renderStatsButton = () => {
+    if (variant === "member") {
+      return (
+        <Button variant="outline" className="w-full gap-2" asChild>
+          <Link to="/statistics">
+            Zobrazit celé statistiky
+            <ArrowRight className="w-4 h-4" />
+          </Link>
+        </Button>
+      );
+    }
+    
+    return (
+      <Button variant="outline" className="w-full gap-2" asChild>
+        <Link to="/register">
+          Zobrazit celé statistiky
+          <ArrowRight className="w-4 h-4" />
+        </Link>
+      </Button>
+    );
+  };
+
+  // Render events button based on variant
+  const renderEventsButton = () => {
+    if (variant === "member") {
+      return (
+        <Button variant="outline" className="w-full gap-2" asChild>
+          <Link to="/events">
+            Přihlásit se na vyjížďky
+            <ArrowRight className="w-4 h-4" />
+          </Link>
+        </Button>
+      );
+    }
+    
+    return (
+      <Button variant="outline" className="w-full gap-2" asChild>
+        <Link to="/register">
+          Přihlásit se na vyjížďky
+          <ArrowRight className="w-4 h-4" />
+        </Link>
+      </Button>
+    );
+  };
+
   return (
     <section className="py-24 relative overflow-hidden bg-muted/30">
       {/* Subtle background */}
@@ -153,19 +469,19 @@ const TeaserSection = () => {
           className={`text-center mb-12 animate-on-scroll fade-up ${sectionVisible ? 'is-visible' : ''}`}
         >
           <Badge variant="secondary" className="mb-4">
-            <Lock className="w-3 h-3 mr-1.5" />
-            Náhled pro členy
+            <badgeContent.icon className="w-3 h-3 mr-1.5" />
+            {badgeContent.text}
           </Badge>
           <h2 className="text-display font-semibold mb-4">
-            Co se děje v klubu
+            {getSectionTitle()}
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Podívej se na aktuální dění v klubu Eskocc. Pro plný přístup se staň členem.
+            {getSectionDescription()}
           </p>
         </div>
 
         <div className="grid lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
-          {/* Statistics Teaser */}
+          {/* Statistics Card */}
           <div 
             ref={statsRef}
             className={`animate-on-scroll fade-up ${statsVisible ? 'is-visible' : ''}`}
@@ -187,11 +503,6 @@ const TeaserSection = () => {
                   <div className="space-y-4">
                     <Skeleton className="h-4 w-full" />
                     <Skeleton className="h-8 w-3/4" />
-                    <div className="space-y-3 mt-6">
-                      {[1, 2, 3].map((i) => (
-                        <Skeleton key={i} className="h-12 w-full" />
-                      ))}
-                    </div>
                   </div>
                 ) : (
                   <>
@@ -217,57 +528,19 @@ const TeaserSection = () => {
                       </p>
                     </div>
 
-                    {/* Top 3 blurred */}
-                    <div className="space-y-3">
-                      <p className="text-sm font-medium text-muted-foreground">Top jezdci</p>
-                      {topMembers.length > 0 ? (
-                        topMembers.map((member, index) => (
-                          <div 
-                            key={member.id}
-                            className="flex items-center gap-3 p-3 rounded-lg bg-muted/50"
-                          >
-                            <span className="text-sm font-bold text-muted-foreground w-5">
-                              {index + 1}.
-                            </span>
-                            <Avatar className="w-8 h-8 blur-[2px]">
-                              <AvatarImage src={member.avatar_url || undefined} />
-                              <AvatarFallback className="text-xs">
-                                {getInitials(member.full_name, member.nickname)}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1 min-w-0">
-                              <p className="font-medium text-sm blur-[3px] select-none">
-                                {member.nickname || member.full_name || "Člen klubu"}
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-1 text-sm font-medium">
-                              <Bike className="w-4 h-4 text-muted-foreground" />
-                              {Math.round(member.ytd_distance).toLocaleString()} km
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <p className="text-sm text-muted-foreground text-center py-4">
-                          Zatím žádná data
-                        </p>
-                      )}
-                    </div>
+                    {/* Top riders */}
+                    {renderTopRiders()}
                   </>
                 )}
 
                 <div className="mt-6 pt-4 border-t border-border/50">
-                  <Button variant="outline" className="w-full gap-2" asChild>
-                    <Link to="/register">
-                      Zobrazit celé statistiky
-                      <ArrowRight className="w-4 h-4" />
-                    </Link>
-                  </Button>
+                  {renderStatsButton()}
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Events Teaser */}
+          {/* Events Card */}
           <div 
             ref={eventsRef}
             className={`animate-on-scroll fade-up ${eventsVisible ? 'is-visible' : ''}`}
@@ -285,55 +558,10 @@ const TeaserSection = () => {
                   </div>
                 </div>
 
-                {loading ? (
-                  <div className="space-y-3">
-                    {[1, 2, 3].map((i) => (
-                      <Skeleton key={i} className="h-20 w-full" />
-                    ))}
-                  </div>
-                ) : upcomingEvents.length > 0 ? (
-                  <div className="space-y-3">
-                    {upcomingEvents.map((event, index) => (
-                      <div 
-                        key={event.id}
-                        className="p-4 rounded-lg bg-muted/50 hover:bg-muted/70 transition-colors"
-                      >
-                        <div className="flex items-start justify-between gap-3 mb-2">
-                          <h4 className="font-medium line-clamp-1">{event.title}</h4>
-                          <Badge variant="secondary" className="shrink-0">
-                            <Users className="w-3 h-3 mr-1" />
-                            {event.participant_count}
-                          </Badge>
-                        </div>
-                        <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
-                          <span className="flex items-center gap-1.5">
-                            <Calendar className="w-3.5 h-3.5" />
-                            {format(new Date(event.event_date), "d. MMMM", { locale: cs })}
-                          </span>
-                          <span className="flex items-center gap-1.5">
-                            <MapPin className="w-3.5 h-3.5" />
-                            {event.location}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="py-8 text-center">
-                    <Calendar className="w-12 h-12 mx-auto mb-3 text-muted-foreground/50" />
-                    <p className="text-sm text-muted-foreground">
-                      Žádné nadcházející vyjížďky
-                    </p>
-                  </div>
-                )}
+                {renderEvents()}
 
                 <div className="mt-6 pt-4 border-t border-border/50">
-                  <Button variant="outline" className="w-full gap-2" asChild>
-                    <Link to="/register">
-                      Přihlásit se na vyjížďky
-                      <ArrowRight className="w-4 h-4" />
-                    </Link>
-                  </Button>
+                  {renderEventsButton()}
                 </div>
               </CardContent>
             </Card>
@@ -345,43 +573,7 @@ const TeaserSection = () => {
           className={`text-center mt-12 animate-on-scroll fade-up ${sectionVisible ? 'is-visible' : ''}`}
           style={{ transitionDelay: '300ms' }}
         >
-          {isPending ? (
-            <>
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary mb-4">
-                <Clock className="w-4 h-4" />
-                <span className="text-sm font-medium">Čekáte na schválení členství</span>
-              </div>
-              <p className="text-muted-foreground mb-4 max-w-md mx-auto">
-                Vaše registrace byla přijata! Jakmile administrátor schválí vaše členství, 
-                získáte plný přístup ke statistikám, vyjížďkám a galerii.
-              </p>
-              <Button size="lg" variant="outline" asChild>
-                <Link to="/dashboard">
-                  Přejít na dashboard
-                </Link>
-              </Button>
-            </>
-          ) : (
-            <>
-              <p className="text-muted-foreground mb-4">
-                Chceš vidět kompletní statistiky a účastnit se vyjížděk?
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Button size="lg" asChild>
-                  <Link to="/register">
-                    Staň se členem
-                  </Link>
-                </Button>
-                {!user && (
-                  <Button size="lg" variant="outline" asChild>
-                    <Link to="/login">
-                      Už mám účet
-                    </Link>
-                  </Button>
-                )}
-              </div>
-            </>
-          )}
+          {renderCTA()}
         </div>
       </div>
     </section>
