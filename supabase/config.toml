@@ -5,3 +5,6 @@ verify_jwt = true
 
 [functions.strava-callback]
 verify_jwt = false
+
+[functions.strava-stats]
+verify_jwt = true
