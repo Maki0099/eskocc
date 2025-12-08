@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
-import { X } from "lucide-react";
+import { Dialog, DialogContent, DialogTrigger, DialogTitle } from "@/components/ui/dialog";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import decreeOriginal from "@/assets/decree/ustanovujici-dekret-original.jpg";
 import decree2025 from "@/assets/decree/ustanovujici-dekret-2025.jpg";
 
@@ -30,48 +30,39 @@ const DecreeModal = () => {
   const [selectedDoc, setSelectedDoc] = useState<DocumentItem | null>(null);
 
   return (
-    <>
-      <div className="flex flex-col gap-3">
-        <span className="text-sm text-muted-foreground">Dokumenty klubu</span>
-        <div className="flex gap-3">
-          {documents.map((doc) => (
-            <Dialog key={doc.id} open={selectedDoc?.id === doc.id} onOpenChange={(open) => setSelectedDoc(open ? doc : null)}>
-              <DialogTrigger asChild>
-                <button className="group flex flex-col items-center gap-1 text-center">
-                  <div className="relative w-14 h-18 rounded overflow-hidden border border-border/50 shadow-sm group-hover:shadow-md group-hover:border-border transition-all duration-200">
-                    <img 
-                      src={doc.image} 
-                      alt={doc.title} 
-                      className="w-full h-full object-cover object-top"
-                    />
-                    <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/5 transition-colors" />
-                  </div>
-                  <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors max-w-16 truncate">
-                    {doc.year}
-                  </span>
-                </button>
-              </DialogTrigger>
-              <DialogContent className="max-w-[95vw] max-h-[95vh] w-auto h-auto p-0 bg-background border-border overflow-hidden">
-                <div className="relative flex items-center justify-center p-6">
-                  <button
-                    onClick={() => setSelectedDoc(null)}
-                    className="absolute top-2 right-2 z-10 p-2 rounded-full bg-background/80 backdrop-blur-sm border border-border hover:bg-secondary transition-colors"
-                    aria-label="Zavřít"
-                  >
-                    <X className="h-5 w-5" />
-                  </button>
+    <div className="flex flex-col gap-3">
+      <span className="text-sm text-muted-foreground">Dokumenty klubu</span>
+      <div className="flex gap-3">
+        {documents.map((doc) => (
+          <Dialog key={doc.id} open={selectedDoc?.id === doc.id} onOpenChange={(open) => setSelectedDoc(open ? doc : null)}>
+            <DialogTrigger asChild>
+              <button className="group flex flex-col items-center gap-1 text-center">
+                <div className="relative w-14 h-18 rounded overflow-hidden border border-border/50 group-hover:border-primary/50 transition-colors">
                   <img 
                     src={doc.image} 
-                    alt={`${doc.title} - ${doc.year}`} 
-                    className="max-w-[90vw] max-h-[85vh] w-auto h-auto object-contain rounded-lg shadow-xl"
+                    alt={doc.title} 
+                    className="w-full h-full object-cover object-top"
                   />
                 </div>
-              </DialogContent>
-            </Dialog>
-          ))}
-        </div>
+                <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors max-w-16 truncate">
+                  {doc.year}
+                </span>
+              </button>
+            </DialogTrigger>
+            <DialogContent className="max-w-[95vw] max-h-[95vh] w-auto h-auto p-4 border-0 bg-transparent shadow-none">
+              <VisuallyHidden>
+                <DialogTitle>{doc.title} - {doc.year}</DialogTitle>
+              </VisuallyHidden>
+              <img 
+                src={doc.image} 
+                alt={`${doc.title} - ${doc.year}`} 
+                className="max-w-[90vw] max-h-[90vh] w-auto h-auto object-contain rounded-lg"
+              />
+            </DialogContent>
+          </Dialog>
+        ))}
       </div>
-    </>
+    </div>
   );
 };
 
