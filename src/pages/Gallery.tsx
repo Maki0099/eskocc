@@ -15,6 +15,7 @@ import { ExternalLink, ImageIcon } from "lucide-react";
 import mallorca2025 from "@/assets/albums/mallorca-2025.jpg";
 import mallorca2024 from "@/assets/albums/mallorca-2024.jpg";
 import vyjezd2024 from "@/assets/albums/vyjezd-2024.jpg";
+import mallorca2022 from "@/assets/albums/mallorca-2022.jpg";
 
 interface Photo {
   id: string;
@@ -47,6 +48,11 @@ const externalAlbums = [
     title: "Mallorca 2023",
     url: "https://photos.app.goo.gl/EsoeTbv4AudTPitD9",
     image: vyjezd2024,
+  },
+  {
+    title: "Mallorca 2022",
+    url: "https://photos.app.goo.gl/24M22WZEVDkG5osC8",
+    image: mallorca2022,
   },
 ];
 
