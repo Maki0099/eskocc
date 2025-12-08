@@ -33,6 +33,7 @@ const Register = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [nickname, setNickname] = useState("");
   const [birthDate, setBirthDate] = useState<Date | undefined>();
+  const [phone, setPhone] = useState("");
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
@@ -78,7 +79,7 @@ const Register = () => {
 
     setLoading(true);
     
-    const { error } = await signUp(email, password, fullName, nickname || undefined, birthDate);
+    const { error } = await signUp(email, password, fullName, nickname || undefined, birthDate, phone || undefined);
     
     if (error) {
       let message = "Nepodařilo se vytvořit účet";
@@ -154,6 +155,8 @@ const Register = () => {
               setNickname={setNickname}
               birthDate={birthDate}
               setBirthDate={setBirthDate}
+              phone={phone}
+              setPhone={setPhone}
               email={email}
               setEmail={setEmail}
               password={password}

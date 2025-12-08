@@ -247,6 +247,7 @@ export type Database = {
           full_name: string | null
           id: string
           nickname: string | null
+          phone: string | null
           strava_access_token: string | null
           strava_id: string | null
           strava_refresh_token: string | null
@@ -264,6 +265,7 @@ export type Database = {
           full_name?: string | null
           id: string
           nickname?: string | null
+          phone?: string | null
           strava_access_token?: string | null
           strava_id?: string | null
           strava_refresh_token?: string | null
@@ -281,6 +283,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           nickname?: string | null
+          phone?: string | null
           strava_access_token?: string | null
           strava_id?: string | null
           strava_refresh_token?: string | null
