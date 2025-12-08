@@ -32,8 +32,10 @@ export function getInitials(
 
 /**
  * Calculate age from birth date
+ * Returns null if birthDate is null or undefined
  */
-export function calculateAge(birthDate: string | Date): number {
+export function calculateAge(birthDate: string | Date | null | undefined): number | null {
+  if (!birthDate) return null;
   const birth = typeof birthDate === "string" ? new Date(birthDate) : birthDate;
   const today = new Date();
   let age = today.getFullYear() - birth.getFullYear();
