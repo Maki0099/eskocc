@@ -31,8 +31,9 @@ import { Users, Shield, Loader2, Coffee, Target, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
-
-type AppRole = "pending" | "member" | "active_member" | "admin";
+import type { AppRole } from "@/lib/types";
+import { ROLE_LABELS, ROLE_BADGE_VARIANTS } from "@/lib/constants";
+import { getInitials } from "@/lib/user-utils";
 
 interface UserWithRole {
   id: string;
@@ -41,20 +42,6 @@ interface UserWithRole {
   created_at: string;
   role: AppRole;
 }
-
-const roleLabels: Record<AppRole, string> = {
-  pending: "Čeká na schválení",
-  member: "Člen",
-  active_member: "Aktivní člen",
-  admin: "Administrátor",
-};
-
-const roleBadgeVariants: Record<AppRole, "default" | "secondary" | "outline" | "destructive"> = {
-  pending: "outline",
-  member: "secondary",
-  active_member: "default",
-  admin: "destructive",
-};
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -149,17 +136,6 @@ const Admin = () => {
     }
   };
 
-  const getInitials = (name: string | null, email: string) => {
-    if (name) {
-      return name
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2);
-    }
-    return email[0].toUpperCase();
-  };
 
   const pendingCount = users.filter((u) => u.role === "pending").length;
 
@@ -312,8 +288,8 @@ const Admin = () => {
                                 })}
                               </TableCell>
                               <TableCell>
-                                <Badge variant={roleBadgeVariants[user.role]}>
-                                  {roleLabels[user.role]}
+                                <Badge variant={ROLE_BADGE_VARIANTS[user.role]}>
+                                  {ROLE_LABELS[user.role]}
                                 </Badge>
                               </TableCell>
                               <TableCell className="text-right">
@@ -333,16 +309,16 @@ const Admin = () => {
                                   </SelectTrigger>
                                   <SelectContent>
                                     <SelectItem value="pending">
-                                      {roleLabels.pending}
+                                      {ROLE_LABELS.pending}
                                     </SelectItem>
                                     <SelectItem value="member">
-                                      {roleLabels.member}
+                                      {ROLE_LABELS.member}
                                     </SelectItem>
                                     <SelectItem value="active_member">
-                                      {roleLabels.active_member}
+                                      {ROLE_LABELS.active_member}
                                     </SelectItem>
                                     <SelectItem value="admin">
-                                      {roleLabels.admin}
+                                      {ROLE_LABELS.admin}
                                     </SelectItem>
                                   </SelectContent>
                                 </Select>

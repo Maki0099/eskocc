@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
+import { getInitials } from "@/lib/user-utils";
 
 interface TopMember {
   id: string;
@@ -145,18 +146,6 @@ const TeaserSection = () => {
     fetchTeaserData();
   }, [isMember]);
 
-  const getInitials = (name: string | null, nickname: string | null) => {
-    const displayName = nickname || name;
-    if (displayName) {
-      return displayName
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2);
-    }
-    return "?";
-  };
 
   const progress = clubStats 
     ? Math.min((clubStats.totalDistance / clubStats.targetDistance) * 100, 100) 

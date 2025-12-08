@@ -11,6 +11,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { StravaStats } from "@/components/strava/StravaStats";
 import logoRound from "@/assets/logo-round-dark.png";
+import type { AppRole } from "@/lib/types";
+import { ROLE_LABELS } from "@/lib/constants";
+import { getInitials } from "@/lib/user-utils";
 
 interface MemberData {
   full_name: string | null;
@@ -30,15 +33,6 @@ interface EventParticipation {
     location: string;
   };
 }
-
-type AppRole = "pending" | "member" | "active_member" | "admin";
-
-const roleLabels: Record<AppRole, string> = {
-  pending: "Čekající",
-  member: "Člen",
-  active_member: "Aktivní člen",
-  admin: "Admin",
-};
 
 const MemberProfile = () => {
   const { userId } = useParams<{ userId: string }>();
@@ -113,16 +107,6 @@ const MemberProfile = () => {
     fetchMemberData();
   }, [userId]);
 
-  const getInitials = (name: string | null, fallback: string = "U") => {
-    if (!name) return fallback;
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-  };
-
   const getDisplayName = () => {
     if (member?.nickname && member?.full_name) {
       return `${member.full_name} "${member.nickname}"`;
@@ -190,7 +174,7 @@ const MemberProfile = () => {
             <div className="flex gap-2 mb-4">
               {role && role !== "pending" && (
                 <Badge variant={role === "admin" ? "default" : "secondary"}>
-                  {roleLabels[role]}
+                  {ROLE_LABELS[role]}
                 </Badge>
               )}
               {isOwnProfile && (

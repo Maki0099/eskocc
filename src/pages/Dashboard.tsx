@@ -10,15 +10,8 @@ import { StravaWidget } from "@/components/dashboard/StravaWidget";
 import { ChallengeWidget } from "@/components/dashboard/ChallengeWidget";
 import PendingMembershipWidget from "@/components/dashboard/PendingMembershipWidget";
 import StravaConnectPrompt from "@/components/dashboard/StravaConnectPrompt";
-
-type AppRole = "pending" | "member" | "active_member" | "admin";
-
-const roleLabels: Record<AppRole, string> = {
-  pending: "Čekající na schválení",
-  member: "Člen",
-  active_member: "Aktivní člen",
-  admin: "Administrátor",
-};
+import type { AppRole } from "@/lib/types";
+import { ROLE_LABELS } from "@/lib/constants";
 
 interface Profile {
   full_name: string | null;
@@ -105,7 +98,7 @@ const Dashboard = () => {
               {role && (
                 <span className="inline-flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-primary"></span>
-                  {roleLabels[role]}
+                  {ROLE_LABELS[role]}
                 </span>
               )}
             </p>
