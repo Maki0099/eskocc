@@ -34,15 +34,15 @@ const CronJobsAdmin = () => {
   const fetchCronJobs = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.rpc('get_cron_jobs');
+      // Use type assertion to bypass TypeScript limitation for custom RPC
+      const { data, error } = await (supabase.rpc as any)('get_cron_jobs');
       
       if (error) {
         console.error("Error fetching cron jobs:", error);
-        // Fallback: try direct query (may fail due to permissions)
         toast.error("Nepodařilo se načíst cron jobs");
         setJobs([]);
       } else {
-        setJobs(data || []);
+        setJobs((data as CronJob[]) || []);
       }
     } catch (error) {
       console.error("Error:", error);
