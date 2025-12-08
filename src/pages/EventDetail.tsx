@@ -65,6 +65,8 @@ const EventDetail = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { isAdmin, isMember } = useUserRole();
+  
+  const isPastEvent = (eventDate: string) => new Date(eventDate) < new Date();
 
   const [event, setEvent] = useState<EventData | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
@@ -253,7 +255,14 @@ const EventDetail = () => {
           </Link>
 
           <div className="flex items-start justify-between gap-4 mb-6">
-            <h1 className="text-3xl font-bold">{event.title}</h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-3xl font-bold">{event.title}</h1>
+              {isPastEvent(event.event_date) && (
+                <Badge variant="outline" className="text-muted-foreground">
+                  Proběhlo
+                </Badge>
+              )}
+            </div>
             {canEdit && (
               <div className="flex gap-2">
                 <EditEventDialog event={event} onEventUpdated={fetchEvent} />
@@ -318,7 +327,7 @@ const EventDetail = () => {
                   </Button>
                 )}
 
-                {user &&
+                {user && !isPastEvent(event.event_date) &&
                   (isParticipating ? (
                     <Button variant="outline" onClick={handleLeave}>
                       Odhlásit se
