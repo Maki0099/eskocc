@@ -14,6 +14,7 @@ import Dashboard from "./pages/Dashboard";
 import Account from "./pages/Account";
 import Events from "./pages/Events";
 import EventDetail from "./pages/EventDetail";
+import MemberProfile from "./pages/MemberProfile";
 import Gallery from "./pages/Gallery";
 import Cafe from "./pages/Cafe";
 import About from "./pages/About";
@@ -41,6 +42,7 @@ const App = () => (
               <Route path="/events/:id" element={<EventDetail />} />
               <Route path="/gallery" element={<Gallery />} />
               <Route path="/cafe" element={<Cafe />} />
+              <Route path="/member/:userId" element={<MemberProfile />} />
               <Route path="/about" element={<About />} />
               <Route
                 path="/dashboard"

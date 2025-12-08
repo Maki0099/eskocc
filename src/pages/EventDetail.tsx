@@ -345,8 +345,9 @@ const EventDetail = () => {
               ) : (
                 <div className="space-y-3">
                   {participants.map((participant) => (
-                    <div
+                    <Link
                       key={participant.id}
+                      to={`/member/${participant.user_id}`}
                       className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors"
                     >
                       <Avatar className="h-9 w-9">
@@ -369,7 +370,7 @@ const EventDetail = () => {
                         </p>
                       </div>
                       <Badge variant="secondary">Jede</Badge>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               )}
