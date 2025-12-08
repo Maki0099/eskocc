@@ -49,12 +49,13 @@ async function fetchStravaStats(
   supabaseUrl: string,
   supabaseServiceKey: string,
   clientId: string,
-  clientSecret: string
+  clientSecret: string,
+  forceRefresh: boolean = false
 ): Promise<{ userId: string; ytd_distance: number; ytd_count: number }> {
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
   
-  // Check cache first
-  if (profile.strava_stats_cached_at) {
+  // Check cache first (skip if forceRefresh)
+  if (!forceRefresh && profile.strava_stats_cached_at) {
     const cachedAt = new Date(profile.strava_stats_cached_at).getTime();
     const now = Date.now();
     if (now - cachedAt < CACHE_DURATION_MS && profile.strava_ytd_distance !== null) {
@@ -146,17 +147,10 @@ serve(async (req) => {
   }
 
   try {
-    const { userIds } = await req.json();
+    const body = await req.json();
+    const { userIds, refreshAll } = body;
     
-    if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
-      return new Response(
-        JSON.stringify({ error: 'userIds array is required' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    console.log(`Processing batch stats for ${userIds.length} users`);
-
+    // If refreshAll is true (from cron job), fetch all users with Strava connected
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const clientId = Deno.env.get('STRAVA_CLIENT_ID');
@@ -171,12 +165,43 @@ serve(async (req) => {
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    
+    let targetUserIds: string[] = userIds || [];
+    
+    // If refreshAll, fetch all users with Strava connected
+    if (refreshAll) {
+      console.log('Cron job triggered: refreshing all Strava-connected users');
+      const { data: allProfiles, error: allError } = await supabase
+        .from('profiles')
+        .select('id')
+        .not('strava_id', 'is', null);
+      
+      if (allError) {
+        console.error('Failed to fetch all profiles:', allError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to fetch profiles' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      targetUserIds = (allProfiles || []).map(p => p.id);
+      console.log(`Found ${targetUserIds.length} users with Strava connected`);
+    }
+    
+    if (targetUserIds.length === 0) {
+      return new Response(
+        JSON.stringify({ stats: {}, message: 'No users to process' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log(`Processing batch stats for ${targetUserIds.length} users${refreshAll ? ' (force refresh)' : ''}`);
 
     // Fetch all profiles at once
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
       .select('id, strava_id, strava_access_token, strava_refresh_token, strava_token_expires_at, strava_ytd_distance, strava_ytd_count, strava_stats_cached_at')
-      .in('id', userIds);
+      .in('id', targetUserIds);
 
     if (profilesError) {
       console.error('Failed to fetch profiles:', profilesError);
@@ -193,9 +218,9 @@ serve(async (req) => {
 
     console.log(`Found ${stravaProfiles.length} users with Strava connected`);
 
-    // Process all users in parallel
+    // Process all users in parallel (force refresh if refreshAll)
     const statsPromises = stravaProfiles.map(profile => 
-      fetchStravaStats(profile as StravaProfile, supabaseUrl, supabaseServiceKey, clientId, clientSecret)
+      fetchStravaStats(profile as StravaProfile, supabaseUrl, supabaseServiceKey, clientId, clientSecret, !!refreshAll)
     );
 
     const statsResults = await Promise.all(statsPromises);
@@ -211,7 +236,7 @@ serve(async (req) => {
     }
 
     // Add zero stats for users without Strava
-    for (const userId of userIds) {
+    for (const userId of targetUserIds) {
       if (!statsMap[userId]) {
         statsMap[userId] = { ytd_distance: 0, ytd_count: 0 };
       }
