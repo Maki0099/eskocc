@@ -366,6 +366,7 @@ export type Database = {
           username: string
         }[]
       }
+      get_top_members: { Args: { limit_count?: number }; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
