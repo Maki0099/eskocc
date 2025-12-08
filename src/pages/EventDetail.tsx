@@ -11,7 +11,7 @@ import PhotoUpload from "@/components/gallery/PhotoUpload";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -350,10 +350,16 @@ const EventDetail = () => {
                       className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors"
                     >
                       <Avatar className="h-9 w-9">
+                        {participant.profile?.avatar_url && (
+                          <AvatarImage 
+                            src={participant.profile.avatar_url} 
+                            alt={participant.profile?.full_name || "Účastník"} 
+                          />
+                        )}
                         <AvatarFallback className="text-xs">
                           {getInitials(
                             participant.profile?.full_name || null,
-                            null
+                            "U"
                           )}
                         </AvatarFallback>
                       </Avatar>
