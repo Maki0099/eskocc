@@ -7,7 +7,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string, fullName: string, nickname?: string, birthDate?: Date) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, fullName: string, nickname?: string, birthDate?: Date, phone?: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
@@ -47,7 +47,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, fullName: string, nickname?: string, birthDate?: Date) => {
+  const signUp = async (email: string, password: string, fullName: string, nickname?: string, birthDate?: Date, phone?: string) => {
     const redirectUrl = `${window.location.origin}/`;
     
     const { data, error } = await supabase.auth.signUp({
@@ -62,11 +62,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       },
     });
 
-    // If signup successful and we have birthDate, update profile
-    if (!error && data.user && birthDate) {
+    // If signup successful and we have additional profile data, update profile
+    if (!error && data.user && (birthDate || phone)) {
+      const updateData: { birth_date?: string; phone?: string } = {};
+      if (birthDate) updateData.birth_date = format(birthDate, "yyyy-MM-dd");
+      if (phone) updateData.phone = phone;
+      
       await supabase
         .from("profiles")
-        .update({ birth_date: format(birthDate, "yyyy-MM-dd") })
+        .update(updateData)
         .eq("id", data.user.id);
     }
 

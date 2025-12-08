@@ -15,6 +15,8 @@ interface PersonalDetailsStepProps {
   setNickname: (value: string) => void;
   birthDate: Date | undefined;
   setBirthDate: (value: Date | undefined) => void;
+  phone: string;
+  setPhone: (value: string) => void;
   email: string;
   setEmail: (value: string) => void;
   password: string;
@@ -31,6 +33,8 @@ const PersonalDetailsStep = ({
   setNickname,
   birthDate,
   setBirthDate,
+  phone,
+  setPhone,
   email,
   setEmail,
   password,
@@ -98,6 +102,18 @@ const PersonalDetailsStep = ({
             />
           </PopoverContent>
         </Popover>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="phone" className="text-sm">Telefon</Label>
+        <Input
+          id="phone"
+          type="tel"
+          placeholder="+420 xxx xxx xxx"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          className="h-12 rounded-xl"
+        />
       </div>
 
       <div className="space-y-2">
