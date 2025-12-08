@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import ClubLocationMap from "@/components/map/ClubLocationMap";
@@ -164,7 +165,7 @@ const About = () => {
                 Máte zájem se k nám přidat? Zaregistrujte se a staňte se součástí naší komunity!
               </p>
               <Button asChild>
-                <a href="/register">Registrovat se</a>
+                <Link to="/register">Registrovat se</Link>
               </Button>
             </div>
 
