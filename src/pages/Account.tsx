@@ -14,6 +14,7 @@ import { cs } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import logoDark from "@/assets/logo-horizontal-dark.png";
 import { StravaStats } from "@/components/strava/StravaStats";
+import { PushNotificationToggle } from "@/components/notifications/PushNotificationToggle";
 
 interface Profile {
   full_name: string | null;
@@ -495,8 +496,14 @@ const Account = () => {
             </Button>
           </div>
 
-          {/* Password section */}
+          {/* Notifications section */}
           <div className="mt-12 pt-8 border-t border-border/40">
+            <h2 className="font-medium mb-4">Notifikace</h2>
+            <PushNotificationToggle />
+          </div>
+
+          {/* Password section */}
+          <div className="mt-8 pt-8 border-t border-border/40">
             <h2 className="font-medium mb-4">Změna hesla</h2>
             <Button
               variant="outline"

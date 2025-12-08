@@ -75,16 +75,25 @@ const CreateEventDialog = ({ onEventCreated }: CreateEventDialogProps) => {
       const eventDateTime = new Date(data.event_date);
       eventDateTime.setHours(hours, minutes, 0, 0);
 
-      const { error } = await supabase.from("events").insert({
+      const { data: newEvent, error } = await supabase.from("events").insert({
         title: data.title,
         description: data.description || null,
         event_date: eventDateTime.toISOString(),
         location: data.location,
         route_link: data.route_link || null,
         created_by: user.id,
-      });
+      }).select('id').single();
 
       if (error) throw error;
+
+      // Send push notifications to all members
+      supabase.functions.invoke('push-send', {
+        body: { 
+          type: 'new_event', 
+          eventId: newEvent?.id,
+          eventTitle: data.title 
+        }
+      }).catch(err => console.error('Push notification error:', err));
 
       toast.success("Vyjížďka byla vytvořena");
       form.reset();
