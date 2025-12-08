@@ -57,12 +57,12 @@ const Header = () => {
               <img 
                 src={logoDark} 
                 alt="ESKO.cc" 
-                className="h-8 dark:hidden"
+                className="h-10 dark:hidden"
               />
               <img 
                 src={logoWhite} 
                 alt="ESKO.cc" 
-                className="h-8 hidden dark:block"
+                className="h-10 hidden dark:block"
               />
             </Link>
 
