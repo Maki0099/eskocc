@@ -9,44 +9,38 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ROUTES } from "@/lib/routes";
 import { useCountUp } from "@/hooks/useCountUp";
 import { useUserStats } from "@/hooks/useUserStats";
-
 const HeroSection = () => {
-  const { ref: parallaxRef, offset } = useParallax({ speed: 0.4 });
-  const { user } = useAuth();
-  const { ytdDistance } = useUserStats();
-  const { count: animatedDistance } = useCountUp(ytdDistance, { duration: 2500 });
-
-  return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+  const {
+    ref: parallaxRef,
+    offset
+  } = useParallax({
+    speed: 0.4
+  });
+  const {
+    user
+  } = useAuth();
+  const {
+    ytdDistance
+  } = useUserStats();
+  const {
+    count: animatedDistance
+  } = useCountUp(ytdDistance, {
+    duration: 2500
+  });
+  return <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background with Parallax */}
-      <div 
-        ref={parallaxRef}
-        className="absolute inset-0 will-change-transform"
-        style={{ 
-          transform: `translateY(${offset}px) scale(1.1)`,
-        }}
-      >
-        <img 
-          src={heroCycling} 
-          alt="Cyklisté při západu slunce" 
-          className="w-full h-full object-cover" 
-        />
+      <div ref={parallaxRef} className="absolute inset-0 will-change-transform" style={{
+      transform: `translateY(${offset}px) scale(1.1)`
+    }}>
+        <img src={heroCycling} alt="Cyklisté při západu slunce" className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-background/60 backdrop-blur-[2px]" />
       </div>
 
       {/* Content */}
       <div className="relative z-10 container mx-auto px-4 pt-14">
         <div className="max-w-3xl mx-auto text-center">
-          <img 
-            src={logoRoundDark} 
-            alt="ESKO.cc logo" 
-            className="w-24 h-24 mx-auto mb-6 opacity-0 animate-fade-up animation-delay-100 dark:hidden"
-          />
-          <img 
-            src={logoRound} 
-            alt="ESKO.cc logo" 
-            className="w-24 h-24 mx-auto mb-6 opacity-0 animate-fade-up animation-delay-100 hidden dark:block"
-          />
+          <img src={logoRoundDark} alt="ESKO.cc logo" className="w-24 h-24 mx-auto mb-6 opacity-0 animate-fade-up animation-delay-100 dark:hidden" />
+          <img src={logoRound} alt="ESKO.cc logo" className="w-24 h-24 mx-auto mb-6 opacity-0 animate-fade-up animation-delay-100 hidden dark:block" />
           <p className="text-sm text-muted-foreground mb-6 opacity-0 animate-fade-up animation-delay-150">
             Cyklistický klub Esko.cc
           </p>
@@ -63,19 +57,16 @@ const HeroSection = () => {
             — Eddy Merckx
           </p>
 
-          {user && ytdDistance !== null && (
-            <p className="text-3xl font-bold text-primary mb-6 opacity-0 animate-fade-up animation-delay-300">
+          {user && ytdDistance !== null && <p className="text-3xl font-bold mb-6 opacity-0 animate-fade-up animation-delay-300 text-muted-foreground">
               <span className="tabular-nums">{animatedDistance.toLocaleString('cs-CZ')}</span> km letos
-            </p>
-          )}
+            </p>}
 
           <p className="text-lg text-muted-foreground mb-10 max-w-xl mx-auto opacity-0 animate-fade-up animation-delay-300">
             {user ? "Kam to dnes natočíš?" : "Přidej se k naší komunitě cyklistů. Společné vyjížďky, nezapomenutelné zážitky."}
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center opacity-0 animate-fade-up animation-delay-400">
-            {user ? (
-              <>
+            {user ? <>
                 <Link to={ROUTES.STATISTICS}>
                   <Button variant="apple" size="lg" className="group">
                     Zobrazit statistiky
@@ -87,9 +78,7 @@ const HeroSection = () => {
                     Nadcházející vyjížďky
                   </Button>
                 </Link>
-              </>
-            ) : (
-              <>
+              </> : <>
                 <Link to={ROUTES.REGISTER}>
                   <Button variant="apple" size="lg" className="group">
                     Připojit se ke klubu
@@ -101,13 +90,10 @@ const HeroSection = () => {
                     Zobrazit vyjížďky
                   </Button>
                 </Link>
-              </>
-            )}
+              </>}
           </div>
         </div>
       </div>
-    </section>
-  );
+    </section>;
 };
-
 export default HeroSection;
