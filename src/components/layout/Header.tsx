@@ -7,6 +7,7 @@ import { useTheme } from "@/components/ThemeProvider";
 import logoWhite from "@/assets/logo-horizontal-white.png";
 import logoDark from "@/assets/logo-horizontal-dark.png";
 import { ROUTES, NAV_ITEMS } from "@/lib/routes";
+import NotificationBell from "./NotificationBell";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -87,12 +88,15 @@ const Header = () => {
               {loading ? (
                 <div className="w-20 h-8 bg-muted animate-pulse rounded-lg"></div>
               ) : user ? (
-                <Link to={ROUTES.DASHBOARD}>
-                  <Button variant="ghost" size="sm" className="gap-2">
-                    <User className="w-4 h-4" />
-                    Dashboard
-                  </Button>
-                </Link>
+                <>
+                  <NotificationBell />
+                  <Link to={ROUTES.DASHBOARD}>
+                    <Button variant="ghost" size="sm" className="gap-2">
+                      <User className="w-4 h-4" />
+                      Dashboard
+                    </Button>
+                  </Link>
+                </>
               ) : (
                 <>
                   <Link to={ROUTES.LOGIN}>
