@@ -24,6 +24,7 @@ interface Profile {
   avatar_url: string | null;
   strava_id: string | null;
   email: string;
+  is_strava_club_member: boolean | null;
 }
 
 const Account = () => {
@@ -83,7 +84,7 @@ const Account = () => {
 
       const { data, error } = await supabase
         .from("profiles")
-        .select("full_name, nickname, birth_date, avatar_url, strava_id, email")
+        .select("full_name, nickname, birth_date, avatar_url, strava_id, email, is_strava_club_member")
         .eq("id", user.id)
         .maybeSingle();
 
@@ -486,10 +487,19 @@ const Account = () => {
               {/* Strava Stats */}
               {user && <StravaStats userId={user.id} isConnected={!!stravaId} />}
               
-              {/* Strava Club Banner */}
-              <div className="mt-4">
-                <StravaClubBanner hasStravaConnected={!!stravaId} />
-              </div>
+              {/* Strava Club Membership Status */}
+              {stravaId && (
+                <div className="mt-4">
+                  {profile?.is_strava_club_member ? (
+                    <div className="flex items-center gap-2 p-3 rounded-xl bg-primary/10 border border-primary/20">
+                      <Check className="w-5 h-5 text-primary" />
+                      <span className="text-sm font-medium text-primary">Člen klubu ESKO.cc na Stravě</span>
+                    </div>
+                  ) : (
+                    <StravaClubBanner hasStravaConnected={true} isClubMember={false} />
+                  )}
+                </div>
+              )}
             </div>
 
             <Button
