@@ -9,6 +9,151 @@ const corsHeaders = {
 // ESKO.cc Strava Club ID
 const STRAVA_CLUB_ID = 1860524;
 
+// ============= Web Push Helper Functions =============
+
+function base64urlToUint8Array(base64url: string): Uint8Array {
+  const padding = '='.repeat((4 - base64url.length % 4) % 4);
+  const base64 = (base64url + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
+function uint8ArrayToBase64url(uint8Array: Uint8Array): string {
+  let binary = '';
+  for (let i = 0; i < uint8Array.length; i++) {
+    binary += String.fromCharCode(uint8Array[i]);
+  }
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+async function createVapidJwt(audience: string, subject: string, privateKeyBytes: Uint8Array): Promise<string> {
+  const header = { alg: 'ES256', typ: 'JWT' };
+  const now = Math.floor(Date.now() / 1000);
+  const payload = {
+    aud: audience,
+    exp: now + 12 * 60 * 60,
+    sub: subject,
+  };
+
+  const headerB64 = uint8ArrayToBase64url(new TextEncoder().encode(JSON.stringify(header)));
+  const payloadB64 = uint8ArrayToBase64url(new TextEncoder().encode(JSON.stringify(payload)));
+  const unsignedToken = `${headerB64}.${payloadB64}`;
+
+  const key = await crypto.subtle.importKey(
+    'pkcs8',
+    privateKeyBytes.buffer as ArrayBuffer,
+    { name: 'ECDSA', namedCurve: 'P-256' },
+    false,
+    ['sign']
+  );
+
+  const signature = await crypto.subtle.sign(
+    { name: 'ECDSA', hash: 'SHA-256' },
+    key,
+    new TextEncoder().encode(unsignedToken)
+  );
+
+  return `${unsignedToken}.${uint8ArrayToBase64url(new Uint8Array(signature))}`;
+}
+
+async function encryptPayload(payload: string, p256dhB64: string, authB64: string): Promise<{ body: ArrayBuffer; salt: Uint8Array; localPublicKey: Uint8Array }> {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const localKeyPair = await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveBits']);
+  const localPublicKeyRaw = await crypto.subtle.exportKey('raw', localKeyPair.publicKey);
+  const localPublicKey = new Uint8Array(localPublicKeyRaw);
+
+  const subscriberPublicKeyBytes = base64urlToUint8Array(p256dhB64);
+  const subscriberPublicKey = await crypto.subtle.importKey(
+    'raw',
+    subscriberPublicKeyBytes.buffer as ArrayBuffer,
+    { name: 'ECDH', namedCurve: 'P-256' },
+    false,
+    []
+  );
+
+  const sharedSecret = await crypto.subtle.deriveBits(
+    { name: 'ECDH', public: subscriberPublicKey },
+    localKeyPair.privateKey,
+    256
+  );
+
+  const authSecret = base64urlToUint8Array(authB64);
+  const ikm = await crypto.subtle.importKey('raw', sharedSecret, { name: 'HKDF' }, false, ['deriveBits']);
+  
+  const prk = await crypto.subtle.deriveBits(
+    { name: 'HKDF', hash: 'SHA-256', salt: authSecret.buffer as ArrayBuffer, info: new TextEncoder().encode('Content-Encoding: auth\0') },
+    ikm,
+    256
+  );
+
+  const prkKey = await crypto.subtle.importKey('raw', prk, { name: 'HKDF' }, false, ['deriveBits']);
+  const context = new Uint8Array([
+    ...new TextEncoder().encode('P-256\0'),
+    0, 65, ...subscriberPublicKeyBytes,
+    0, 65, ...localPublicKey,
+  ]);
+
+  const cekInfo = new Uint8Array([...new TextEncoder().encode('Content-Encoding: aesgcm\0'), ...context]);
+  const nonceInfo = new Uint8Array([...new TextEncoder().encode('Content-Encoding: nonce\0'), ...context]);
+
+  const cekBits = await crypto.subtle.deriveBits({ name: 'HKDF', hash: 'SHA-256', salt: salt.buffer as ArrayBuffer, info: cekInfo }, prkKey, 128);
+  const nonceBits = await crypto.subtle.deriveBits({ name: 'HKDF', hash: 'SHA-256', salt: salt.buffer as ArrayBuffer, info: nonceInfo }, prkKey, 96);
+
+  const cek = await crypto.subtle.importKey('raw', cekBits, { name: 'AES-GCM' }, false, ['encrypt']);
+  const paddedPayload = new Uint8Array([0, 0, ...new TextEncoder().encode(payload)]);
+  const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: nonceBits }, cek, paddedPayload);
+
+  return { body: encrypted, salt, localPublicKey };
+}
+
+interface PushSubscription {
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+}
+
+interface VapidKeys {
+  public_key: string;
+  private_key: string;
+}
+
+async function sendPushNotification(subscription: PushSubscription, payload: string, vapidKeys: VapidKeys): Promise<void> {
+  const url = new URL(subscription.endpoint);
+  const audience = `${url.protocol}//${url.host}`;
+
+  const privateKeyPem = vapidKeys.private_key;
+  const pemContents = privateKeyPem
+    .replace('-----BEGIN PRIVATE KEY-----', '')
+    .replace('-----END PRIVATE KEY-----', '')
+    .replace(/\s/g, '');
+  const privateKeyBytes = base64urlToUint8Array(pemContents.replace(/\+/g, '-').replace(/\//g, '_'));
+
+  const jwt = await createVapidJwt(audience, 'mailto:info@eskocc.cz', privateKeyBytes);
+  const { body, salt, localPublicKey } = await encryptPayload(payload, subscription.p256dh, subscription.auth);
+
+  const response = await fetch(subscription.endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/octet-stream',
+      'Content-Encoding': 'aesgcm',
+      'TTL': '86400',
+      'Authorization': `vapid t=${jwt}, k=${vapidKeys.public_key}`,
+      'Crypto-Key': `dh=${uint8ArrayToBase64url(localPublicKey)}; p256ecdsa=${vapidKeys.public_key}`,
+      'Encryption': `salt=${uint8ArrayToBase64url(salt)}`,
+    },
+    body,
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Push failed: ${response.status} - ${errorText}`);
+  }
+}
+
 async function refreshStravaToken(
   refreshToken: string,
   clientId: string,
@@ -89,10 +234,10 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get user's Strava tokens
+    // Get user's Strava tokens and current club membership status
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('strava_id, strava_access_token, strava_refresh_token, strava_token_expires_at')
+      .select('strava_id, strava_access_token, strava_refresh_token, strava_token_expires_at, is_strava_club_member, full_name, nickname')
       .eq('id', userId)
       .maybeSingle();
 
@@ -144,11 +289,59 @@ serve(async (req) => {
     }
 
     // Check club membership and update profile
+    const wasClubMember = profile.is_strava_club_member || false;
     const isClubMember = await checkClubMembership(accessToken);
+    
     await supabase
       .from('profiles')
       .update({ is_strava_club_member: isClubMember })
       .eq('id', userId);
+
+    // Send push notification if user just became a club member
+    if (!wasClubMember && isClubMember) {
+      console.log('User just became a club member, sending congratulation notification...');
+      
+      // Get user's push subscription
+      const { data: subscriptions } = await supabase
+        .from('push_subscriptions')
+        .select('*')
+        .eq('user_id', userId);
+
+      if (subscriptions && subscriptions.length > 0) {
+        // Get VAPID keys
+        const { data: vapidKeys } = await supabase
+          .from('vapid_keys')
+          .select('*')
+          .limit(1)
+          .single();
+
+        if (vapidKeys) {
+          const userName = profile.nickname || profile.full_name?.split(' ')[0] || 'člene';
+          
+          // Import push sending logic
+          const payload = JSON.stringify({
+            title: '🎉 Vítej v klubu!',
+            body: `Gratulujeme ${userName}! Jsi nyní členem ESKO.cc na Stravě.`,
+            icon: '/pwa-192x192.png',
+            badge: '/pwa-64x64.png',
+            data: {
+              url: '/dashboard',
+              type: 'club_membership'
+            }
+          });
+
+          // Send notification to each subscription
+          for (const sub of subscriptions) {
+            try {
+              await sendPushNotification(sub, payload, vapidKeys);
+              console.log('Congratulation notification sent successfully');
+            } catch (error) {
+              console.error('Failed to send congratulation notification:', error);
+            }
+          }
+        }
+      }
+    }
 
     // Fetch athlete stats from Strava
     console.log('Fetching Strava stats for athlete:', profile.strava_id);
