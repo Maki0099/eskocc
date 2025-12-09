@@ -1,8 +1,8 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { LogOut, User, Calendar, Image, Shield, Settings } from "lucide-react";
+import { LogOut, User, Calendar, Image, Shield, Settings, Users } from "lucide-react";
 import logoDark from "@/assets/logo-horizontal-dark.png";
 import logoWhite from "@/assets/logo-horizontal-white.png";
 import { StravaWidget } from "@/components/dashboard/StravaWidget";
@@ -10,7 +10,8 @@ import { ChallengeWidget } from "@/components/dashboard/ChallengeWidget";
 import PendingMembershipWidget from "@/components/dashboard/PendingMembershipWidget";
 import StravaConnectPrompt from "@/components/dashboard/StravaConnectPrompt";
 import StravaClubBanner from "@/components/strava/StravaClubBanner";
-import { ROLE_LABELS } from "@/lib/constants";
+import { Badge } from "@/components/ui/badge";
+import { ROLE_LABELS, STRAVA_CLUB_URL } from "@/lib/constants";
 import { ROUTES } from "@/lib/routes";
 import { useUserStats } from "@/hooks/useUserStats";
 import { useToast } from "@/hooks/use-toast";
@@ -20,6 +21,7 @@ const Dashboard = () => {
   const { profile, role, loading, refetch } = useUserStats();
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
+  const clubMemberToastShown = useRef(false);
 
   // Handle Strava connection callback
   useEffect(() => {
@@ -35,6 +37,22 @@ const Dashboard = () => {
       });
     }
   }, [searchParams, setSearchParams, refetch, toast]);
+
+  // Show toast when user becomes club member (first detection)
+  useEffect(() => {
+    if (profile?.is_strava_club_member && !clubMemberToastShown.current) {
+      const shownKey = `club_member_toast_${user?.id}`;
+      const alreadyShown = localStorage.getItem(shownKey);
+      if (!alreadyShown) {
+        toast({
+          title: "Vítej v klubu ESKO.cc!",
+          description: "Tvé členství ve Strava klubu bylo potvrzeno.",
+        });
+        localStorage.setItem(shownKey, 'true');
+      }
+      clubMemberToastShown.current = true;
+    }
+  }, [profile?.is_strava_club_member, user?.id, toast]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -74,14 +92,22 @@ const Dashboard = () => {
             <h1 className="text-3xl font-semibold mb-2">
               Ahoj, {displayName}!
             </h1>
-            <p className="text-muted-foreground">
+            <div className="flex items-center gap-3 flex-wrap">
               {role && (
-                <span className="inline-flex items-center gap-2">
+                <span className="inline-flex items-center gap-2 text-muted-foreground">
                   <span className="w-2 h-2 rounded-full bg-primary"></span>
                   {ROLE_LABELS[role]}
                 </span>
               )}
-            </p>
+              {profile?.is_strava_club_member && (
+                <a href={STRAVA_CLUB_URL} target="_blank" rel="noopener noreferrer">
+                  <Badge variant="secondary" className="gap-1 text-xs bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20 hover:bg-green-500/20 transition-colors">
+                    <Users className="w-3 h-3" />
+                    Člen Strava klubu
+                  </Badge>
+                </a>
+              )}
+            </div>
           </div>
 
           {/* Strava connect prompt from registration */}
@@ -157,7 +183,7 @@ const Dashboard = () => {
           {/* Strava Widget */}
           {user && (
             <div className="mt-4">
-              <StravaWidget userId={user.id} />
+              <StravaWidget userId={user.id} isClubMember={profile?.is_strava_club_member ?? false} />
             </div>
           )}
 
