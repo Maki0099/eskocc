@@ -56,8 +56,7 @@ const Footer = () => {
               <li className="pt-2">
                 <a 
                   href="/documents/podminky-registrace-clenstvi.pdf" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
+                  download="podminky-registrace-clenstvi.pdf"
                   className="hover:text-foreground transition-colors"
                 >
                   Podmínky registrace a členství

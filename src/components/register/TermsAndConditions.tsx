@@ -15,8 +15,7 @@ const TermsAndConditions = ({ accepted, onAcceptedChange }: TermsAndConditionsPr
         Pro dokončení registrace si prosím přečti a odsouhlasí podmínky členství v klubu.{" "}
         <a 
           href="/documents/podminky-registrace-clenstvi.pdf" 
-          target="_blank" 
-          rel="noopener noreferrer"
+          download="podminky-registrace-clenstvi.pdf"
           className="text-primary hover:underline"
         >
           Stáhnout PDF
