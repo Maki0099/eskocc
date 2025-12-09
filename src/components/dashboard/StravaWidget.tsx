@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Bike, Mountain, TrendingUp, Loader2, LinkIcon, Users } from "lucide-react";
+import { Bike, Mountain, TrendingUp, Loader2, LinkIcon, Users, ExternalLink } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { STRAVA_CLUB_URL } from "@/lib/constants";
-
 interface StravaWidgetProps {
   userId: string;
   isClubMember?: boolean;
@@ -169,28 +168,29 @@ export const StravaWidget = ({ userId, isClubMember = false }: StravaWidgetProps
     name: formatMonth(item.month),
   })) || [];
 
+  const stravaProfileUrl = `https://www.strava.com/athletes/${stravaId}`;
+
   return (
-    <a
-      href={`https://www.strava.com/athletes/${stravaId}`}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="group p-6 rounded-2xl border border-orange-500/20 bg-gradient-to-br from-orange-500/10 to-orange-600/5 hover:border-orange-500/40 transition-colors block"
-    >
+    <div className="group p-6 rounded-2xl border border-orange-500/20 bg-gradient-to-br from-orange-500/10 to-orange-600/5 hover:border-orange-500/40 transition-colors">
       <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
+        <a 
+          href={stravaProfileUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+        >
           <img 
             src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Strava_Logo.svg" 
             alt="Strava" 
             className="h-5 w-auto"
           />
           <span className="text-xs text-muted-foreground">Moje statistiky</span>
-        </div>
+        </a>
         {isClubMember && (
           <a
             href={STRAVA_CLUB_URL}
             target="_blank"
             rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
             className="hover:opacity-80 transition-opacity"
           >
             <Badge variant="secondary" className="gap-1 text-xs bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20">
@@ -235,11 +235,7 @@ export const StravaWidget = ({ userId, isClubMember = false }: StravaWidgetProps
             </p>
             <div className="flex gap-1">
               <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setChartMetric('distance');
-                }}
+                onClick={() => setChartMetric('distance')}
                 className={`px-2 py-0.5 text-xs rounded transition-colors ${
                   chartMetric === 'distance' 
                     ? 'bg-orange-500/20 text-orange-600 dark:text-orange-400' 
@@ -249,11 +245,7 @@ export const StravaWidget = ({ userId, isClubMember = false }: StravaWidgetProps
                 km
               </button>
               <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setChartMetric('count');
-                }}
+                onClick={() => setChartMetric('count')}
                 className={`px-2 py-0.5 text-xs rounded transition-colors ${
                   chartMetric === 'count' 
                     ? 'bg-orange-500/20 text-orange-600 dark:text-orange-400' 
@@ -290,10 +282,21 @@ export const StravaWidget = ({ userId, isClubMember = false }: StravaWidgetProps
 
       {/* YTD summary */}
       <div className="pt-3 border-t border-border/40">
-        <p className="text-xs text-muted-foreground">
-          Letos: <span className="text-foreground font-medium">{ytd.count} jízd</span> · <span className="text-foreground font-medium">{formatDistance(ytd.distance)} km</span>
-        </p>
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-muted-foreground">
+            Letos: <span className="text-foreground font-medium">{ytd.count} jízd</span> · <span className="text-foreground font-medium">{formatDistance(ytd.distance)} km</span>
+          </p>
+          <a 
+            href={stravaProfileUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 text-xs text-orange-600 dark:text-orange-400 hover:underline"
+          >
+            <ExternalLink className="w-3 h-3" />
+            Zobrazit na Stravě
+          </a>
+        </div>
       </div>
-    </a>
+    </div>
   );
 };
