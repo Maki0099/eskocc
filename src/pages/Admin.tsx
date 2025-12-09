@@ -7,6 +7,7 @@ import Footer from "@/components/layout/Footer";
 import CafeAdmin from "@/components/admin/CafeAdmin";
 import ChallengeAdmin from "@/components/admin/ChallengeAdmin";
 import CronJobsAdmin from "@/components/admin/CronJobsAdmin";
+import { PushNotificationsAdmin } from "@/components/admin/PushNotificationsAdmin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -27,7 +28,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Users, Shield, Loader2, Coffee, Target, Clock, KeyRound } from "lucide-react";
+import { Users, Shield, Loader2, Coffee, Target, Clock, KeyRound, Bell } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
@@ -205,6 +206,10 @@ const Admin = () => {
                 <Clock className="w-4 h-4" />
                 Úlohy
               </TabsTrigger>
+              <TabsTrigger value="notifications" className="gap-2">
+                <Bell className="w-4 h-4" />
+                Notifikace
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="users" className="space-y-6">
@@ -377,6 +382,10 @@ const Admin = () => {
 
             <TabsContent value="cron">
               <CronJobsAdmin />
+            </TabsContent>
+
+            <TabsContent value="notifications">
+              <PushNotificationsAdmin />
             </TabsContent>
           </Tabs>
         </div>

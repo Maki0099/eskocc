@@ -234,7 +234,7 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { type, eventId, eventTitle, message, targetUserId } = await req.json();
+    const { type, eventId, eventTitle, message, targetUserId, title: customTitle } = await req.json();
 
     console.log(`Sending push notification: type=${type}, eventId=${eventId}, targetUserId=${targetUserId}`);
 
@@ -291,25 +291,29 @@ serve(async (req) => {
     console.log(`Found ${targetSubscriptions.length} subscriptions to notify`);
 
     // Prepare notification payload
-    let title = 'Esko.cc';
+    let title = customTitle || 'Esko.cc';
     let body = message || '';
     
     switch (type) {
       case 'new_event':
-        title = '🚴 Nová vyjížďka';
+        title = customTitle || '🚴 Nová vyjížďka';
         body = eventTitle || 'Byla přidána nová vyjížďka';
         break;
       case 'event_updated':
-        title = '📝 Změna vyjížďky';
+        title = customTitle || '📝 Změna vyjížďky';
         body = eventTitle ? `${eventTitle} byla upravena` : 'Vyjížďka byla upravena';
         break;
       case 'event_reminder':
-        title = '⏰ Připomínka vyjížďky';
+        title = customTitle || '⏰ Připomínka vyjížďky';
         body = eventTitle ? `Zítra: ${eventTitle}` : 'Zítra se koná vyjížďka';
         break;
       case 'test':
-        title = '🔔 Testovací notifikace';
+        title = customTitle || '🔔 Testovací notifikace';
         body = message || 'Push notifikace fungují správně!';
+        break;
+      case 'broadcast':
+        title = customTitle || '📢 Zpráva z klubu';
+        body = message || '';
         break;
     }
 

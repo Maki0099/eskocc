@@ -8,17 +8,23 @@ export function usePushNotifications() {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [permission, setPermission] = useState<NotificationPermission>('default');
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const supported = 'serviceWorker' in navigator && 'PushManager' in window;
-    setIsSupported(supported);
+    const checkSupport = async () => {
+      const supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+      setIsSupported(supported);
 
-    if (supported) {
-      setPermission(Notification.permission);
-      checkSubscription();
-    } else {
-      setIsLoading(false);
-    }
+      if (supported) {
+        setPermission(Notification.permission);
+        await checkSubscription();
+      } else {
+        console.log('Push notifications not supported in this browser');
+        setIsLoading(false);
+      }
+    };
+
+    checkSupport();
   }, [user]);
 
   const checkSubscription = async () => {
@@ -28,38 +34,72 @@ export function usePushNotifications() {
     }
 
     try {
+      // Wait for service worker to be ready
       const registration = await navigator.serviceWorker.ready;
       const subscription = await registration.pushManager.getSubscription();
       setIsSubscribed(!!subscription);
-    } catch (error) {
-      console.error('Error checking push subscription:', error);
+      
+      if (subscription) {
+        console.log('Existing push subscription found');
+      }
+    } catch (err) {
+      console.error('Error checking push subscription:', err);
+      setError('Nepodařilo se zkontrolovat stav notifikací');
     } finally {
       setIsLoading(false);
     }
   };
 
   const subscribe = useCallback(async () => {
-    if (!user || !isSupported) return false;
+    if (!user || !isSupported) {
+      console.log('Cannot subscribe: user=', !!user, 'supported=', isSupported);
+      return false;
+    }
 
     try {
       setIsLoading(true);
+      setError(null);
+
+      // Make sure service worker is registered
+      let registration: ServiceWorkerRegistration;
+      try {
+        registration = await navigator.serviceWorker.ready;
+        console.log('Service worker ready:', registration.active?.state);
+      } catch (swError) {
+        console.error('Service worker not ready:', swError);
+        setError('Service worker není připraven');
+        return false;
+      }
 
       // Request permission
+      console.log('Requesting notification permission...');
       const perm = await Notification.requestPermission();
       setPermission(perm);
+      console.log('Permission result:', perm);
 
       if (perm !== 'granted') {
         console.log('Push notification permission denied');
+        setError('Notifikace jsou zablokované v nastavení prohlížeče');
         return false;
       }
 
       // Get VAPID public key
+      console.log('Fetching VAPID key...');
       const { data: vapidData, error: vapidError } = await supabase.functions.invoke('push-vapid-keys');
       
-      if (vapidError || !vapidData?.publicKey) {
+      if (vapidError) {
         console.error('Error getting VAPID key:', vapidError);
+        setError('Nepodařilo se získat VAPID klíč');
         return false;
       }
+      
+      if (!vapidData?.publicKey) {
+        console.error('No VAPID key in response:', vapidData);
+        setError('VAPID klíč nebyl vrácen');
+        return false;
+      }
+
+      console.log('VAPID key received, creating subscription...');
 
       // Convert base64url to Uint8Array
       const publicKey = vapidData.publicKey;
@@ -71,12 +111,13 @@ export function usePushNotifications() {
         applicationServerKey[i] = rawData.charCodeAt(i);
       }
 
-      // Subscribe
-      const registration = await navigator.serviceWorker.ready;
+      // Subscribe to push manager
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey
       });
+
+      console.log('Push subscription created, saving to server...');
 
       // Save to server
       const { error: subError } = await supabase.functions.invoke('push-subscribe', {
@@ -86,13 +127,17 @@ export function usePushNotifications() {
       if (subError) {
         console.error('Error saving subscription:', subError);
         await subscription.unsubscribe();
+        setError('Nepodařilo se uložit subscription');
         return false;
       }
 
+      console.log('Push subscription saved successfully');
       setIsSubscribed(true);
+      setError(null);
       return true;
-    } catch (error) {
-      console.error('Error subscribing to push:', error);
+    } catch (err) {
+      console.error('Error subscribing to push:', err);
+      setError(err instanceof Error ? err.message : 'Neznámá chyba');
       return false;
     } finally {
       setIsLoading(false);
@@ -104,6 +149,7 @@ export function usePushNotifications() {
 
     try {
       setIsLoading(true);
+      setError(null);
 
       const registration = await navigator.serviceWorker.ready;
       const subscription = await registration.pushManager.getSubscription();
@@ -119,12 +165,14 @@ export function usePushNotifications() {
 
         // Unsubscribe locally
         await subscription.unsubscribe();
+        console.log('Push subscription removed');
       }
 
       setIsSubscribed(false);
       return true;
-    } catch (error) {
-      console.error('Error unsubscribing from push:', error);
+    } catch (err) {
+      console.error('Error unsubscribing from push:', err);
+      setError(err instanceof Error ? err.message : 'Neznámá chyba');
       return false;
     } finally {
       setIsLoading(false);
@@ -136,6 +184,7 @@ export function usePushNotifications() {
     isSubscribed,
     isLoading,
     permission,
+    error,
     subscribe,
     unsubscribe
   };
