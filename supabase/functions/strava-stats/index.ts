@@ -6,6 +6,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// ESKO.cc Strava Club ID
+const STRAVA_CLUB_ID = 1860524;
+
 async function refreshStravaToken(
   refreshToken: string,
   clientId: string,
@@ -30,6 +33,29 @@ async function refreshStravaToken(
   }
 
   return response.json();
+}
+
+async function checkClubMembership(accessToken: string): Promise<boolean> {
+  console.log('Checking Strava club membership...');
+  
+  try {
+    const response = await fetch('https://www.strava.com/api/v3/athlete/clubs', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+
+    if (!response.ok) {
+      console.error('Failed to fetch clubs:', await response.text());
+      return false;
+    }
+
+    const clubs = await response.json();
+    const isMember = clubs.some((club: { id: number }) => club.id === STRAVA_CLUB_ID);
+    console.log(`Club membership check: ${isMember ? 'member' : 'not a member'}`);
+    return isMember;
+  } catch (error) {
+    console.error('Error checking club membership:', error);
+    return false;
+  }
 }
 
 serve(async (req) => {
@@ -116,6 +142,13 @@ serve(async (req) => {
 
       accessToken = newTokens.access_token;
     }
+
+    // Check club membership and update profile
+    const isClubMember = await checkClubMembership(accessToken);
+    await supabase
+      .from('profiles')
+      .update({ is_strava_club_member: isClubMember })
+      .eq('id', userId);
 
     // Fetch athlete stats from Strava
     console.log('Fetching Strava stats for athlete:', profile.strava_id);
@@ -212,6 +245,7 @@ serve(async (req) => {
         elevation_gain: stats.recent_ride_totals?.elevation_gain || 0,
       },
       monthly_stats: monthlyStats,
+      is_club_member: isClubMember,
     };
 
     return new Response(
