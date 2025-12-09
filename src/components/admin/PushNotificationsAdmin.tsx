@@ -1,0 +1,327 @@
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Bell, BellOff, Trash2, Loader2, RefreshCw, Send } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { toast } from "sonner";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { getInitials } from "@/lib/user-utils";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+
+interface UserSubscription {
+  user_id: string;
+  full_name: string | null;
+  nickname: string | null;
+  avatar_url: string | null;
+  push_notifications_enabled: boolean;
+  subscription_count: number;
+}
+
+export function PushNotificationsAdmin() {
+  const [users, setUsers] = useState<UserSubscription[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState<string | null>(null);
+  const [broadcastTitle, setBroadcastTitle] = useState("");
+  const [broadcastMessage, setBroadcastMessage] = useState("");
+  const [sending, setSending] = useState(false);
+
+  const fetchUsers = async () => {
+    setLoading(true);
+    try {
+      // Fetch all members with their push preferences and subscription counts
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, full_name, nickname, avatar_url, push_notifications_enabled");
+
+      if (profilesError) throw profilesError;
+
+      // Get member user IDs
+      const { data: memberRoles } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .in("role", ["member", "active_member", "admin"]);
+
+      const memberIds = new Set((memberRoles || []).map(r => r.user_id));
+
+      // Get subscription counts
+      const { data: subscriptions } = await supabase
+        .from("push_subscriptions")
+        .select("user_id");
+
+      const subscriptionCounts = (subscriptions || []).reduce((acc, sub) => {
+        acc[sub.user_id] = (acc[sub.user_id] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+
+      // Combine data
+      const usersData: UserSubscription[] = (profiles || [])
+        .filter(p => memberIds.has(p.id))
+        .map(p => ({
+          user_id: p.id,
+          full_name: p.full_name,
+          nickname: p.nickname,
+          avatar_url: p.avatar_url,
+          push_notifications_enabled: p.push_notifications_enabled ?? true,
+          subscription_count: subscriptionCounts[p.id] || 0
+        }))
+        .sort((a, b) => b.subscription_count - a.subscription_count);
+
+      setUsers(usersData);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      toast.error("Nepodařilo se načíst uživatele");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const toggleUserNotifications = async (userId: string, enabled: boolean) => {
+    setUpdating(userId);
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ push_notifications_enabled: enabled })
+        .eq("id", userId);
+
+      if (error) throw error;
+
+      setUsers(users.map(u => 
+        u.user_id === userId ? { ...u, push_notifications_enabled: enabled } : u
+      ));
+      
+      toast.success(enabled ? "Notifikace zapnuty" : "Notifikace vypnuty");
+    } catch (error) {
+      console.error("Error updating notifications:", error);
+      toast.error("Nepodařilo se změnit nastavení");
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+  const deleteUserSubscriptions = async (userId: string) => {
+    if (!confirm("Opravdu smazat všechny subscriptions tohoto uživatele?")) return;
+    
+    setUpdating(userId);
+    try {
+      const { error } = await supabase
+        .from("push_subscriptions")
+        .delete()
+        .eq("user_id", userId);
+
+      if (error) throw error;
+
+      setUsers(users.map(u => 
+        u.user_id === userId ? { ...u, subscription_count: 0 } : u
+      ));
+      
+      toast.success("Subscriptions smazány");
+    } catch (error) {
+      console.error("Error deleting subscriptions:", error);
+      toast.error("Nepodařilo se smazat subscriptions");
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+  const sendBroadcast = async () => {
+    if (!broadcastTitle.trim() || !broadcastMessage.trim()) {
+      toast.error("Vyplňte titulek a zprávu");
+      return;
+    }
+
+    setSending(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("push-send", {
+        body: {
+          type: "broadcast",
+          title: broadcastTitle.trim(),
+          message: broadcastMessage.trim()
+        }
+      });
+
+      if (error) throw error;
+
+      toast.success(`Odesláno: ${data?.sent || 0} notifikací`);
+      setBroadcastTitle("");
+      setBroadcastMessage("");
+    } catch (error) {
+      console.error("Error sending broadcast:", error);
+      toast.error("Nepodařilo se odeslat notifikace");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const totalSubscriptions = users.reduce((acc, u) => acc + u.subscription_count, 0);
+  const usersWithSubscriptions = users.filter(u => u.subscription_count > 0).length;
+
+  return (
+    <div className="space-y-6">
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-2xl font-bold">{users.length}</div>
+            <p className="text-xs text-muted-foreground">Celkem členů</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-2xl font-bold">{usersWithSubscriptions}</div>
+            <p className="text-xs text-muted-foreground">S aktivní subscription</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-2xl font-bold">{totalSubscriptions}</div>
+            <p className="text-xs text-muted-foreground">Celkem subscriptions</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-2xl font-bold">
+              {users.filter(u => u.push_notifications_enabled).length}
+            </div>
+            <p className="text-xs text-muted-foreground">S povolenými notifikacemi</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Broadcast */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Send className="h-5 w-5" />
+            Hromadná notifikace
+          </CardTitle>
+          <CardDescription>
+            Odešlete notifikaci všem členům s aktivní subscription
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Input
+            placeholder="Titulek notifikace"
+            value={broadcastTitle}
+            onChange={(e) => setBroadcastTitle(e.target.value)}
+          />
+          <Textarea
+            placeholder="Text notifikace"
+            value={broadcastMessage}
+            onChange={(e) => setBroadcastMessage(e.target.value)}
+            rows={3}
+          />
+          <Button onClick={sendBroadcast} disabled={sending}>
+            {sending ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Odesílám...
+              </>
+            ) : (
+              <>
+                <Send className="mr-2 h-4 w-4" />
+                Odeslat všem ({usersWithSubscriptions})
+              </>
+            )}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Users table */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>Členové</CardTitle>
+            <CardDescription>Správa push notifikací uživatelů</CardDescription>
+          </div>
+          <Button variant="outline" size="sm" onClick={fetchUsers} disabled={loading}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+            Obnovit
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Uživatel</TableHead>
+                  <TableHead className="text-center">Subscriptions</TableHead>
+                  <TableHead className="text-center">Povoleno</TableHead>
+                  <TableHead className="text-right">Akce</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {users.map((user) => (
+                  <TableRow key={user.user_id}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={user.avatar_url || undefined} />
+                          <AvatarFallback className="text-xs">
+                            {getInitials(user.full_name || user.nickname || "?")}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium">{user.full_name || user.nickname || "Bez jména"}</p>
+                          {user.nickname && user.full_name && (
+                            <p className="text-xs text-muted-foreground">{user.nickname}</p>
+                          )}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {user.subscription_count > 0 ? (
+                        <Badge variant="secondary" className="bg-green-500/10 text-green-600">
+                          <Bell className="h-3 w-3 mr-1" />
+                          {user.subscription_count}
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-muted-foreground">
+                          <BellOff className="h-3 w-3 mr-1" />
+                          0
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Switch
+                        checked={user.push_notifications_enabled}
+                        onCheckedChange={(checked) => toggleUserNotifications(user.user_id, checked)}
+                        disabled={updating === user.user_id}
+                      />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => deleteUserSubscriptions(user.user_id)}
+                        disabled={updating === user.user_id || user.subscription_count === 0}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        {updating === user.user_id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

@@ -1,11 +1,11 @@
-import { Bell, BellOff, Loader2 } from 'lucide-react';
+import { Bell, BellOff, Loader2, AlertCircle } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { toast } from 'sonner';
 
 export function PushNotificationToggle() {
-  const { isSupported, isSubscribed, isLoading, permission, subscribe, unsubscribe } = usePushNotifications();
+  const { isSupported, isSubscribed, isLoading, permission, error, subscribe, unsubscribe } = usePushNotifications();
 
   if (!isSupported) {
     return (
@@ -27,9 +27,9 @@ export function PushNotificationToggle() {
       if (success) {
         toast.success('Push notifikace zapnuty');
       } else if (permission === 'denied') {
-        toast.error('Notifikace jsou zablokované v nastavení prohlížeče');
+        toast.error('Notifikace jsou zablokované v nastavení prohlížeče. Povolte je v nastavení a zkuste znovu.');
       } else {
-        toast.error('Nepodařilo se zapnout notifikace');
+        toast.error(error || 'Nepodařilo se zapnout notifikace');
       }
     } else {
       const success = await unsubscribe();
@@ -45,6 +45,8 @@ export function PushNotificationToggle() {
     <div className="flex items-center gap-3 p-4 rounded-lg bg-muted/50">
       {isSubscribed ? (
         <Bell className="h-5 w-5 text-primary" />
+      ) : permission === 'denied' ? (
+        <AlertCircle className="h-5 w-5 text-destructive" />
       ) : (
         <BellOff className="h-5 w-5 text-muted-foreground" />
       )}
@@ -55,9 +57,14 @@ export function PushNotificationToggle() {
         <p className="text-xs text-muted-foreground">
           {isSubscribed 
             ? 'Dostáváte upozornění na nové vyjížďky'
-            : 'Zapněte upozornění na nové vyjížďky'
+            : permission === 'denied'
+              ? 'Povolte notifikace v nastavení prohlížeče'
+              : 'Zapněte upozornění na nové vyjížďky'
           }
         </p>
+        {error && !isSubscribed && (
+          <p className="text-xs text-destructive mt-1">{error}</p>
+        )}
       </div>
       {isLoading ? (
         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />

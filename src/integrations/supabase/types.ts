@@ -270,6 +270,7 @@ export type Database = {
           is_strava_club_member: boolean | null
           nickname: string | null
           phone: string | null
+          push_notifications_enabled: boolean | null
           strava_access_token: string | null
           strava_id: string | null
           strava_refresh_token: string | null
@@ -289,6 +290,7 @@ export type Database = {
           is_strava_club_member?: boolean | null
           nickname?: string | null
           phone?: string | null
+          push_notifications_enabled?: boolean | null
           strava_access_token?: string | null
           strava_id?: string | null
           strava_refresh_token?: string | null
@@ -308,6 +310,7 @@ export type Database = {
           is_strava_club_member?: boolean | null
           nickname?: string | null
           phone?: string | null
+          push_notifications_enabled?: boolean | null
           strava_access_token?: string | null
           strava_id?: string | null
           strava_refresh_token?: string | null
