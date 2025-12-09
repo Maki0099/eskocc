@@ -480,6 +480,7 @@ export type Database = {
           created_at: string
           full_name: string
           id: string
+          is_strava_club_member: boolean
           nickname: string
           strava_id: string
           strava_ytd_count: number

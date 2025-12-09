@@ -20,7 +20,8 @@ import {
   Users,
   Bike,
   AlertCircle,
-  CheckCircle2
+  CheckCircle2,
+  Check
 } from "lucide-react";
 import type { AppRole } from "@/lib/types";
 import type { ChallengeSettings } from "@/lib/types";
@@ -36,6 +37,7 @@ interface MemberStats {
   ytd_distance: number;
   target: number;
   age_category: string;
+  is_strava_club_member: boolean;
 }
 
 const Statistics = () => {
@@ -139,6 +141,7 @@ const Statistics = () => {
             ytd_distance,
             target,
             age_category: profile.age_category,
+            is_strava_club_member: profile.is_strava_club_member || false,
           };
         });
 
@@ -407,6 +410,12 @@ const Statistics = () => {
                                   </p>
                                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                     <span>{getAgeCategoryLabel(member.age_category)}</span>
+                                    {member.is_strava_club_member && (
+                                      <span className="inline-flex items-center gap-0.5 text-primary">
+                                        <Check className="w-3 h-3" />
+                                        <span className="text-[10px]">Klub</span>
+                                      </span>
+                                    )}
                                     {!member.strava_id && (
                                       <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4">
                                         Bez Stravy
