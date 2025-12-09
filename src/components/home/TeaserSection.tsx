@@ -340,7 +340,7 @@ const TeaserSection = () => {
         return (
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Button size="lg" asChild>
-              <Link to="/statistics">
+              <Link to="/statistiky">
                 Zobrazit statistiky
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Link>
@@ -400,7 +400,7 @@ const TeaserSection = () => {
     if (variant === "member") {
       return (
         <Button variant="outline" className="w-full gap-2" asChild>
-          <Link to="/statistics">
+          <Link to="/statistiky">
             Zobrazit celé statistiky
             <ArrowRight className="w-4 h-4" />
           </Link>

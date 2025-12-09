@@ -209,7 +209,7 @@ export const ChallengeWidget = ({ userId }: ChallengeWidgetProps) => {
             </div>
 
             <Link 
-              to="/statistics" 
+              to="/statistiky" 
               className="flex items-center justify-between text-sm text-primary hover:underline"
             >
               <span>Zobrazit celkové statistiky</span>
