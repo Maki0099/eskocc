@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import type { AppRole } from "@/lib/types";
@@ -17,6 +17,8 @@ interface UserStats {
   profile: UserProfile | null;
   role: AppRole | null;
   loading: boolean;
+  refreshing: boolean;
+  refetch: () => Promise<void>;
 }
 
 export const useUserStats = (): UserStats => {
@@ -26,49 +28,59 @@ export const useUserStats = (): UserStats => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      if (!user) {
-        setLoading(false);
-        return;
-      }
-
-      // Fetch profile with stats
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('full_name, nickname, avatar_url, strava_id, is_strava_club_member, strava_ytd_distance, strava_ytd_count')
-        .eq('id', user.id)
-        .maybeSingle();
-
-      if (profileData) {
-        setYtdDistance(profileData.strava_ytd_distance);
-        setYtdCount(profileData.strava_ytd_count);
-        setProfile({
-          full_name: profileData.full_name,
-          nickname: profileData.nickname,
-          avatar_url: profileData.avatar_url,
-          strava_id: profileData.strava_id,
-          is_strava_club_member: profileData.is_strava_club_member,
-        });
-      }
-
-      // Fetch role
-      const { data: roleData } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      if (roleData) {
-        setRole(roleData.role as AppRole);
-      }
-
+  const fetchStats = useCallback(async (isRefresh = false) => {
+    if (!user) {
       setLoading(false);
-    };
+      return;
+    }
 
-    fetchStats();
+    if (isRefresh) {
+      setRefreshing(true);
+    }
+
+    // Fetch profile with stats
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('full_name, nickname, avatar_url, strava_id, is_strava_club_member, strava_ytd_distance, strava_ytd_count')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    if (profileData) {
+      setYtdDistance(profileData.strava_ytd_distance);
+      setYtdCount(profileData.strava_ytd_count);
+      setProfile({
+        full_name: profileData.full_name,
+        nickname: profileData.nickname,
+        avatar_url: profileData.avatar_url,
+        strava_id: profileData.strava_id,
+        is_strava_club_member: profileData.is_strava_club_member,
+      });
+    }
+
+    // Fetch role
+    const { data: roleData } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (roleData) {
+      setRole(roleData.role as AppRole);
+    }
+
+    setLoading(false);
+    setRefreshing(false);
   }, [user]);
 
-  return { ytdDistance, ytdCount, profile, role, loading };
+  const refetch = useCallback(async () => {
+    await fetchStats(true);
+  }, [fetchStats]);
+
+  useEffect(() => {
+    fetchStats(false);
+  }, [fetchStats]);
+
+  return { ytdDistance, ytdCount, profile, role, loading, refreshing, refetch };
 };

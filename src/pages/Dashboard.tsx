@@ -1,4 +1,5 @@
-import { Link } from "react-router-dom";
+import { useEffect } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { LogOut, User, Calendar, Image, Shield, Settings } from "lucide-react";
@@ -12,10 +13,28 @@ import StravaClubBanner from "@/components/strava/StravaClubBanner";
 import { ROLE_LABELS } from "@/lib/constants";
 import { ROUTES } from "@/lib/routes";
 import { useUserStats } from "@/hooks/useUserStats";
+import { useToast } from "@/hooks/use-toast";
 
 const Dashboard = () => {
   const { user, signOut } = useAuth();
-  const { profile, role, loading } = useUserStats();
+  const { profile, role, loading, refetch } = useUserStats();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { toast } = useToast();
+
+  // Handle Strava connection callback
+  useEffect(() => {
+    if (searchParams.get('strava') === 'connected') {
+      refetch();
+      // Remove query param
+      searchParams.delete('strava');
+      setSearchParams(searchParams, { replace: true });
+      // Show success toast
+      toast({
+        title: "Strava propojena",
+        description: "Váš účet Strava byl úspěšně propojen.",
+      });
+    }
+  }, [searchParams, setSearchParams, refetch, toast]);
 
   const handleSignOut = async () => {
     await signOut();
