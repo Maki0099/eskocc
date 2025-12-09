@@ -262,7 +262,7 @@ const Statistics = () => {
           ) : (
             <div className="space-y-6">
               {/* Strava Club Banner */}
-              <StravaClubBanner hasStravaConnected={!!userStravaId} />
+              <StravaClubBanner hasStravaConnected={!!userStravaId} isClubMember={members.some(m => m.id === user?.id && m.is_strava_club_member)} />
               {/* Club Goal Card */}
               {settings && (
                 <Card className="overflow-hidden border-0 shadow-lg animate-fade-up">
@@ -319,9 +319,19 @@ const Statistics = () => {
                 </Card>
               )}
 
-              {/* Age Category Targets */}
+              {/* Stats Cards */}
               {settings && (
-                <div className="grid gap-4 md:grid-cols-3">
+                <div className="grid gap-4 md:grid-cols-4">
+                  {/* Strava Club Members Count */}
+                  <Card className="text-center animate-fade-up">
+                    <CardContent className="pt-6 pb-5">
+                      <div className="w-10 h-10 rounded-full bg-[#FC4C02]/10 flex items-center justify-center mx-auto mb-3">
+                        <Check className="w-5 h-5 text-[#FC4C02]" />
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-1">Členů Strava klubu</p>
+                      <p className="text-2xl font-bold">{members.filter(m => m.is_strava_club_member).length}</p>
+                    </CardContent>
+                  </Card>
                   <Card className="text-center animate-fade-up animation-delay-100">
                     <CardContent className="pt-6 pb-5">
                       <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
