@@ -6,12 +6,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ROUTES } from "@/lib/routes";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
-import { formatDistance } from "@/lib/user-utils";
+import { useCountUp } from "@/hooks/useCountUp";
 
 const CTASection = () => {
   const { ref, isVisible } = useScrollAnimation();
   const { user } = useAuth();
   const [ytdDistance, setYtdDistance] = useState<number | null>(null);
+  const { count: animatedDistance } = useCountUp(isVisible ? ytdDistance : null, { duration: 2000 });
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -41,7 +42,7 @@ const CTASection = () => {
 
           {user && ytdDistance !== null && (
             <p className="text-3xl font-bold text-primary mb-4">
-              {formatDistance(ytdDistance * 1000)} letos
+              <span className="tabular-nums">{animatedDistance.toLocaleString('cs-CZ')}</span> km letos
             </p>
           )}
 
