@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { X, Users } from "lucide-react";
+import { X, Users, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { STRAVA_CLUB_URL } from "@/lib/constants";
 
@@ -7,9 +7,10 @@ const STORAGE_KEY = "strava_club_dismissed";
 
 interface StravaClubBannerProps {
   hasStravaConnected: boolean;
+  isClubMember?: boolean;
 }
 
-const StravaClubBanner = ({ hasStravaConnected }: StravaClubBannerProps) => {
+const StravaClubBanner = ({ hasStravaConnected, isClubMember }: StravaClubBannerProps) => {
   const [isDismissed, setIsDismissed] = useState(true);
 
   useEffect(() => {
@@ -22,8 +23,8 @@ const StravaClubBanner = ({ hasStravaConnected }: StravaClubBannerProps) => {
     setIsDismissed(true);
   };
 
-  // Don't show if user hasn't connected Strava or has dismissed
-  if (!hasStravaConnected || isDismissed) {
+  // Don't show if user hasn't connected Strava, has dismissed, or is already a club member
+  if (!hasStravaConnected || isDismissed || isClubMember) {
     return null;
   }
 

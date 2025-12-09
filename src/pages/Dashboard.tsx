@@ -19,6 +19,7 @@ interface Profile {
   avatar_url: string | null;
   nickname: string | null;
   strava_id: string | null;
+  is_strava_club_member: boolean | null;
 }
 
 const Dashboard = () => {
@@ -34,7 +35,7 @@ const Dashboard = () => {
       // Fetch profile
       const { data: profileData } = await supabase
         .from("profiles")
-        .select("full_name, avatar_url, nickname, strava_id")
+        .select("full_name, avatar_url, nickname, strava_id, is_strava_club_member")
         .eq("id", user.id)
         .maybeSingle();
 
@@ -185,7 +186,10 @@ const Dashboard = () => {
           {/* Strava Club Banner */}
           {profile && (
             <div className="mt-4">
-              <StravaClubBanner hasStravaConnected={!!profile.strava_id} />
+              <StravaClubBanner 
+                hasStravaConnected={!!profile.strava_id} 
+                isClubMember={profile.is_strava_club_member ?? false}
+              />
             </div>
           )}
 
