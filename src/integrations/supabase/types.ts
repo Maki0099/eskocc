@@ -447,6 +447,7 @@ export type Database = {
           created_at: string | null
           full_name: string | null
           id: string | null
+          is_strava_club_member: boolean | null
           nickname: string | null
           strava_id: string | null
           strava_ytd_count: number | null
