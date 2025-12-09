@@ -29,15 +29,27 @@ const Dashboard = () => {
     setSendingTestPush(true);
     try {
       const { data, error } = await supabase.functions.invoke('push-send', {
-        body: { type: 'test', message: 'Toto je testovací notifikace z ESKO.cc' }
+        body: { 
+          type: 'test', 
+          message: 'Toto je testovací notifikace z ESKO.cc',
+          targetUserId: user?.id 
+        }
       });
       
       if (error) throw error;
       
-      toast({
-        title: "Testovací notifikace odeslána",
-        description: `Odesláno: ${data?.sent || 0}, Selhalo: ${data?.failed || 0}`,
-      });
+      if (data?.sent === 0 && data?.message) {
+        toast({
+          title: "Notifikace neodeslána",
+          description: data.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Testovací notifikace odeslána",
+          description: "Notifikace byla odeslána na vaše zařízení.",
+        });
+      }
     } catch (error) {
       console.error('Error sending test push:', error);
       toast({
