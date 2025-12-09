@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Camera, CalendarIcon, Loader2, Link as LinkIcon, Check, X } from "lucide-react";
+import { ArrowLeft, Camera, CalendarIcon, Loader2, Link as LinkIcon, Check, X, Bell } from "lucide-react";
+import { ROUTES } from "@/lib/routes";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -515,7 +516,15 @@ const Account = () => {
           {/* Notifications section */}
           <div className="mt-12 pt-8 border-t border-border/40">
             <h2 className="font-medium mb-4">Notifikace</h2>
-            <PushNotificationToggle />
+            <div className="space-y-4">
+              <PushNotificationToggle />
+              <Link to={ROUTES.NOTIFICATIONS}>
+                <Button variant="outline" className="w-full h-12 rounded-xl gap-2">
+                  <Bell className="w-4 h-4" />
+                  Zobrazit všechny notifikace
+                </Button>
+              </Link>
+            </div>
           </div>
 
           {/* Password section */}

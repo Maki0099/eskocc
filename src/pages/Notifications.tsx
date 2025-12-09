@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Bell, Check, CheckCheck, Trash2, Calendar, AlertCircle, Info, ArrowLeft, Filter } from 'lucide-react';
+import { Bell, Check, CheckCheck, Trash2, Calendar, AlertCircle, Info, ArrowLeft, Filter, ExternalLink } from 'lucide-react';
 import { useNotifications, Notification } from '@/hooks/useNotifications';
 import { Button } from '@/components/ui/button';
 import { ROUTES } from '@/lib/routes';
@@ -70,6 +70,20 @@ const NotificationCard = ({
               })}
             </p>
             <div className="flex items-center gap-1">
+              {notification.url && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onClick();
+                  }}
+                  className="h-7 text-xs gap-1"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  Zobrazit
+                </Button>
+              )}
               {!notification.is_read && (
                 <Button
                   variant="ghost"
