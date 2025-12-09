@@ -27,6 +27,7 @@ const About = lazy(() => import("./pages/About"));
 const Admin = lazy(() => import("./pages/Admin"));
 const Statistics = lazy(() => import("./pages/Statistics"));
 const Install = lazy(() => import("./pages/Install"));
+const Documents = lazy(() => import("./pages/Documents"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -55,6 +56,7 @@ const App = () => (
                 <Route path="/member/:userId" element={<MemberProfile />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/install" element={<Install />} />
+                <Route path="/dokumenty" element={<Documents />} />
                 <Route
                   path="/dashboard"
                   element={
