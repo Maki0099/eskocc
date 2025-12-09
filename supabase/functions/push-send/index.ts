@@ -37,20 +37,51 @@ async function createVapidJwt(
   const payloadB64 = btoa(JSON.stringify(payload)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   const unsignedToken = `${headerB64}.${payloadB64}`;
 
-  // Import private key for signing - build PKCS8 structure
-  const pkcs8Header = new Uint8Array([
-    0x30, 0x41, 0x02, 0x01, 0x00, 0x30, 0x13, 0x06, 0x07, 0x2a, 0x86, 0x48,
-    0xce, 0x3d, 0x02, 0x01, 0x06, 0x08, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x03,
-    0x01, 0x07, 0x04, 0x27, 0x30, 0x25, 0x02, 0x01, 0x01, 0x04, 0x20
+  // Import private key for signing - build proper PKCS8 structure for P-256
+  // PKCS8 structure: SEQUENCE { version, AlgorithmIdentifier, privateKey }
+  // The privateKey is wrapped in OCTET STRING containing ECPrivateKey structure
+  const pkcs8 = new Uint8Array([
+    0x30, 0x67,                         // SEQUENCE (103 bytes total)
+    0x02, 0x01, 0x00,                   // INTEGER version = 0
+    0x30, 0x13,                         // SEQUENCE (19 bytes) - AlgorithmIdentifier
+    0x06, 0x07,                         // OID (7 bytes)
+    0x2a, 0x86, 0x48, 0xce, 0x3d, 0x02, 0x01, // 1.2.840.10045.2.1 (ecPublicKey)
+    0x06, 0x08,                         // OID (8 bytes)
+    0x2a, 0x86, 0x48, 0xce, 0x3d, 0x03, 0x01, 0x07, // 1.2.840.10045.3.1.7 (P-256)
+    0x04, 0x4d,                         // OCTET STRING (77 bytes) - contains ECPrivateKey
+    0x30, 0x4b,                         // SEQUENCE (75 bytes) - ECPrivateKey
+    0x02, 0x01, 0x01,                   // INTEGER version = 1
+    0x04, 0x20,                         // OCTET STRING (32 bytes) - privateKey d value
+    // 32 bytes of private key will be inserted here
+    ...privateKeyBytes,
+    0xa1, 0x24,                         // [1] (36 bytes) - optional publicKey
+    0x03, 0x22,                         // BIT STRING (34 bytes)
+    0x00,                               // no unused bits
+    // 33 bytes: 0x04 prefix + 32 bytes of placeholder (we don't have public key, use zeros)
+    0x04,
+    ...new Uint8Array(32),              // x coordinate placeholder
+    ...new Uint8Array(32)               // y coordinate placeholder - but this makes it 65 bytes total
   ]);
-  const pkcs8Buffer = new ArrayBuffer(pkcs8Header.length + privateKeyBytes.length);
-  const pkcs8 = new Uint8Array(pkcs8Buffer);
-  pkcs8.set(pkcs8Header, 0);
-  pkcs8.set(privateKeyBytes, pkcs8Header.length);
+
+  // Simpler approach: use minimal PKCS8 without public key component
+  const minimalPkcs8 = new Uint8Array([
+    0x30, 0x41,                         // SEQUENCE (65 bytes)
+    0x02, 0x01, 0x00,                   // INTEGER version = 0
+    0x30, 0x13,                         // SEQUENCE (19 bytes) - AlgorithmIdentifier
+    0x06, 0x07,                         // OID (7 bytes)
+    0x2a, 0x86, 0x48, 0xce, 0x3d, 0x02, 0x01, // ecPublicKey
+    0x06, 0x08,                         // OID (8 bytes)
+    0x2a, 0x86, 0x48, 0xce, 0x3d, 0x03, 0x01, 0x07, // P-256
+    0x04, 0x27,                         // OCTET STRING (39 bytes)
+    0x30, 0x25,                         // SEQUENCE (37 bytes) - ECPrivateKey
+    0x02, 0x01, 0x01,                   // INTEGER version = 1
+    0x04, 0x20,                         // OCTET STRING (32 bytes)
+    ...privateKeyBytes                  // 32-byte private key
+  ]);
 
   const privateKey = await crypto.subtle.importKey(
     "pkcs8",
-    pkcs8Buffer,
+    minimalPkcs8.buffer,
     { name: "ECDSA", namedCurve: "P-256" },
     false,
     ["sign"]
