@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Bell, BellOff, Trash2, Loader2, RefreshCw, Send } from "lucide-react";
+import { Bell, BellOff, Trash2, Loader2, RefreshCw, Send, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -11,6 +11,15 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getInitials } from "@/lib/user-utils";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 
 interface UserSubscription {
   user_id: string;
@@ -28,6 +37,13 @@ export function PushNotificationsAdmin() {
   const [broadcastTitle, setBroadcastTitle] = useState("");
   const [broadcastMessage, setBroadcastMessage] = useState("");
   const [sending, setSending] = useState(false);
+  
+  // Individual notification dialog state
+  const [notifyDialogOpen, setNotifyDialogOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<UserSubscription | null>(null);
+  const [individualTitle, setIndividualTitle] = useState("");
+  const [individualMessage, setIndividualMessage] = useState("");
+  const [sendingIndividual, setSendingIndividual] = useState(false);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -157,6 +173,46 @@ export function PushNotificationsAdmin() {
       toast.error("Nepodařilo se odeslat notifikace");
     } finally {
       setSending(false);
+    }
+  };
+
+  const openNotifyDialog = (user: UserSubscription) => {
+    setSelectedUser(user);
+    setIndividualTitle("");
+    setIndividualMessage("");
+    setNotifyDialogOpen(true);
+  };
+
+  const sendIndividualNotification = async () => {
+    if (!selectedUser || !individualMessage.trim()) {
+      toast.error("Vyplňte zprávu");
+      return;
+    }
+
+    setSendingIndividual(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("push-send", {
+        body: {
+          type: "broadcast",
+          title: individualTitle.trim() || "Zpráva z klubu",
+          message: individualMessage.trim(),
+          targetUserId: selectedUser.user_id
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.sent === 0) {
+        toast.error("Uživatel nemá aktivní subscription");
+      } else {
+        toast.success(`Notifikace odeslána`);
+        setNotifyDialogOpen(false);
+      }
+    } catch (error) {
+      console.error("Error sending notification:", error);
+      toast.error("Nepodařilo se odeslat notifikaci");
+    } finally {
+      setSendingIndividual(false);
     }
   };
 
@@ -301,19 +357,31 @@ export function PushNotificationsAdmin() {
                       />
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => deleteUserSubscriptions(user.user_id)}
-                        disabled={updating === user.user_id || user.subscription_count === 0}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        {updating === user.user_id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Trash2 className="h-4 w-4" />
-                        )}
-                      </Button>
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openNotifyDialog(user)}
+                          disabled={user.subscription_count === 0}
+                          title="Odeslat notifikaci"
+                        >
+                          <MessageSquare className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => deleteUserSubscriptions(user.user_id)}
+                          disabled={updating === user.user_id || user.subscription_count === 0}
+                          className="text-destructive hover:text-destructive"
+                          title="Smazat subscriptions"
+                        >
+                          {updating === user.user_id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -322,6 +390,57 @@ export function PushNotificationsAdmin() {
           )}
         </CardContent>
       </Card>
+
+      {/* Individual notification dialog */}
+      <Dialog open={notifyDialogOpen} onOpenChange={setNotifyDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Odeslat notifikaci</DialogTitle>
+            <DialogDescription>
+              Odeslat notifikaci uživateli {selectedUser?.full_name || selectedUser?.nickname || ""}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="notify-title">Titulek (volitelný)</Label>
+              <Input
+                id="notify-title"
+                placeholder="Zpráva z klubu"
+                value={individualTitle}
+                onChange={(e) => setIndividualTitle(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="notify-message">Zpráva</Label>
+              <Textarea
+                id="notify-message"
+                placeholder="Text notifikace..."
+                value={individualMessage}
+                onChange={(e) => setIndividualMessage(e.target.value)}
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNotifyDialogOpen(false)}>
+              Zrušit
+            </Button>
+            <Button onClick={sendIndividualNotification} disabled={sendingIndividual || !individualMessage.trim()}>
+              {sendingIndividual ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Odesílám...
+                </>
+              ) : (
+                <>
+                  <Send className="mr-2 h-4 w-4" />
+                  Odeslat
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
