@@ -7,30 +7,14 @@ import logoRound from "@/assets/logo-round.png";
 import { useParallax } from "@/hooks/useParallax";
 import { useAuth } from "@/contexts/AuthContext";
 import { ROUTES } from "@/lib/routes";
-import { supabase } from "@/integrations/supabase/client";
-import { useState, useEffect } from "react";
 import { useCountUp } from "@/hooks/useCountUp";
+import { useUserStats } from "@/hooks/useUserStats";
 
 const HeroSection = () => {
   const { ref: parallaxRef, offset } = useParallax({ speed: 0.4 });
   const { user } = useAuth();
-  const [ytdDistance, setYtdDistance] = useState<number | null>(null);
+  const { ytdDistance } = useUserStats();
   const { count: animatedDistance } = useCountUp(ytdDistance, { duration: 2500 });
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      if (!user) return;
-      const { data } = await supabase
-        .from('profiles')
-        .select('strava_ytd_distance')
-        .eq('id', user.id)
-        .maybeSingle();
-      if (data?.strava_ytd_distance) {
-        setYtdDistance(data.strava_ytd_distance);
-      }
-    };
-    fetchStats();
-  }, [user]);
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
