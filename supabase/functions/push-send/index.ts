@@ -234,9 +234,9 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { type, eventId, eventTitle, message } = await req.json();
+    const { type, eventId, eventTitle, message, targetUserId } = await req.json();
 
-    console.log(`Sending push notification: type=${type}, eventId=${eventId}`);
+    console.log(`Sending push notification: type=${type}, eventId=${eventId}, targetUserId=${targetUserId}`);
 
     // Get VAPID keys
     const { data: vapidKeys, error: vapidError } = await supabase
@@ -250,10 +250,17 @@ serve(async (req) => {
       throw new Error('VAPID keys not configured');
     }
 
-    // Get all member subscriptions
-    const { data: subscriptions, error: subError } = await supabase
+    // Get subscriptions - either for specific user or all members
+    let subscriptionsQuery = supabase
       .from('push_subscriptions')
       .select('endpoint, p256dh, auth, user_id');
+    
+    // If targetUserId is specified, only get that user's subscriptions
+    if (targetUserId) {
+      subscriptionsQuery = subscriptionsQuery.eq('user_id', targetUserId);
+    }
+
+    const { data: subscriptions, error: subError } = await subscriptionsQuery;
 
     if (subError) {
       console.error('Error fetching subscriptions:', subError);
@@ -263,21 +270,25 @@ serve(async (req) => {
     if (!subscriptions || subscriptions.length === 0) {
       console.log('No subscriptions found');
       return new Response(
-        JSON.stringify({ sent: 0 }),
+        JSON.stringify({ sent: 0, message: targetUserId ? 'Nemáte aktivní push subscription. Povolte notifikace v nastavení účtu.' : 'No subscriptions found' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Filter to only members
-    const { data: memberRoles } = await supabase
-      .from('user_roles')
-      .select('user_id')
-      .in('role', ['member', 'active_member', 'admin']);
+    let targetSubscriptions = subscriptions;
 
-    const memberUserIds = new Set((memberRoles || []).map(r => r.user_id));
-    const memberSubscriptions = subscriptions.filter(s => memberUserIds.has(s.user_id));
+    // If not targeting specific user, filter to only members
+    if (!targetUserId) {
+      const { data: memberRoles } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .in('role', ['member', 'active_member', 'admin']);
 
-    console.log(`Found ${memberSubscriptions.length} member subscriptions`);
+      const memberUserIds = new Set((memberRoles || []).map(r => r.user_id));
+      targetSubscriptions = subscriptions.filter(s => memberUserIds.has(s.user_id));
+    }
+
+    console.log(`Found ${targetSubscriptions.length} subscriptions to notify`);
 
     // Prepare notification payload
     let title = 'Esko.cc';
@@ -320,7 +331,7 @@ serve(async (req) => {
     let failCount = 0;
     const failedEndpoints: string[] = [];
 
-    for (const sub of memberSubscriptions) {
+    for (const sub of targetSubscriptions) {
       try {
         const url = new URL(sub.endpoint);
         const audience = `${url.protocol}//${url.host}`;
