@@ -348,6 +348,8 @@ serve(async (req) => {
         break;
     }
 
+    const notificationUrl = eventId ? `/events/${eventId}` : '/events';
+    
     const payload = JSON.stringify({
       title,
       body,
@@ -356,9 +358,32 @@ serve(async (req) => {
       data: {
         type,
         eventId,
-        url: eventId ? `/events/${eventId}` : '/events'
+        url: notificationUrl
       }
     });
+
+    // Store notifications in database for in-app history
+    const uniqueUserIds = [...new Set(targetSubscriptions.map(s => s.user_id))];
+    if (uniqueUserIds.length > 0) {
+      const notificationRecords = uniqueUserIds.map(userId => ({
+        user_id: userId,
+        title,
+        message: body,
+        type,
+        url: notificationUrl,
+        is_read: false
+      }));
+      
+      const { error: insertError } = await supabase
+        .from('notifications')
+        .insert(notificationRecords);
+      
+      if (insertError) {
+        console.error('Error storing notifications in DB:', insertError);
+      } else {
+        console.log(`Stored ${notificationRecords.length} notifications in database`);
+      }
+    }
 
     const privateKeyBytes = base64urlToUint8Array(vapidKeys.private_key);
 

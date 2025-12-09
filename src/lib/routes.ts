@@ -18,6 +18,7 @@ export const ROUTES = {
   STATISTICS: '/statistiky',
   DOCUMENTS: '/dokumenty',
   INSTALL: '/install',
+  NOTIFICATIONS: '/notifications',
 } as const;
 
 // Dynamic route patterns (for Route definitions in App.tsx)
