@@ -9,12 +9,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ROUTES } from "@/lib/routes";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
-import { formatDistance } from "@/lib/user-utils";
+import { useCountUp } from "@/hooks/useCountUp";
 
 const HeroSection = () => {
   const { ref: parallaxRef, offset } = useParallax({ speed: 0.4 });
   const { user } = useAuth();
   const [ytdDistance, setYtdDistance] = useState<number | null>(null);
+  const { count: animatedDistance } = useCountUp(ytdDistance, { duration: 2500 });
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -80,7 +81,7 @@ const HeroSection = () => {
 
           {user && ytdDistance !== null && (
             <p className="text-3xl font-bold text-primary mb-6 opacity-0 animate-fade-up animation-delay-300">
-              {formatDistance(ytdDistance * 1000)} letos
+              <span className="tabular-nums">{animatedDistance.toLocaleString('cs-CZ')}</span> km letos
             </p>
           )}
 
