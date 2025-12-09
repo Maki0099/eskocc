@@ -104,9 +104,8 @@ const NotificationBell = () => {
       markAsRead(notification.id);
     }
     setIsOpen(false);
-    if (notification.url) {
-      navigate(notification.url);
-    }
+    // Always navigate to notifications page
+    navigate(ROUTES.NOTIFICATIONS);
   };
 
   const recentNotifications = notifications.slice(0, 10);
