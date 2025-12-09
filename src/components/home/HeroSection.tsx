@@ -5,9 +5,12 @@ import heroCycling from "@/assets/hero-cycling.jpg";
 import logoRoundDark from "@/assets/logo-round-dark.png";
 import logoRound from "@/assets/logo-round.png";
 import { useParallax } from "@/hooks/useParallax";
+import { useAuth } from "@/contexts/AuthContext";
+import { ROUTES } from "@/lib/routes";
 
 const HeroSection = () => {
   const { ref: parallaxRef, offset } = useParallax({ speed: 0.4 });
+  const { user } = useAuth();
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
@@ -61,17 +64,35 @@ const HeroSection = () => {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center opacity-0 animate-fade-up animation-delay-400">
-            <Link to="/register">
-              <Button variant="apple" size="lg" className="group">
-                Připojit se ke klubu
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-              </Button>
-            </Link>
-            <Link to="/events">
-              <Button variant="appleOutline" size="lg">
-                Zobrazit vyjížďky
-              </Button>
-            </Link>
+            {user ? (
+              <>
+                <Link to={ROUTES.STATISTICS}>
+                  <Button variant="apple" size="lg" className="group">
+                    Zobrazit statistiky
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                  </Button>
+                </Link>
+                <Link to={ROUTES.EVENTS}>
+                  <Button variant="appleOutline" size="lg">
+                    Nadcházející vyjížďky
+                  </Button>
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link to={ROUTES.REGISTER}>
+                  <Button variant="apple" size="lg" className="group">
+                    Připojit se ke klubu
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                  </Button>
+                </Link>
+                <Link to={ROUTES.EVENTS}>
+                  <Button variant="appleOutline" size="lg">
+                    Zobrazit vyjížďky
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>
