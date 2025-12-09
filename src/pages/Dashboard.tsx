@@ -1,7 +1,5 @@
-import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { LogOut, User, Calendar, Image, Shield, Settings } from "lucide-react";
 import logoDark from "@/assets/logo-horizontal-dark.png";
@@ -11,53 +9,13 @@ import { ChallengeWidget } from "@/components/dashboard/ChallengeWidget";
 import PendingMembershipWidget from "@/components/dashboard/PendingMembershipWidget";
 import StravaConnectPrompt from "@/components/dashboard/StravaConnectPrompt";
 import StravaClubBanner from "@/components/strava/StravaClubBanner";
-import type { AppRole } from "@/lib/types";
 import { ROLE_LABELS } from "@/lib/constants";
 import { ROUTES } from "@/lib/routes";
-
-interface Profile {
-  full_name: string | null;
-  avatar_url: string | null;
-  nickname: string | null;
-  strava_id: string | null;
-  is_strava_club_member: boolean | null;
-}
+import { useUserStats } from "@/hooks/useUserStats";
 
 const Dashboard = () => {
   const { user, signOut } = useAuth();
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [role, setRole] = useState<AppRole | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchUserData = async () => {
-      if (!user) return;
-
-      // Fetch profile
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("full_name, avatar_url, nickname, strava_id, is_strava_club_member")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      setProfile(profileData);
-
-      // Fetch role
-      const { data: roleData } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      if (roleData) {
-        setRole(roleData.role as AppRole);
-      }
-
-      setLoading(false);
-    };
-
-    fetchUserData();
-  }, [user]);
+  const { profile, role, loading } = useUserStats();
 
   const handleSignOut = async () => {
     await signOut();
