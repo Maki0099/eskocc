@@ -7,10 +7,29 @@ import logoRound from "@/assets/logo-round.png";
 import { useParallax } from "@/hooks/useParallax";
 import { useAuth } from "@/contexts/AuthContext";
 import { ROUTES } from "@/lib/routes";
+import { supabase } from "@/integrations/supabase/client";
+import { useState, useEffect } from "react";
+import { formatDistance } from "@/lib/user-utils";
 
 const HeroSection = () => {
   const { ref: parallaxRef, offset } = useParallax({ speed: 0.4 });
   const { user } = useAuth();
+  const [ytdDistance, setYtdDistance] = useState<number | null>(null);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      if (!user) return;
+      const { data } = await supabase
+        .from('profiles')
+        .select('strava_ytd_distance')
+        .eq('id', user.id)
+        .maybeSingle();
+      if (data?.strava_ytd_distance) {
+        setYtdDistance(data.strava_ytd_distance);
+      }
+    };
+    fetchStats();
+  }, [user]);
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
@@ -59,8 +78,14 @@ const HeroSection = () => {
             — Eddy Merckx
           </p>
 
+          {user && ytdDistance !== null && (
+            <p className="text-3xl font-bold text-primary mb-6 opacity-0 animate-fade-up animation-delay-300">
+              {formatDistance(ytdDistance * 1000)} letos
+            </p>
+          )}
+
           <p className="text-lg text-muted-foreground mb-10 max-w-xl mx-auto opacity-0 animate-fade-up animation-delay-300">
-            Přidej se k naší komunitě cyklistů. Společné vyjížďky, nezapomenutelné zážitky.
+            {user ? "Kam to dnes natočíš?" : "Přidej se k naší komunitě cyklistů. Společné vyjížďky, nezapomenutelné zážitky."}
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center opacity-0 animate-fade-up animation-delay-400">
