@@ -12,7 +12,15 @@ const TermsAndConditions = ({ accepted, onAcceptedChange }: TermsAndConditionsPr
     <div className="space-y-4">
       <h2 className="text-lg font-semibold">Podmínky členství</h2>
       <p className="text-sm text-muted-foreground">
-        Pro dokončení registrace si prosím přečti a odsouhlasí podmínky členství v klubu.
+        Pro dokončení registrace si prosím přečti a odsouhlasí podmínky členství v klubu.{" "}
+        <a 
+          href="/documents/podminky-registrace-clenstvi.pdf" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="text-primary hover:underline"
+        >
+          Stáhnout PDF
+        </a>
       </p>
       
       <ScrollArea className="h-64 rounded-xl border border-border bg-muted/30 p-4">
