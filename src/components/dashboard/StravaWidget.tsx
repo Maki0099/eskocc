@@ -1,11 +1,14 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Bike, Mountain, TrendingUp, Loader2, LinkIcon } from "lucide-react";
+import { Bike, Mountain, TrendingUp, Loader2, LinkIcon, Users } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
+import { Badge } from "@/components/ui/badge";
+import { STRAVA_CLUB_URL } from "@/lib/constants";
 
 interface StravaWidgetProps {
   userId: string;
+  isClubMember?: boolean;
 }
 
 interface MonthlyStats {
@@ -65,7 +68,7 @@ const CustomTooltip = ({ active, payload, label, metric }: { active?: boolean; p
   return null;
 };
 
-export const StravaWidget = ({ userId }: StravaWidgetProps) => {
+export const StravaWidget = ({ userId, isClubMember = false }: StravaWidgetProps) => {
   const [stats, setStats] = useState<StatsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [isConnected, setIsConnected] = useState(false);
@@ -173,13 +176,29 @@ export const StravaWidget = ({ userId }: StravaWidgetProps) => {
       rel="noopener noreferrer"
       className="group p-6 rounded-2xl border border-orange-500/20 bg-gradient-to-br from-orange-500/10 to-orange-600/5 hover:border-orange-500/40 transition-colors block"
     >
-      <div className="flex items-center gap-3 mb-4">
-        <img 
-          src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Strava_Logo.svg" 
-          alt="Strava" 
-          className="h-5 w-auto"
-        />
-        <span className="text-xs text-muted-foreground">Moje statistiky</span>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <img 
+            src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Strava_Logo.svg" 
+            alt="Strava" 
+            className="h-5 w-auto"
+          />
+          <span className="text-xs text-muted-foreground">Moje statistiky</span>
+        </div>
+        {isClubMember && (
+          <a
+            href={STRAVA_CLUB_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="hover:opacity-80 transition-opacity"
+          >
+            <Badge variant="secondary" className="gap-1 text-xs bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20">
+              <Users className="w-3 h-3" />
+              Člen klubu
+            </Badge>
+          </a>
+        )}
       </div>
 
       {/* Main stats */}
