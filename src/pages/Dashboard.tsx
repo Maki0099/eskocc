@@ -1,8 +1,8 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { LogOut, User, Calendar, Image, Shield, Settings, Users } from "lucide-react";
+import { LogOut, User, Calendar, Image, Shield, Settings, Users, Bell } from "lucide-react";
 import logoDark from "@/assets/logo-horizontal-dark.png";
 import logoWhite from "@/assets/logo-horizontal-white.png";
 import { StravaWidget } from "@/components/dashboard/StravaWidget";
@@ -15,6 +15,7 @@ import { ROLE_LABELS, STRAVA_CLUB_URL } from "@/lib/constants";
 import { ROUTES } from "@/lib/routes";
 import { useUserStats } from "@/hooks/useUserStats";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const Dashboard = () => {
   const { user, signOut } = useAuth();
@@ -22,6 +23,32 @@ const Dashboard = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const clubMemberToastShown = useRef(false);
+  const [sendingTestPush, setSendingTestPush] = useState(false);
+
+  const handleTestPush = async () => {
+    setSendingTestPush(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('push-send', {
+        body: { type: 'test', message: 'Toto je testovací notifikace z ESKO.cc' }
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Testovací notifikace odeslána",
+        description: `Odesláno: ${data?.sent || 0}, Selhalo: ${data?.failed || 0}`,
+      });
+    } catch (error) {
+      console.error('Error sending test push:', error);
+      toast({
+        title: "Chyba",
+        description: "Nepodařilo se odeslat testovací notifikaci.",
+        variant: "destructive",
+      });
+    } finally {
+      setSendingTestPush(false);
+    }
+  };
 
   // Handle Strava connection callback
   useEffect(() => {
@@ -159,17 +186,31 @@ const Dashboard = () => {
               </p>
             </Link>
 
-            {role === "admin" && (
-              <Link
-                to={ROUTES.ADMIN}
-                className="group p-6 rounded-2xl border border-primary/20 hover:border-primary/40 bg-primary/5 transition-colors"
-              >
-                <Shield className="w-8 h-8 mb-4 text-primary" />
-                <h3 className="font-medium mb-1">Admin Panel</h3>
-                <p className="text-sm text-muted-foreground">
-                  Správa uživatelů a jejich rolí
-                </p>
-              </Link>
+          {role === "admin" && (
+              <>
+                <Link
+                  to={ROUTES.ADMIN}
+                  className="group p-6 rounded-2xl border border-primary/20 hover:border-primary/40 bg-primary/5 transition-colors"
+                >
+                  <Shield className="w-8 h-8 mb-4 text-primary" />
+                  <h3 className="font-medium mb-1">Admin Panel</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Správa uživatelů a jejich rolí
+                  </p>
+                </Link>
+
+                <button
+                  onClick={handleTestPush}
+                  disabled={sendingTestPush}
+                  className="group p-6 rounded-2xl border border-border/40 hover:border-border transition-colors text-left disabled:opacity-50"
+                >
+                  <Bell className="w-8 h-8 mb-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+                  <h3 className="font-medium mb-1">Test Push Notifikace</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {sendingTestPush ? "Odesílám..." : "Odeslat testovací notifikaci"}
+                  </p>
+                </button>
+              </>
             )}
           </div>
 

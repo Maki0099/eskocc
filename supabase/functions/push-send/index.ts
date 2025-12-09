@@ -296,6 +296,10 @@ serve(async (req) => {
         title = '⏰ Připomínka vyjížďky';
         body = eventTitle ? `Zítra: ${eventTitle}` : 'Zítra se koná vyjížďka';
         break;
+      case 'test':
+        title = '🔔 Testovací notifikace';
+        body = message || 'Push notifikace fungují správně!';
+        break;
     }
 
     const payload = JSON.stringify({
