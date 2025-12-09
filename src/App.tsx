@@ -10,6 +10,7 @@ import ScrollToTop from "./components/ScrollToTop";
 import { ScrollProgressBar } from "./components/layout/ScrollProgressBar";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PageLoader from "./components/PageLoader";
+import { ROUTES, ROUTE_PATTERNS } from "@/lib/routes";
 
 // Lazy load all pages for code-splitting
 const Index = lazy(() => import("./pages/Index"));
@@ -44,21 +45,21 @@ const App = () => (
           <AuthProvider>
             <Suspense fallback={<PageLoader />}>
               <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/reset-password" element={<ResetPassword />} />
-                <Route path="/events" element={<Events />} />
-                <Route path="/events/:id" element={<EventDetail />} />
-                <Route path="/gallery" element={<Gallery />} />
-                <Route path="/cafe" element={<Cafe />} />
-                <Route path="/statistiky" element={<Statistics />} />
-                <Route path="/member/:userId" element={<MemberProfile />} />
-                <Route path="/about" element={<About />} />
-                <Route path="/install" element={<Install />} />
-                <Route path="/dokumenty" element={<Documents />} />
+                <Route path={ROUTES.HOME} element={<Index />} />
+                <Route path={ROUTES.LOGIN} element={<Login />} />
+                <Route path={ROUTES.REGISTER} element={<Register />} />
+                <Route path={ROUTES.RESET_PASSWORD} element={<ResetPassword />} />
+                <Route path={ROUTES.EVENTS} element={<Events />} />
+                <Route path={ROUTE_PATTERNS.EVENT_DETAIL} element={<EventDetail />} />
+                <Route path={ROUTES.GALLERY} element={<Gallery />} />
+                <Route path={ROUTES.CAFE} element={<Cafe />} />
+                <Route path={ROUTES.STATISTICS} element={<Statistics />} />
+                <Route path={ROUTE_PATTERNS.MEMBER_PROFILE} element={<MemberProfile />} />
+                <Route path={ROUTES.ABOUT} element={<About />} />
+                <Route path={ROUTES.INSTALL} element={<Install />} />
+                <Route path={ROUTES.DOCUMENTS} element={<Documents />} />
                 <Route
-                  path="/dashboard"
+                  path={ROUTES.DASHBOARD}
                   element={
                     <ProtectedRoute>
                       <Dashboard />
@@ -66,7 +67,7 @@ const App = () => (
                   }
                 />
                 <Route
-                  path="/account"
+                  path={ROUTES.ACCOUNT}
                   element={
                     <ProtectedRoute>
                       <Account />
@@ -74,7 +75,7 @@ const App = () => (
                   }
                 />
                 <Route
-                  path="/admin"
+                  path={ROUTES.ADMIN}
                   element={
                     <ProtectedRoute>
                       <Admin />

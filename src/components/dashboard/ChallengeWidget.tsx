@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Target, ChevronRight, Loader2, AlertCircle, PartyPopper } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { ROUTES } from "@/lib/routes";
 
 interface ChallengeWidgetProps {
   userId: string;
@@ -209,7 +210,7 @@ export const ChallengeWidget = ({ userId }: ChallengeWidgetProps) => {
             </div>
 
             <Link 
-              to="/statistiky" 
+              to={ROUTES.STATISTICS} 
               className="flex items-center justify-between text-sm text-primary hover:underline"
             >
               <span>Zobrazit celkové statistiky</span>
