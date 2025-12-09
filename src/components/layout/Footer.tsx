@@ -54,13 +54,12 @@ const Footer = () => {
                 </a>
               </li>
               <li className="pt-2">
-                <a 
-                  href="/documents/podminky-registrace-clenstvi.pdf" 
-                  download="podminky-registrace-clenstvi.pdf"
+                <Link 
+                  to="/dokumenty"
                   className="hover:text-foreground transition-colors"
                 >
-                  Podmínky registrace a členství
-                </a>
+                  Klubové dokumenty
+                </Link>
               </li>
             </ul>
           </div>
