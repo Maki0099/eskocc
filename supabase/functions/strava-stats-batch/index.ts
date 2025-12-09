@@ -7,6 +7,7 @@ const corsHeaders = {
 };
 
 const CACHE_DURATION_MS = 60 * 60 * 1000; // 1 hour
+const STRAVA_CLUB_ID = 1860524; // ESKO.cc club ID
 
 interface StravaProfile {
   id: string;
@@ -44,6 +45,27 @@ async function refreshStravaToken(
   return response.json();
 }
 
+async function checkClubMembership(accessToken: string): Promise<boolean> {
+  try {
+    const clubsResponse = await fetch('https://www.strava.com/api/v3/athlete/clubs', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+
+    if (!clubsResponse.ok) {
+      console.error('Failed to fetch clubs:', await clubsResponse.text());
+      return false;
+    }
+
+    const clubs = await clubsResponse.json();
+    const isMember = clubs.some((club: { id: number }) => club.id === STRAVA_CLUB_ID);
+    console.log(`Club membership check: ${isMember ? 'member' : 'not member'}`);
+    return isMember;
+  } catch (error) {
+    console.error('Error checking club membership:', error);
+    return false;
+  }
+}
+
 async function fetchStravaStats(
   profile: StravaProfile,
   supabaseUrl: string,
@@ -51,7 +73,7 @@ async function fetchStravaStats(
   clientId: string,
   clientSecret: string,
   forceRefresh: boolean = false
-): Promise<{ userId: string; ytd_distance: number; ytd_count: number }> {
+): Promise<{ userId: string; ytd_distance: number; ytd_count: number; is_club_member: boolean }> {
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
   
   // Check cache first (skip if forceRefresh)
@@ -64,6 +86,7 @@ async function fetchStravaStats(
         userId: profile.id,
         ytd_distance: profile.strava_ytd_distance || 0,
         ytd_count: 0,
+        is_club_member: false, // We don't cache club membership status in the response
       };
     }
   }
@@ -82,7 +105,7 @@ async function fetchStravaStats(
 
     if (!newTokens) {
       console.error(`Failed to refresh token for user ${profile.id}`);
-      return { userId: profile.id, ytd_distance: 0, ytd_count: 0 };
+      return { userId: profile.id, ytd_distance: 0, ytd_count: 0, is_club_member: false };
     }
 
     // Update tokens in database
@@ -114,20 +137,24 @@ async function fetchStravaStats(
   if (!statsResponse.ok) {
     const errorText = await statsResponse.text();
     console.error(`Strava API error for user ${profile.id}:`, errorText);
-    return { userId: profile.id, ytd_distance: 0, ytd_count: 0 };
+    return { userId: profile.id, ytd_distance: 0, ytd_count: 0, is_club_member: false };
   }
 
   const stats = await statsResponse.json();
   const ytd_distance = Math.round((stats.ytd_ride_totals?.distance || 0) / 1000);
   const ytd_count = stats.ytd_ride_totals?.count || 0;
 
-  // Update cache in database
+  // Check club membership
+  const isClubMember = await checkClubMembership(accessToken);
+
+  // Update cache in database including club membership
   const { error: cacheError } = await supabase
     .from('profiles')
     .update({
       strava_ytd_distance: ytd_distance,
       strava_ytd_count: ytd_count,
       strava_stats_cached_at: new Date().toISOString(),
+      is_strava_club_member: isClubMember,
     })
     .eq('id', profile.id);
 
@@ -135,9 +162,9 @@ async function fetchStravaStats(
     console.error(`Failed to cache stats for ${profile.id}:`, cacheError);
   }
 
-  console.log(`Fetched and cached stats for user ${profile.id}: ${ytd_distance} km`);
+  console.log(`Fetched and cached stats for user ${profile.id}: ${ytd_distance} km, club member: ${isClubMember}`);
 
-  return { userId: profile.id, ytd_distance, ytd_count };
+  return { userId: profile.id, ytd_distance, ytd_count, is_club_member: isClubMember };
 }
 
 serve(async (req) => {
