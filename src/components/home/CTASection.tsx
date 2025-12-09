@@ -4,10 +4,29 @@ import { ArrowRight } from "lucide-react";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 import { useAuth } from "@/contexts/AuthContext";
 import { ROUTES } from "@/lib/routes";
+import { supabase } from "@/integrations/supabase/client";
+import { useState, useEffect } from "react";
+import { formatDistance } from "@/lib/user-utils";
 
 const CTASection = () => {
   const { ref, isVisible } = useScrollAnimation();
   const { user } = useAuth();
+  const [ytdDistance, setYtdDistance] = useState<number | null>(null);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      if (!user) return;
+      const { data } = await supabase
+        .from('profiles')
+        .select('strava_ytd_distance')
+        .eq('id', user.id)
+        .maybeSingle();
+      if (data?.strava_ytd_distance) {
+        setYtdDistance(data.strava_ytd_distance);
+      }
+    };
+    fetchStats();
+  }, [user]);
 
   return (
     <section className="py-32 bg-secondary/30">
@@ -19,6 +38,12 @@ const CTASection = () => {
           <h2 className="text-display font-semibold mb-6">
             {user ? "Připraven na další vyjížďku?" : "Připraven na další vyjížďku?"}
           </h2>
+
+          {user && ytdDistance !== null && (
+            <p className="text-3xl font-bold text-primary mb-4">
+              {formatDistance(ytdDistance * 1000)} letos
+            </p>
+          )}
 
           <p className="text-lg text-muted-foreground mb-10">
             {user ? "Podívej se, co tě čeká" : "Staň se součástí ESKO.cc"}
