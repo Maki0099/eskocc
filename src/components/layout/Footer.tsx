@@ -53,6 +53,16 @@ const Footer = () => {
                   info@eskocc.cz
                 </a>
               </li>
+              <li className="pt-2">
+                <a 
+                  href="/documents/podminky-registrace-clenstvi.pdf" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="hover:text-foreground transition-colors"
+                >
+                  Podmínky registrace a členství
+                </a>
+              </li>
             </ul>
           </div>
 
