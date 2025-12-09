@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
 import logoDark from "@/assets/logo-horizontal-dark.png";
+import { ROUTES } from "@/lib/routes";
 
 const loginSchema = z.object({
   email: z.string().email("Neplatný formát emailu"),
@@ -31,7 +32,7 @@ const Login = () => {
 
   useEffect(() => {
     if (user) {
-      navigate("/dashboard");
+      navigate(ROUTES.DASHBOARD);
     }
   }, [user, navigate]);
 
@@ -69,7 +70,7 @@ const Login = () => {
             title: "Přihlášení úspěšné",
             description: "Vítej zpět!",
           });
-          navigate("/dashboard");
+          navigate(ROUTES.DASHBOARD);
         }
         
         // Clear the hash
@@ -85,7 +86,7 @@ const Login = () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.origin + '/login',
+        redirectTo: window.location.origin + ROUTES.LOGIN,
       },
     });
     
@@ -134,7 +135,7 @@ const Login = () => {
         title: "Přihlášení úspěšné",
         description: "Vítej zpět!",
       });
-      navigate("/dashboard");
+      navigate(ROUTES.DASHBOARD);
     }
     
     setLoading(false);
@@ -156,7 +157,7 @@ const Login = () => {
     setLoading(true);
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
+      redirectTo: `${window.location.origin}${ROUTES.RESET_PASSWORD}`,
     });
 
     if (error) {
@@ -262,7 +263,7 @@ const Login = () => {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
-        <Link to="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-8">
+        <Link to={ROUTES.HOME} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-8">
           <ArrowLeft className="w-4 h-4" />
           Zpět
         </Link>
@@ -360,7 +361,7 @@ const Login = () => {
 
         <p className="text-center text-sm text-muted-foreground mt-8">
           Nemáš účet?{" "}
-          <Link to="/register" className="text-foreground hover:underline">
+          <Link to={ROUTES.REGISTER} className="text-foreground hover:underline">
             Registruj se
           </Link>
         </p>

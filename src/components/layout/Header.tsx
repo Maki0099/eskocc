@@ -6,15 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/components/ThemeProvider";
 import logoWhite from "@/assets/logo-horizontal-white.png";
 import logoDark from "@/assets/logo-horizontal-dark.png";
-
-const navItems = [
-  { to: "/", label: "Domů" },
-  { to: "/events", label: "Vyjížďky" },
-  { to: "/statistiky", label: "Statistiky" },
-  { to: "/cafe", label: "Kavárna" },
-  { to: "/gallery", label: "Galerie" },
-  { to: "/about", label: "O klubu" },
-];
+import { ROUTES, NAV_ITEMS } from "@/lib/routes";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -44,7 +36,7 @@ const Header = () => {
   }, [isMenuOpen]);
 
   const isActive = (path: string) => {
-    if (path === "/") return location.pathname === "/";
+    if (path === ROUTES.HOME) return location.pathname === ROUTES.HOME;
     return location.pathname.startsWith(path);
   };
 
@@ -53,7 +45,7 @@ const Header = () => {
       <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
-            <Link to="/" className="flex items-center">
+            <Link to={ROUTES.HOME} className="flex items-center">
               <img 
                 src={logoDark} 
                 alt="ESKO.cc" 
@@ -68,7 +60,7 @@ const Header = () => {
 
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center gap-8">
-              {navItems.map((item) => (
+              {NAV_ITEMS.map((item) => (
                 <Link
                   key={item.to}
                   to={item.to}
@@ -95,7 +87,7 @@ const Header = () => {
               {loading ? (
                 <div className="w-20 h-8 bg-muted animate-pulse rounded-lg"></div>
               ) : user ? (
-                <Link to="/dashboard">
+                <Link to={ROUTES.DASHBOARD}>
                   <Button variant="ghost" size="sm" className="gap-2">
                     <User className="w-4 h-4" />
                     Dashboard
@@ -103,10 +95,10 @@ const Header = () => {
                 </Link>
               ) : (
                 <>
-                  <Link to="/login">
+                  <Link to={ROUTES.LOGIN}>
                     <Button variant="ghost" size="sm">Přihlásit se</Button>
                   </Link>
-                  <Link to="/register">
+                  <Link to={ROUTES.REGISTER}>
                     <Button variant="apple" size="sm">Registrace</Button>
                   </Link>
                 </>
@@ -141,7 +133,7 @@ const Header = () => {
       >
         <nav className="flex flex-col h-full">
           <div className="flex-1 overflow-y-auto py-4">
-            {navItems.map((item, index) => (
+            {NAV_ITEMS.map((item, index) => (
               <Link
                 key={item.to}
                 to={item.to}
@@ -161,7 +153,7 @@ const Header = () => {
           {/* Mobile Theme Toggle & Auth Buttons */}
           <div className="p-6 border-t border-border/50 bg-muted/30 space-y-4">
             <Link
-              to="/install"
+              to={ROUTES.INSTALL}
               className="flex items-center justify-between w-full px-4 py-3 rounded-xl bg-background hover:bg-muted/50 transition-colors"
             >
               <span className="text-sm font-medium flex items-center gap-2">
@@ -184,7 +176,7 @@ const Header = () => {
             {loading ? (
               <div className="h-12 bg-muted animate-pulse rounded-xl"></div>
             ) : user ? (
-              <Link to="/dashboard" className="block">
+              <Link to={ROUTES.DASHBOARD} className="block">
                 <Button variant="apple" className="w-full h-12 gap-2 text-base rounded-xl">
                   <User className="w-5 h-5" />
                   Dashboard
@@ -192,12 +184,12 @@ const Header = () => {
               </Link>
             ) : (
               <div className="flex flex-col gap-3">
-                <Link to="/register" className="block">
+                <Link to={ROUTES.REGISTER} className="block">
                   <Button variant="apple" className="w-full h-12 text-base rounded-xl">
                     Registrace
                   </Button>
                 </Link>
-                <Link to="/login" className="block">
+                <Link to={ROUTES.LOGIN} className="block">
                   <Button variant="outline" className="w-full h-12 text-base rounded-xl">
                     Přihlásit se
                   </Button>

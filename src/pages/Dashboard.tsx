@@ -13,6 +13,7 @@ import StravaConnectPrompt from "@/components/dashboard/StravaConnectPrompt";
 import StravaClubBanner from "@/components/strava/StravaClubBanner";
 import type { AppRole } from "@/lib/types";
 import { ROLE_LABELS } from "@/lib/constants";
+import { ROUTES } from "@/lib/routes";
 
 interface Profile {
   full_name: string | null;
@@ -77,7 +78,7 @@ const Dashboard = () => {
       {/* Header */}
       <header className="border-b border-border/40 bg-background/80 backdrop-blur-xl">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-          <Link to="/">
+          <Link to={ROUTES.HOME}>
             <img src={logoDark} alt="ESKO.cc" className="h-10 dark:hidden" />
             <img src={logoWhite} alt="ESKO.cc" className="h-10 hidden dark:block" />
           </Link>
@@ -123,7 +124,7 @@ const Dashboard = () => {
           {/* Quick actions */}
           <div className="grid gap-4 md:grid-cols-2">
             <Link
-              to="/events"
+              to={ROUTES.EVENTS}
               className="group p-6 rounded-2xl border border-border/40 hover:border-border transition-colors"
             >
               <Calendar className="w-8 h-8 mb-4 text-muted-foreground group-hover:text-foreground transition-colors" />
@@ -134,7 +135,7 @@ const Dashboard = () => {
             </Link>
 
             <Link
-              to="/gallery"
+              to={ROUTES.GALLERY}
               className="group p-6 rounded-2xl border border-border/40 hover:border-border transition-colors"
             >
               <Image className="w-8 h-8 mb-4 text-muted-foreground group-hover:text-foreground transition-colors" />
@@ -145,7 +146,7 @@ const Dashboard = () => {
             </Link>
 
             <Link
-              to="/account"
+              to={ROUTES.ACCOUNT}
               className="group p-6 rounded-2xl border border-border/40 hover:border-border transition-colors"
             >
               <Settings className="w-8 h-8 mb-4 text-muted-foreground group-hover:text-foreground transition-colors" />
@@ -157,7 +158,7 @@ const Dashboard = () => {
 
             {role === "admin" && (
               <Link
-                to="/admin"
+                to={ROUTES.ADMIN}
                 className="group p-6 rounded-2xl border border-primary/20 hover:border-primary/40 bg-primary/5 transition-colors"
               >
                 <Shield className="w-8 h-8 mb-4 text-primary" />
@@ -195,7 +196,7 @@ const Dashboard = () => {
 
           {/* Profile info */}
           <div className="mt-12 p-6 rounded-2xl border border-border/40">
-            <Link to="/account" className="flex items-center gap-4 group">
+            <Link to={ROUTES.ACCOUNT} className="flex items-center gap-4 group">
               <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center overflow-hidden">
                 {profile?.avatar_url ? (
                   <img

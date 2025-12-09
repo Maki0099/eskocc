@@ -23,6 +23,7 @@ import {
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
 import { getInitials } from "@/lib/user-utils";
+import { ROUTES, getMemberProfilePath, getEventDetailPath } from "@/lib/routes";
 
 interface TopMember {
   id: string;
@@ -200,7 +201,7 @@ const TeaserSection = () => {
           {topMembers.map((member, index) => (
             <Link
               key={member.id}
-              to={`/member/${member.id}`}
+              to={getMemberProfilePath(member.id)}
               className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
             >
               <span className="text-sm font-bold text-muted-foreground w-5">
@@ -321,7 +322,7 @@ const TeaserSection = () => {
           // For members, make events clickable
           if (variant === "member") {
             return (
-              <Link key={event.id} to={`/events/${event.id}`}>
+              <Link key={event.id} to={getEventDetailPath(event.id)}>
                 {eventContent}
               </Link>
             );
@@ -340,13 +341,13 @@ const TeaserSection = () => {
         return (
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Button size="lg" asChild>
-              <Link to="/statistiky">
+              <Link to={ROUTES.STATISTICS}>
                 Zobrazit statistiky
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Link>
             </Button>
             <Button size="lg" variant="outline" asChild>
-              <Link to="/events">
+              <Link to={ROUTES.EVENTS}>
                 Všechny vyjížďky
               </Link>
             </Button>
@@ -364,7 +365,7 @@ const TeaserSection = () => {
               získáte plný přístup ke statistikám, vyjížďkám a galerii.
             </p>
             <Button size="lg" variant="outline" asChild>
-              <Link to="/dashboard">
+              <Link to={ROUTES.DASHBOARD}>
                 Přejít na dashboard
               </Link>
             </Button>
@@ -378,13 +379,13 @@ const TeaserSection = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Button size="lg" asChild>
-                <Link to="/register">
+                <Link to={ROUTES.REGISTER}>
                   Staň se členem
                 </Link>
               </Button>
               {!user && (
                 <Button size="lg" variant="outline" asChild>
-                  <Link to="/login">
+                  <Link to={ROUTES.LOGIN}>
                     Už mám účet
                   </Link>
                 </Button>
@@ -400,7 +401,7 @@ const TeaserSection = () => {
     if (variant === "member") {
       return (
         <Button variant="outline" className="w-full gap-2" asChild>
-          <Link to="/statistiky">
+          <Link to={ROUTES.STATISTICS}>
             Zobrazit celé statistiky
             <ArrowRight className="w-4 h-4" />
           </Link>
@@ -410,7 +411,7 @@ const TeaserSection = () => {
     
     return (
       <Button variant="outline" className="w-full gap-2" asChild>
-        <Link to="/register">
+        <Link to={ROUTES.REGISTER}>
           Zobrazit celé statistiky
           <ArrowRight className="w-4 h-4" />
         </Link>
@@ -423,7 +424,7 @@ const TeaserSection = () => {
     if (variant === "member") {
       return (
         <Button variant="outline" className="w-full gap-2" asChild>
-          <Link to="/events">
+          <Link to={ROUTES.EVENTS}>
             Přihlásit se na vyjížďky
             <ArrowRight className="w-4 h-4" />
           </Link>
@@ -433,7 +434,7 @@ const TeaserSection = () => {
     
     return (
       <Button variant="outline" className="w-full gap-2" asChild>
-        <Link to="/register">
+        <Link to={ROUTES.REGISTER}>
           Přihlásit se na vyjížďky
           <ArrowRight className="w-4 h-4" />
         </Link>

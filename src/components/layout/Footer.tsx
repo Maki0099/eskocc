@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { useTheme } from "next-themes";
 import logoRoundDark from "@/assets/logo-round-dark.png";
 import logoRound from "@/assets/logo-round.png";
+import { ROUTES } from "@/lib/routes";
 
 const Footer = () => {
   const { resolvedTheme } = useTheme();
@@ -13,7 +14,7 @@ const Footer = () => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1 text-center md:text-left mb-4 md:mb-0">
-            <Link to="/" className="inline-block mb-4">
+            <Link to={ROUTES.HOME} className="inline-block mb-4">
               <img 
                 src={logoRoundDark} 
                 alt="ESKO.cc" 
@@ -34,11 +35,11 @@ const Footer = () => {
           <div className="text-center md:text-left">
             <h4 className="text-sm font-medium mb-3 md:mb-4">Navigace</h4>
             <ul className="space-y-2">
-              <li><Link to="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Domů</Link></li>
-              <li><Link to="/events" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Vyjížďky</Link></li>
-              <li><Link to="/gallery" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Galerie</Link></li>
-              <li><Link to="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">O klubu</Link></li>
-              <li><Link to="/install" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Nainstalovat aplikaci</Link></li>
+              <li><Link to={ROUTES.HOME} className="text-sm text-muted-foreground hover:text-foreground transition-colors">Domů</Link></li>
+              <li><Link to={ROUTES.EVENTS} className="text-sm text-muted-foreground hover:text-foreground transition-colors">Vyjížďky</Link></li>
+              <li><Link to={ROUTES.GALLERY} className="text-sm text-muted-foreground hover:text-foreground transition-colors">Galerie</Link></li>
+              <li><Link to={ROUTES.ABOUT} className="text-sm text-muted-foreground hover:text-foreground transition-colors">O klubu</Link></li>
+              <li><Link to={ROUTES.INSTALL} className="text-sm text-muted-foreground hover:text-foreground transition-colors">Nainstalovat aplikaci</Link></li>
             </ul>
           </div>
 
@@ -55,7 +56,7 @@ const Footer = () => {
               </li>
               <li className="pt-2">
                 <Link 
-                  to="/dokumenty"
+                  to={ROUTES.DOCUMENTS}
                   className="hover:text-foreground transition-colors"
                 >
                   Klubové dokumenty
