@@ -213,7 +213,7 @@ const CafeAdmin = () => {
       const { error } = await supabase.from("cafe_menu_categories").delete().eq("id", id);
       if (error) throw error;
       toast.success("Kategorie smazána");
-      fetchData();
+      fetchData(true);
     } catch (error) {
       console.error("Error deleting category:", error);
       toast.error("Nepodařilo se smazat kategorii");
@@ -285,7 +285,7 @@ const CafeAdmin = () => {
       const { error } = await supabase.from("cafe_menu_items").delete().eq("id", id);
       if (error) throw error;
       toast.success("Položka smazána");
-      fetchData();
+      fetchData(true);
     } catch (error) {
       console.error("Error deleting menu item:", error);
       toast.error("Nepodařilo se smazat položku");
@@ -299,7 +299,7 @@ const CafeAdmin = () => {
         .update({ is_available: !item.is_available })
         .eq("id", item.id);
       if (error) throw error;
-      fetchData();
+      fetchData(true);
     } catch (error) {
       console.error("Error toggling availability:", error);
       toast.error("Nepodařilo se změnit dostupnost");
