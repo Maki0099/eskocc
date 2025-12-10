@@ -203,7 +203,7 @@ export function PushNotificationsAdmin() {
 
     setSending(true);
     try {
-      const body: Record<string, unknown> = {
+      const payload: Record<string, unknown> = {
         type: "broadcast",
         title: broadcastTitle.trim(),
         message: broadcastMessage.trim()
@@ -211,10 +211,10 @@ export function PushNotificationsAdmin() {
 
       // If selected mode, pass array of user IDs
       if (recipientMode === "selected") {
-        body.targetUserIds = Array.from(selectedRecipients);
+        payload.targetUserIds = Array.from(selectedRecipients);
       }
 
-      const { data, error } = await supabase.functions.invoke("push-send", body);
+      const { data, error } = await supabase.functions.invoke("push-send", { body: payload });
 
       if (error) throw error;
 
