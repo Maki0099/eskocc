@@ -335,6 +335,7 @@ export type Database = {
           push_notifications_enabled: boolean | null
           strava_access_token: string | null
           strava_id: string | null
+          strava_monthly_stats: Json | null
           strava_refresh_token: string | null
           strava_stats_cached_at: string | null
           strava_token_expires_at: string | null
@@ -355,6 +356,7 @@ export type Database = {
           push_notifications_enabled?: boolean | null
           strava_access_token?: string | null
           strava_id?: string | null
+          strava_monthly_stats?: Json | null
           strava_refresh_token?: string | null
           strava_stats_cached_at?: string | null
           strava_token_expires_at?: string | null
@@ -375,6 +377,7 @@ export type Database = {
           push_notifications_enabled?: boolean | null
           strava_access_token?: string | null
           strava_id?: string | null
+          strava_monthly_stats?: Json | null
           strava_refresh_token?: string | null
           strava_stats_cached_at?: string | null
           strava_token_expires_at?: string | null
