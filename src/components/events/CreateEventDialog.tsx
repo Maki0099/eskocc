@@ -4,12 +4,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
-import { CalendarIcon, Plus, Upload, X, FileText, ImageIcon } from "lucide-react";
+import { CalendarIcon, Plus, Upload, X, FileText, ImageIcon, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-
+import { parseGpxFile } from "@/lib/gpx-utils";
 import {
   Dialog,
   DialogContent,
@@ -81,6 +81,7 @@ const CreateEventDialog = ({ onEventCreated }: CreateEventDialogProps) => {
   const [coverImage, setCoverImage] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [gpxFile, setGpxFile] = useState<File | null>(null);
+  const [parsingGpx, setParsingGpx] = useState(false);
   const coverInputRef = useRef<HTMLInputElement>(null);
   const gpxInputRef = useRef<HTMLInputElement>(null);
 
@@ -111,7 +112,7 @@ const CreateEventDialog = ({ onEventCreated }: CreateEventDialogProps) => {
     }
   };
 
-  const handleGpxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleGpxChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       if (!file.name.toLowerCase().endsWith(".gpx")) {
@@ -123,6 +124,17 @@ const CreateEventDialog = ({ onEventCreated }: CreateEventDialogProps) => {
         return;
       }
       setGpxFile(file);
+      
+      // Parse GPX for distance and elevation
+      setParsingGpx(true);
+      const stats = await parseGpxFile(file);
+      setParsingGpx(false);
+      
+      if (stats) {
+        form.setValue("distance_km", stats.distanceKm);
+        form.setValue("elevation_m", stats.elevationM);
+        toast.success(`GPX načteno: ${stats.distanceKm} km, ${stats.elevationM} m převýšení`);
+      }
     }
   };
 
@@ -480,7 +492,12 @@ const CreateEventDialog = ({ onEventCreated }: CreateEventDialogProps) => {
                 onChange={handleGpxChange}
                 className="hidden"
               />
-              {gpxFile ? (
+              {parsingGpx ? (
+                <div className="flex items-center justify-center p-3 rounded-lg bg-muted">
+                  <Loader2 className="w-5 h-5 animate-spin mr-2 text-primary" />
+                  <span className="text-sm">Načítám data z GPX...</span>
+                </div>
+              ) : gpxFile ? (
                 <div className="flex items-center justify-between p-3 rounded-lg bg-muted">
                   <div className="flex items-center gap-2">
                     <FileText className="w-5 h-5 text-primary" />
