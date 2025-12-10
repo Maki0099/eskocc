@@ -7,13 +7,25 @@ import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import CreateEventDialog from "@/components/events/CreateEventDialog";
+import CreateRouteDialog from "@/components/routes/CreateRouteDialog";
+import RouteListItem from "@/components/routes/RouteListItem";
 import MemberOnlyContent from "@/components/MemberOnlyContent";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SkeletonEventCard } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Calendar, MapPin, Users, ChevronRight, Camera, History, Loader2, Route, Mountain, Gauge } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Calendar, MapPin, Users, ChevronRight, Camera, History, Loader2, Route, Mountain, Gauge, Heart, MapIcon } from "lucide-react";
 import { format, isSameMonth, isSameYear } from "date-fns";
 import { cs } from "date-fns/locale";
 import { toast } from "sonner";
@@ -33,6 +45,20 @@ interface Event {
   elevation_m?: number | null;
   difficulty?: string | null;
   terrain_type?: string | null;
+}
+
+interface FavoriteRoute {
+  id: string;
+  title: string;
+  description: string | null;
+  distance_km: number | null;
+  elevation_m: number | null;
+  difficulty: string | null;
+  terrain_type: string | null;
+  route_link: string | null;
+  gpx_file_url: string | null;
+  cover_image_url: string | null;
+  created_by: string | null;
 }
 
 interface GroupedEvents {
@@ -57,14 +83,18 @@ const DIFFICULTY_COLORS: Record<string, string> = {
 
 const Events = () => {
   const { user } = useAuth();
-  const { canCreateEvents, isMember, loading: roleLoading } = useUserRole();
+  const { canCreateEvents, isMember, isAdmin, loading: roleLoading } = useUserRole();
   const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([]);
   const [pastEvents, setPastEvents] = useState<Event[]>([]);
+  const [favoriteRoutes, setFavoriteRoutes] = useState<FavoriteRoute[]>([]);
   const [loadingUpcoming, setLoadingUpcoming] = useState(true);
   const [loadingPast, setLoadingPast] = useState(false);
+  const [loadingRoutes, setLoadingRoutes] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMorePast, setHasMorePast] = useState(true);
   const [activeTab, setActiveTab] = useState("upcoming");
+  const [routeToDelete, setRouteToDelete] = useState<FavoriteRoute | null>(null);
+  const [deletingRoute, setDeletingRoute] = useState(false);
 
   const { ref: headerRef, isVisible: headerVisible } = useScrollAnimation();
   const { ref: listRef, isVisible: listVisible } = useScrollAnimation();
@@ -174,6 +204,47 @@ const Events = () => {
     }
   };
 
+  const fetchFavoriteRoutes = async () => {
+    setLoadingRoutes(true);
+    try {
+      const { data, error } = await supabase
+        .from("favorite_routes")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setFavoriteRoutes(data || []);
+    } catch (error) {
+      console.error("Error fetching favorite routes:", error);
+      toast.error("Nepodařilo se načíst oblíbené trasy");
+    } finally {
+      setLoadingRoutes(false);
+    }
+  };
+
+  const handleDeleteRoute = async () => {
+    if (!routeToDelete) return;
+
+    setDeletingRoute(true);
+    try {
+      const { error } = await supabase
+        .from("favorite_routes")
+        .delete()
+        .eq("id", routeToDelete.id);
+
+      if (error) throw error;
+
+      toast.success("Trasa byla smazána");
+      setFavoriteRoutes((prev) => prev.filter((r) => r.id !== routeToDelete.id));
+    } catch (error) {
+      console.error("Error deleting route:", error);
+      toast.error("Nepodařilo se smazat trasu");
+    } finally {
+      setDeletingRoute(false);
+      setRouteToDelete(null);
+    }
+  };
+
   useEffect(() => {
     fetchUpcomingEvents();
   }, [user]);
@@ -181,6 +252,9 @@ const Events = () => {
   useEffect(() => {
     if (activeTab === "history" && pastEvents.length === 0) {
       fetchPastEvents(false);
+    }
+    if (activeTab === "routes" && favoriteRoutes.length === 0) {
+      fetchFavoriteRoutes();
     }
   }, [activeTab]);
 
@@ -336,14 +410,20 @@ const Events = () => {
             />
           ) : (
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsList className="grid w-full grid-cols-3 mb-6">
                 <TabsTrigger value="upcoming" className="flex items-center gap-2">
                   <Calendar className="w-4 h-4" />
-                  Nadcházející
+                  <span className="hidden sm:inline">Nadcházející</span>
+                  <span className="sm:hidden">Plán</span>
                 </TabsTrigger>
                 <TabsTrigger value="history" className="flex items-center gap-2">
                   <History className="w-4 h-4" />
                   Historie
+                </TabsTrigger>
+                <TabsTrigger value="routes" className="flex items-center gap-2">
+                  <Heart className="w-4 h-4" />
+                  <span className="hidden sm:inline">Oblíbené trasy</span>
+                  <span className="sm:hidden">Trasy</span>
                 </TabsTrigger>
               </TabsList>
 
@@ -417,11 +497,65 @@ const Events = () => {
                   </div>
                 )}
               </TabsContent>
+
+              <TabsContent value="routes">
+                <div className="flex justify-end mb-4">
+                  {canCreateEvents && <CreateRouteDialog onRouteCreated={fetchFavoriteRoutes} />}
+                </div>
+                {loadingRoutes ? (
+                  <div className="space-y-2">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="h-16 rounded-lg bg-muted animate-pulse" />
+                    ))}
+                  </div>
+                ) : favoriteRoutes.length === 0 ? (
+                  <Card>
+                    <CardContent className="py-12 text-center">
+                      <MapIcon className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                      <p className="text-muted-foreground">Zatím žádné oblíbené trasy</p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="space-y-2">
+                    {favoriteRoutes.map((route) => (
+                      <RouteListItem
+                        key={route.id}
+                        route={route}
+                        canEdit={user?.id === route.created_by || isAdmin}
+                        onEdit={() => {}}
+                        onDelete={setRouteToDelete}
+                      />
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
             </Tabs>
           )}
         </div>
       </main>
       <Footer />
+
+      {/* Delete Route Confirmation */}
+      <AlertDialog open={!!routeToDelete} onOpenChange={() => setRouteToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Smazat trasu?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Opravdu chcete smazat trasu "{routeToDelete?.title}"? Tuto akci nelze vrátit.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Zrušit</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteRoute}
+              disabled={deletingRoute}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deletingRoute ? "Mazání..." : "Smazat"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

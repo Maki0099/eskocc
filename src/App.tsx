@@ -21,6 +21,7 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Account = lazy(() => import("./pages/Account"));
 const Events = lazy(() => import("./pages/Events"));
 const EventDetail = lazy(() => import("./pages/EventDetail"));
+const RouteDetail = lazy(() => import("./pages/RouteDetail"));
 const MemberProfile = lazy(() => import("./pages/MemberProfile"));
 const Gallery = lazy(() => import("./pages/Gallery"));
 const Cafe = lazy(() => import("./pages/Cafe"));
@@ -52,6 +53,7 @@ const App = () => (
                 <Route path={ROUTES.RESET_PASSWORD} element={<ResetPassword />} />
                 <Route path={ROUTES.EVENTS} element={<Events />} />
                 <Route path={ROUTE_PATTERNS.EVENT_DETAIL} element={<EventDetail />} />
+                <Route path={ROUTE_PATTERNS.ROUTE_DETAIL} element={<RouteDetail />} />
                 <Route path={ROUTES.GALLERY} element={<Gallery />} />
                 <Route path={ROUTES.CAFE} element={<Cafe />} />
                 <Route path={ROUTES.STATISTICS} element={<Statistics />} />
