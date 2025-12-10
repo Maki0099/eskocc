@@ -21,7 +21,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Clock, Coffee, Plus, Pencil, Trash2, Loader2, Image, Upload } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Clock, Coffee, Plus, Pencil, Trash2, Loader2, Image, Upload, FolderTree } from "lucide-react";
 import { toast } from "sonner";
 
 interface OpeningHour {
@@ -38,8 +45,16 @@ interface MenuItem {
   description: string | null;
   price: number;
   category: string;
+  category_id: string | null;
   is_available: boolean;
   sort_order: number;
+}
+
+interface MenuCategory {
+  id: string;
+  name: string;
+  parent_id: string | null;
+  sort_order: number | null;
 }
 
 interface GalleryPhoto {
@@ -56,35 +71,47 @@ const CafeAdmin = () => {
   const { user } = useAuth();
   const [openingHours, setOpeningHours] = useState<OpeningHour[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [galleryPhotos, setGalleryPhotos] = useState<GalleryPhoto[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [menuDialogOpen, setMenuDialogOpen] = useState(false);
+  const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
+  const [editingCategory, setEditingCategory] = useState<MenuCategory | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [menuForm, setMenuForm] = useState({
     name: "",
     description: "",
     price: "",
     category: "",
+    category_id: "",
+    sort_order: "0",
+  });
+  const [categoryForm, setCategoryForm] = useState({
+    name: "",
+    parent_id: "",
     sort_order: "0",
   });
 
   const fetchData = async () => {
     try {
-      const [hoursRes, menuRes, galleryRes] = await Promise.all([
+      const [hoursRes, menuRes, categoriesRes, galleryRes] = await Promise.all([
         supabase.from("cafe_opening_hours").select("*").order("day_of_week"),
         supabase.from("cafe_menu_items").select("*").order("sort_order"),
+        supabase.from("cafe_menu_categories").select("*").order("sort_order"),
         supabase.from("cafe_gallery").select("*").order("sort_order"),
       ]);
 
       if (hoursRes.error) throw hoursRes.error;
       if (menuRes.error) throw menuRes.error;
+      if (categoriesRes.error) throw categoriesRes.error;
       if (galleryRes.error) throw galleryRes.error;
 
       setOpeningHours(hoursRes.data || []);
       setMenuItems(menuRes.data || []);
+      setCategories(categoriesRes.data || []);
       setGalleryPhotos(galleryRes.data || []);
     } catch (error) {
       console.error("Error fetching cafe data:", error);
@@ -124,6 +151,70 @@ const CafeAdmin = () => {
     }
   };
 
+  // Category handlers
+  const openCategoryDialog = (category?: MenuCategory) => {
+    if (category) {
+      setEditingCategory(category);
+      setCategoryForm({
+        name: category.name,
+        parent_id: category.parent_id || "",
+        sort_order: (category.sort_order ?? 0).toString(),
+      });
+    } else {
+      setEditingCategory(null);
+      setCategoryForm({ name: "", parent_id: "", sort_order: "0" });
+    }
+    setCategoryDialogOpen(true);
+  };
+
+  const handleCategorySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+
+    try {
+      const data = {
+        name: categoryForm.name,
+        parent_id: categoryForm.parent_id || null,
+        sort_order: parseInt(categoryForm.sort_order),
+      };
+
+      if (editingCategory) {
+        const { error } = await supabase
+          .from("cafe_menu_categories")
+          .update(data)
+          .eq("id", editingCategory.id);
+        if (error) throw error;
+        toast.success("Kategorie upravena");
+      } else {
+        const { error } = await supabase.from("cafe_menu_categories").insert(data);
+        if (error) throw error;
+        toast.success("Kategorie přidána");
+      }
+
+      setCategoryDialogOpen(false);
+      fetchData();
+    } catch (error) {
+      console.error("Error saving category:", error);
+      toast.error("Nepodařilo se uložit kategorii");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteCategory = async (id: string) => {
+    if (!confirm("Opravdu chcete smazat tuto kategorii? Položky menu zůstanou zachovány.")) return;
+
+    try {
+      const { error } = await supabase.from("cafe_menu_categories").delete().eq("id", id);
+      if (error) throw error;
+      toast.success("Kategorie smazána");
+      fetchData();
+    } catch (error) {
+      console.error("Error deleting category:", error);
+      toast.error("Nepodařilo se smazat kategorii");
+    }
+  };
+
   const openMenuDialog = (item?: MenuItem) => {
     if (item) {
       setEditingItem(item);
@@ -132,11 +223,12 @@ const CafeAdmin = () => {
         description: item.description || "",
         price: item.price.toString(),
         category: item.category,
+        category_id: item.category_id || "",
         sort_order: item.sort_order.toString(),
       });
     } else {
       setEditingItem(null);
-      setMenuForm({ name: "", description: "", price: "", category: "", sort_order: "0" });
+      setMenuForm({ name: "", description: "", price: "", category: "", category_id: "", sort_order: "0" });
     }
     setMenuDialogOpen(true);
   };
@@ -146,11 +238,16 @@ const CafeAdmin = () => {
     setSaving(true);
 
     try {
+      // Find category name from category_id if selected
+      const selectedCategory = categories.find(c => c.id === menuForm.category_id);
+      const categoryName = selectedCategory ? selectedCategory.name : menuForm.category;
+
       const data = {
         name: menuForm.name,
         description: menuForm.description || null,
         price: parseFloat(menuForm.price),
-        category: menuForm.category,
+        category: categoryName,
+        category_id: menuForm.category_id || null,
         sort_order: parseInt(menuForm.sort_order),
         is_available: true,
       };
@@ -282,6 +379,18 @@ const CafeAdmin = () => {
     return orderA - orderB;
   });
 
+  // Get parent categories (those without parent_id)
+  const parentCategories = categories.filter(c => !c.parent_id);
+  
+  // Get category display name with parent
+  const getCategoryDisplayName = (category: MenuCategory) => {
+    if (category.parent_id) {
+      const parent = categories.find(c => c.id === category.parent_id);
+      return parent ? `${parent.name} → ${category.name}` : category.name;
+    }
+    return category.name;
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center py-8">
@@ -335,6 +444,131 @@ const CafeAdmin = () => {
               </div>
             ))}
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Menu Categories */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <FolderTree className="w-5 h-5" />
+            Kategorie menu
+          </CardTitle>
+          <Dialog open={categoryDialogOpen} onOpenChange={setCategoryDialogOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" onClick={() => openCategoryDialog()}>
+                <Plus className="w-4 h-4 mr-2" />
+                Přidat kategorii
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>
+                  {editingCategory ? "Upravit kategorii" : "Nová kategorie"}
+                </DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleCategorySubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="cat-name">Název kategorie</Label>
+                  <Input
+                    id="cat-name"
+                    value={categoryForm.name}
+                    onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
+                    placeholder="např. Káva, Čaj, Míchané nápoje..."
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="parent">Nadřazená kategorie (volitelné)</Label>
+                  <Select
+                    value={categoryForm.parent_id}
+                    onValueChange={(value) => setCategoryForm({ ...categoryForm, parent_id: value === "none" ? "" : value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Bez nadřazené kategorie" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Bez nadřazené kategorie</SelectItem>
+                      {parentCategories
+                        .filter(c => c.id !== editingCategory?.id)
+                        .map((cat) => (
+                          <SelectItem key={cat.id} value={cat.id}>
+                            {cat.name}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="cat-sort">Pořadí</Label>
+                  <Input
+                    id="cat-sort"
+                    type="number"
+                    value={categoryForm.sort_order}
+                    onChange={(e) => setCategoryForm({ ...categoryForm, sort_order: e.target.value })}
+                  />
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button type="button" variant="outline" onClick={() => setCategoryDialogOpen(false)}>
+                    Zrušit
+                  </Button>
+                  <Button type="submit" disabled={saving}>
+                    {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                    {editingCategory ? "Uložit" : "Přidat"}
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </CardHeader>
+        <CardContent>
+          {categories.length === 0 ? (
+            <p className="text-center text-muted-foreground py-4">
+              Zatím nejsou vytvořeny žádné kategorie
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Název</TableHead>
+                    <TableHead>Nadřazená</TableHead>
+                    <TableHead>Pořadí</TableHead>
+                    <TableHead className="text-right">Akce</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {categories.map((cat) => (
+                    <TableRow key={cat.id}>
+                      <TableCell className="font-medium">{cat.name}</TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {cat.parent_id 
+                          ? categories.find(c => c.id === cat.parent_id)?.name || "-"
+                          : "-"
+                        }
+                      </TableCell>
+                      <TableCell>{cat.sort_order ?? 0}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button variant="ghost" size="icon" onClick={() => openCategoryDialog(cat)}>
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => handleDeleteCategory(cat.id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -399,14 +633,42 @@ const CafeAdmin = () => {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="category">Kategorie</Label>
-                  <Input
-                    id="category"
-                    value={menuForm.category}
-                    onChange={(e) => setMenuForm({ ...menuForm, category: e.target.value })}
-                    placeholder="např. Káva Vergnano, Čaj, Matcha..."
-                    required
-                  />
+                  <Label htmlFor="category_select">Kategorie</Label>
+                  {categories.length > 0 ? (
+                    <Select
+                      value={menuForm.category_id}
+                      onValueChange={(value) => {
+                        const cat = categories.find(c => c.id === value);
+                        setMenuForm({ 
+                          ...menuForm, 
+                          category_id: value === "custom" ? "" : value,
+                          category: cat ? cat.name : menuForm.category
+                        });
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Vyberte kategorii" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="custom">Vlastní kategorie</SelectItem>
+                        {categories.map((cat) => (
+                          <SelectItem key={cat.id} value={cat.id}>
+                            {getCategoryDisplayName(cat)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : null}
+                  {(!menuForm.category_id || categories.length === 0) && (
+                    <Input
+                      id="category"
+                      value={menuForm.category}
+                      onChange={(e) => setMenuForm({ ...menuForm, category: e.target.value })}
+                      placeholder="např. Káva Vergnano, Čaj, Matcha..."
+                      required={!menuForm.category_id}
+                      className={categories.length > 0 ? "mt-2" : ""}
+                    />
+                  )}
                 </div>
                 <div className="flex justify-end gap-2">
                   <Button type="button" variant="outline" onClick={() => setMenuDialogOpen(false)}>
