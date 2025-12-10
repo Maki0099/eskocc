@@ -9,6 +9,7 @@ import EditEventDialog from "@/components/events/EditEventDialog";
 import EventNotificationToggle from "@/components/events/EventNotificationToggle";
 import PhotoGrid from "@/components/gallery/PhotoGrid";
 import PhotoUpload from "@/components/gallery/PhotoUpload";
+import GpxMap from "@/components/map/GpxMap";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -36,7 +37,8 @@ import {
   Route,
   Mountain,
   Gauge,
-  Bike
+  Bike,
+  Map
 } from "lucide-react";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
@@ -368,6 +370,21 @@ const EventDetail = () => {
                 </Badge>
               )}
             </div>
+          )}
+
+          {/* GPX Map */}
+          {event.gpx_file_url && (
+            <Card className="mb-6">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Map className="w-5 h-5" />
+                  Trasa
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <GpxMap gpxUrl={event.gpx_file_url} />
+              </CardContent>
+            </Card>
           )}
 
           <Card className="mb-6">
