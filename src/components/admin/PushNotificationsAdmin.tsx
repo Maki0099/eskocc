@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Bell, BellOff, Trash2, Loader2, RefreshCw, Send, MessageSquare } from "lucide-react";
+import { Bell, BellOff, Trash2, Loader2, RefreshCw, Send, MessageSquare, Search, Users, UserCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -20,6 +20,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface UserSubscription {
   user_id: string;
@@ -37,6 +40,11 @@ export function PushNotificationsAdmin() {
   const [broadcastTitle, setBroadcastTitle] = useState("");
   const [broadcastMessage, setBroadcastMessage] = useState("");
   const [sending, setSending] = useState(false);
+  
+  // Recipient selection
+  const [recipientMode, setRecipientMode] = useState<"all" | "selected">("all");
+  const [selectedRecipients, setSelectedRecipients] = useState<Set<string>>(new Set());
+  const [recipientFilter, setRecipientFilter] = useState("");
   
   // Individual notification dialog state
   const [notifyDialogOpen, setNotifyDialogOpen] = useState(false);
@@ -147,27 +155,74 @@ export function PushNotificationsAdmin() {
     }
   };
 
+  // Filter users with subscriptions for recipient selection
+  const usersWithSubs = useMemo(() => 
+    users.filter(u => u.subscription_count > 0),
+    [users]
+  );
+
+  const filteredRecipients = useMemo(() => {
+    if (!recipientFilter.trim()) return usersWithSubs;
+    const filter = recipientFilter.toLowerCase();
+    return usersWithSubs.filter(u => 
+      (u.full_name?.toLowerCase().includes(filter)) ||
+      (u.nickname?.toLowerCase().includes(filter))
+    );
+  }, [usersWithSubs, recipientFilter]);
+
+  const toggleRecipient = (userId: string) => {
+    setSelectedRecipients(prev => {
+      const next = new Set(prev);
+      if (next.has(userId)) {
+        next.delete(userId);
+      } else {
+        next.add(userId);
+      }
+      return next;
+    });
+  };
+
+  const selectAllRecipients = () => {
+    setSelectedRecipients(new Set(usersWithSubs.map(u => u.user_id)));
+  };
+
+  const deselectAllRecipients = () => {
+    setSelectedRecipients(new Set());
+  };
+
   const sendBroadcast = async () => {
     if (!broadcastTitle.trim() || !broadcastMessage.trim()) {
       toast.error("Vyplňte titulek a zprávu");
       return;
     }
 
+    if (recipientMode === "selected" && selectedRecipients.size === 0) {
+      toast.error("Vyberte alespoň jednoho příjemce");
+      return;
+    }
+
     setSending(true);
     try {
-      const { data, error } = await supabase.functions.invoke("push-send", {
-        body: {
-          type: "broadcast",
-          title: broadcastTitle.trim(),
-          message: broadcastMessage.trim()
-        }
-      });
+      const body: Record<string, unknown> = {
+        type: "broadcast",
+        title: broadcastTitle.trim(),
+        message: broadcastMessage.trim()
+      };
+
+      // If selected mode, pass array of user IDs
+      if (recipientMode === "selected") {
+        body.targetUserIds = Array.from(selectedRecipients);
+      }
+
+      const { data, error } = await supabase.functions.invoke("push-send", body);
 
       if (error) throw error;
 
       toast.success(`Odesláno: ${data?.sent || 0} notifikací`);
       setBroadcastTitle("");
       setBroadcastMessage("");
+      setSelectedRecipients(new Set());
+      setRecipientMode("all");
     } catch (error) {
       console.error("Error sending broadcast:", error);
       toast.error("Nepodařilo se odeslat notifikace");
@@ -259,10 +314,111 @@ export function PushNotificationsAdmin() {
             Hromadná notifikace
           </CardTitle>
           <CardDescription>
-            Odešlete notifikaci všem členům s aktivní subscription
+            Odešlete notifikaci členům s aktivní subscription
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Recipient mode selector */}
+          <div className="space-y-3">
+            <Label>Příjemci</Label>
+            <RadioGroup
+              value={recipientMode}
+              onValueChange={(v) => setRecipientMode(v as "all" | "selected")}
+              className="flex gap-4"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="all" id="mode-all" />
+                <Label htmlFor="mode-all" className="flex items-center gap-2 cursor-pointer font-normal">
+                  <Users className="h-4 w-4" />
+                  Všem členům ({usersWithSubscriptions})
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="selected" id="mode-selected" />
+                <Label htmlFor="mode-selected" className="flex items-center gap-2 cursor-pointer font-normal">
+                  <UserCheck className="h-4 w-4" />
+                  Vybraným členům
+                  {selectedRecipients.size > 0 && (
+                    <Badge variant="secondary">{selectedRecipients.size}</Badge>
+                  )}
+                </Label>
+              </div>
+            </RadioGroup>
+          </div>
+
+          {/* Recipient selector (shown only in selected mode) */}
+          {recipientMode === "selected" && (
+            <div className="border rounded-lg p-3 space-y-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Hledat členy..."
+                  value={recipientFilter}
+                  onChange={(e) => setRecipientFilter(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">
+                  {usersWithSubs.length} členů s aktivní subscription
+                </span>
+                <div className="flex gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={selectAllRecipients}
+                  >
+                    Vybrat vše
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={deselectAllRecipients}
+                    disabled={selectedRecipients.size === 0}
+                  >
+                    Zrušit výběr
+                  </Button>
+                </div>
+              </div>
+
+              <ScrollArea className="h-48 rounded border">
+                <div className="p-2 space-y-1">
+                  {filteredRecipients.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      Žádní členové nenalezeni
+                    </p>
+                  ) : (
+                    filteredRecipients.map((user) => (
+                      <label
+                        key={user.user_id}
+                        className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50 cursor-pointer"
+                      >
+                        <Checkbox
+                          checked={selectedRecipients.has(user.user_id)}
+                          onCheckedChange={() => toggleRecipient(user.user_id)}
+                        />
+                        <Avatar className="h-7 w-7">
+                          <AvatarImage src={user.avatar_url || undefined} />
+                          <AvatarFallback className="text-xs">
+                            {getInitials(user.full_name || user.nickname || "?")}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="flex-1 text-sm truncate">
+                          {user.full_name || user.nickname || "Bez jména"}
+                        </span>
+                        <Badge variant="outline" className="text-xs">
+                          <Bell className="h-3 w-3 mr-1" />
+                          {user.subscription_count}
+                        </Badge>
+                      </label>
+                    ))
+                  )}
+                </div>
+              </ScrollArea>
+            </div>
+          )}
+
           <Input
             placeholder="Titulek notifikace"
             value={broadcastTitle}
@@ -274,7 +430,10 @@ export function PushNotificationsAdmin() {
             onChange={(e) => setBroadcastMessage(e.target.value)}
             rows={3}
           />
-          <Button onClick={sendBroadcast} disabled={sending}>
+          <Button 
+            onClick={sendBroadcast} 
+            disabled={sending || (recipientMode === "selected" && selectedRecipients.size === 0)}
+          >
             {sending ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -283,7 +442,10 @@ export function PushNotificationsAdmin() {
             ) : (
               <>
                 <Send className="mr-2 h-4 w-4" />
-                Odeslat všem ({usersWithSubscriptions})
+                {recipientMode === "all" 
+                  ? `Odeslat všem (${usersWithSubscriptions})`
+                  : `Odeslat vybraným (${selectedRecipients.size})`
+                }
               </>
             )}
           </Button>
