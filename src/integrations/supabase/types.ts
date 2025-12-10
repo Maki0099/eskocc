@@ -41,9 +41,42 @@ export type Database = {
         }
         Relationships: []
       }
+      cafe_menu_categories: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          parent_id: string | null
+          sort_order: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          parent_id?: string | null
+          sort_order?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          parent_id?: string | null
+          sort_order?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cafe_menu_categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "cafe_menu_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cafe_menu_items: {
         Row: {
           category: string
+          category_id: string | null
           created_at: string | null
           description: string | null
           id: string
@@ -55,6 +88,7 @@ export type Database = {
         }
         Insert: {
           category: string
+          category_id?: string | null
           created_at?: string | null
           description?: string | null
           id?: string
@@ -66,6 +100,7 @@ export type Database = {
         }
         Update: {
           category?: string
+          category_id?: string | null
           created_at?: string | null
           description?: string | null
           id?: string
@@ -75,7 +110,15 @@ export type Database = {
           sort_order?: number | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "cafe_menu_items_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "cafe_menu_categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cafe_opening_hours: {
         Row: {
