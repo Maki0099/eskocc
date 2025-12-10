@@ -14,22 +14,15 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Clock, Coffee, Plus, Pencil, Trash2, Loader2, Image, Upload, FolderTree } from "lucide-react";
+import { Clock, Coffee, Plus, Loader2, Image, Upload, FolderTree, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { MenuItemsHierarchy } from "./MenuItemsHierarchy";
 
 interface OpeningHour {
   id: string;
@@ -87,12 +80,10 @@ const CafeAdmin = () => {
     price: "",
     category: "",
     category_id: "",
-    sort_order: "0",
   });
   const [categoryForm, setCategoryForm] = useState({
     name: "",
     parent_id: "",
-    sort_order: "0",
   });
 
   const fetchData = async () => {
@@ -158,11 +149,10 @@ const CafeAdmin = () => {
       setCategoryForm({
         name: category.name,
         parent_id: category.parent_id || "",
-        sort_order: (category.sort_order ?? 0).toString(),
       });
     } else {
       setEditingCategory(null);
-      setCategoryForm({ name: "", parent_id: "", sort_order: "0" });
+      setCategoryForm({ name: "", parent_id: "" });
     }
     setCategoryDialogOpen(true);
   };
@@ -175,7 +165,6 @@ const CafeAdmin = () => {
       const data = {
         name: categoryForm.name,
         parent_id: categoryForm.parent_id || null,
-        sort_order: parseInt(categoryForm.sort_order),
       };
 
       if (editingCategory) {
@@ -224,11 +213,10 @@ const CafeAdmin = () => {
         price: item.price.toString(),
         category: item.category,
         category_id: item.category_id || "",
-        sort_order: item.sort_order.toString(),
       });
     } else {
       setEditingItem(null);
-      setMenuForm({ name: "", description: "", price: "", category: "", category_id: "", sort_order: "0" });
+      setMenuForm({ name: "", description: "", price: "", category: "", category_id: "" });
     }
     setMenuDialogOpen(true);
   };
@@ -248,8 +236,7 @@ const CafeAdmin = () => {
         price: parseFloat(menuForm.price),
         category: categoryName,
         category_id: menuForm.category_id || null,
-        sort_order: parseInt(menuForm.sort_order),
-        is_available: true,
+        is_available: editingItem ? editingItem.is_available : true,
       };
 
       if (editingItem) {
@@ -447,170 +434,102 @@ const CafeAdmin = () => {
         </CardContent>
       </Card>
 
-      {/* Menu Categories */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <FolderTree className="w-5 h-5" />
-            Kategorie menu
-          </CardTitle>
-          <Dialog open={categoryDialogOpen} onOpenChange={setCategoryDialogOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm" onClick={() => openCategoryDialog()}>
-                <Plus className="w-4 h-4 mr-2" />
-                Přidat kategorii
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>
-                  {editingCategory ? "Upravit kategorii" : "Nová kategorie"}
-                </DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleCategorySubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="cat-name">Název kategorie</Label>
-                  <Input
-                    id="cat-name"
-                    value={categoryForm.name}
-                    onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
-                    placeholder="např. Káva, Čaj, Míchané nápoje..."
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="parent">Nadřazená kategorie (volitelné)</Label>
-                  <Select
-                    value={categoryForm.parent_id}
-                    onValueChange={(value) => setCategoryForm({ ...categoryForm, parent_id: value === "none" ? "" : value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Bez nadřazené kategorie" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Bez nadřazené kategorie</SelectItem>
-                      {parentCategories
-                        .filter(c => c.id !== editingCategory?.id)
-                        .map((cat) => (
-                          <SelectItem key={cat.id} value={cat.id}>
-                            {cat.name}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="cat-sort">Pořadí</Label>
-                  <Input
-                    id="cat-sort"
-                    type="number"
-                    value={categoryForm.sort_order}
-                    onChange={(e) => setCategoryForm({ ...categoryForm, sort_order: e.target.value })}
-                  />
-                </div>
-                <div className="flex justify-end gap-2">
-                  <Button type="button" variant="outline" onClick={() => setCategoryDialogOpen(false)}>
-                    Zrušit
-                  </Button>
-                  <Button type="submit" disabled={saving}>
-                    {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                    {editingCategory ? "Uložit" : "Přidat"}
-                  </Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
-        </CardHeader>
-        <CardContent>
-          {categories.length === 0 ? (
-            <p className="text-center text-muted-foreground py-4">
-              Zatím nejsou vytvořeny žádné kategorie
-            </p>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Název</TableHead>
-                    <TableHead>Nadřazená</TableHead>
-                    <TableHead>Pořadí</TableHead>
-                    <TableHead className="text-right">Akce</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {categories.map((cat) => (
-                    <TableRow key={cat.id}>
-                      <TableCell className="font-medium">{cat.name}</TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {cat.parent_id 
-                          ? categories.find(c => c.id === cat.parent_id)?.name || "-"
-                          : "-"
-                        }
-                      </TableCell>
-                      <TableCell>{cat.sort_order ?? 0}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button variant="ghost" size="icon" onClick={() => openCategoryDialog(cat)}>
-                            <Pencil className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="text-destructive hover:text-destructive"
-                            onClick={() => handleDeleteCategory(cat.id)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Menu Items */}
+      {/* Menu Items - Hierarchical View */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <Coffee className="w-5 h-5" />
             Nápojový lístek
           </CardTitle>
-          <Dialog open={menuDialogOpen} onOpenChange={setMenuDialogOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm" onClick={() => openMenuDialog()}>
-                <Plus className="w-4 h-4 mr-2" />
-                Přidat položku
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>
-                  {editingItem ? "Upravit položku" : "Nová položka"}
-                </DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleMenuSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Název</Label>
-                  <Input
-                    id="name"
-                    value={menuForm.name}
-                    onChange={(e) => setMenuForm({ ...menuForm, name: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="description">Popis (volitelné)</Label>
-                  <Input
-                    id="description"
-                    value={menuForm.description}
-                    onChange={(e) => setMenuForm({ ...menuForm, description: e.target.value })}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
+          <div className="flex gap-2">
+            <Dialog open={categoryDialogOpen} onOpenChange={setCategoryDialogOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" variant="outline" onClick={() => openCategoryDialog()}>
+                  <FolderTree className="w-4 h-4 mr-2" />
+                  Přidat kategorii
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>
+                    {editingCategory ? "Upravit kategorii" : "Nová kategorie"}
+                  </DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleCategorySubmit} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="cat-name">Název kategorie</Label>
+                    <Input
+                      id="cat-name"
+                      value={categoryForm.name}
+                      onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
+                      placeholder="např. Káva, Čaj, Míchané nápoje..."
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="parent">Nadřazená kategorie (volitelné)</Label>
+                    <Select
+                      value={categoryForm.parent_id}
+                      onValueChange={(value) => setCategoryForm({ ...categoryForm, parent_id: value === "none" ? "" : value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Bez nadřazené kategorie" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Bez nadřazené kategorie</SelectItem>
+                        {parentCategories
+                          .filter(c => c.id !== editingCategory?.id)
+                          .map((cat) => (
+                            <SelectItem key={cat.id} value={cat.id}>
+                              {cat.name}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button type="button" variant="outline" onClick={() => setCategoryDialogOpen(false)}>
+                      Zrušit
+                    </Button>
+                    <Button type="submit" disabled={saving}>
+                      {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                      {editingCategory ? "Uložit" : "Přidat"}
+                    </Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
+            <Dialog open={menuDialogOpen} onOpenChange={setMenuDialogOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" onClick={() => openMenuDialog()}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Přidat položku
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>
+                    {editingItem ? "Upravit položku" : "Nová položka"}
+                  </DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleMenuSubmit} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Název</Label>
+                    <Input
+                      id="name"
+                      value={menuForm.name}
+                      onChange={(e) => setMenuForm({ ...menuForm, name: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="description">Popis (volitelné)</Label>
+                    <Input
+                      id="description"
+                      value={menuForm.description}
+                      onChange={(e) => setMenuForm({ ...menuForm, description: e.target.value })}
+                    />
+                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="price">Cena (Kč)</Label>
                     <Input
@@ -623,110 +542,71 @@ const CafeAdmin = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="sort_order">Pořadí</Label>
-                    <Input
-                      id="sort_order"
-                      type="number"
-                      value={menuForm.sort_order}
-                      onChange={(e) => setMenuForm({ ...menuForm, sort_order: e.target.value })}
-                    />
+                    <Label htmlFor="category_select">Kategorie</Label>
+                    {categories.length > 0 ? (
+                      <Select
+                        value={menuForm.category_id}
+                        onValueChange={(value) => {
+                          const cat = categories.find(c => c.id === value);
+                          setMenuForm({ 
+                            ...menuForm, 
+                            category_id: value === "custom" ? "" : value,
+                            category: cat ? cat.name : menuForm.category
+                          });
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Vyberte kategorii" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="custom">Vlastní kategorie</SelectItem>
+                          {categories.map((cat) => (
+                            <SelectItem key={cat.id} value={cat.id}>
+                              {getCategoryDisplayName(cat)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : null}
+                    {(!menuForm.category_id || categories.length === 0) && (
+                      <Input
+                        id="category"
+                        value={menuForm.category}
+                        onChange={(e) => setMenuForm({ ...menuForm, category: e.target.value })}
+                        placeholder="např. Káva Vergnano, Čaj, Matcha..."
+                        required={!menuForm.category_id}
+                        className={categories.length > 0 ? "mt-2" : ""}
+                      />
+                    )}
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="category_select">Kategorie</Label>
-                  {categories.length > 0 ? (
-                    <Select
-                      value={menuForm.category_id}
-                      onValueChange={(value) => {
-                        const cat = categories.find(c => c.id === value);
-                        setMenuForm({ 
-                          ...menuForm, 
-                          category_id: value === "custom" ? "" : value,
-                          category: cat ? cat.name : menuForm.category
-                        });
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Vyberte kategorii" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="custom">Vlastní kategorie</SelectItem>
-                        {categories.map((cat) => (
-                          <SelectItem key={cat.id} value={cat.id}>
-                            {getCategoryDisplayName(cat)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : null}
-                  {(!menuForm.category_id || categories.length === 0) && (
-                    <Input
-                      id="category"
-                      value={menuForm.category}
-                      onChange={(e) => setMenuForm({ ...menuForm, category: e.target.value })}
-                      placeholder="např. Káva Vergnano, Čaj, Matcha..."
-                      required={!menuForm.category_id}
-                      className={categories.length > 0 ? "mt-2" : ""}
-                    />
-                  )}
-                </div>
-                <div className="flex justify-end gap-2">
-                  <Button type="button" variant="outline" onClick={() => setMenuDialogOpen(false)}>
-                    Zrušit
-                  </Button>
-                  <Button type="submit" disabled={saving}>
-                    {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                    {editingItem ? "Uložit" : "Přidat"}
-                  </Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
+                  <div className="flex justify-end gap-2">
+                    <Button type="button" variant="outline" onClick={() => setMenuDialogOpen(false)}>
+                      Zrušit
+                    </Button>
+                    <Button type="submit" disabled={saving}>
+                      {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                      {editingItem ? "Uložit" : "Přidat"}
+                    </Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Název</TableHead>
-                  <TableHead>Kategorie</TableHead>
-                  <TableHead>Cena</TableHead>
-                  <TableHead>Dostupné</TableHead>
-                  <TableHead className="text-right">Akce</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {menuItems.map((item) => (
-                  <TableRow key={item.id} className={!item.is_available ? "opacity-50" : ""}>
-                    <TableCell className="font-medium">{item.name}</TableCell>
-                    <TableCell className="text-muted-foreground">{item.category}</TableCell>
-                    <TableCell>{item.price} Kč</TableCell>
-                    <TableCell>
-                      <Switch
-                        checked={item.is_available}
-                        onCheckedChange={() => toggleItemAvailability(item)}
-                      />
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="icon" onClick={() => openMenuDialog(item)}>
-                          <Pencil className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-destructive hover:text-destructive"
-                          onClick={() => handleDeleteMenuItem(item.id)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+          <p className="text-sm text-muted-foreground mb-4">
+            Přetažením kategorií a položek změníte jejich pořadí. Kliknutím na kategorii zobrazíte její položky.
+          </p>
+          <MenuItemsHierarchy
+            categories={categories}
+            menuItems={menuItems}
+            onEditCategory={openCategoryDialog}
+            onDeleteCategory={handleDeleteCategory}
+            onEditItem={openMenuDialog}
+            onDeleteItem={handleDeleteMenuItem}
+            onToggleItemAvailability={toggleItemAvailability}
+            onDataChange={fetchData}
+          />
         </CardContent>
       </Card>
 
