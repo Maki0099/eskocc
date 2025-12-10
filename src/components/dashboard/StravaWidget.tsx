@@ -73,12 +73,14 @@ export const StravaWidget = ({ userId, isClubMember = false }: StravaWidgetProps
   const [isConnected, setIsConnected] = useState(false);
   const [stravaId, setStravaId] = useState<string | null>(null);
   const [chartMetric, setChartMetric] = useState<'distance' | 'count'>('distance');
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
   useEffect(() => {
     const checkStravaAndFetchStats = async () => {
-      // First check if user has Strava connected
+      // First check if user has Strava connected and get cached stats
       const { data: profile } = await supabase
         .from("profiles")
-        .select("strava_id")
+        .select("strava_id, strava_monthly_stats, strava_stats_cached_at")
         .eq("id", userId)
         .maybeSingle();
 
@@ -91,7 +93,38 @@ export const StravaWidget = ({ userId, isClubMember = false }: StravaWidgetProps
       setIsConnected(true);
       setStravaId(profile.strava_id);
 
-      // Fetch stats
+      // If we have cached stats, show them immediately
+      if (profile.strava_monthly_stats) {
+        setStats(profile.strava_monthly_stats as unknown as StatsData);
+        setLoading(false);
+        
+        // Check if cache is stale (older than 1 hour)
+        const cacheAge = profile.strava_stats_cached_at 
+          ? Date.now() - new Date(profile.strava_stats_cached_at).getTime()
+          : Infinity;
+        const CACHE_DURATION = 60 * 60 * 1000; // 1 hour
+        
+        if (cacheAge > CACHE_DURATION) {
+          // Refresh in background
+          setIsRefreshing(true);
+          try {
+            const { data, error } = await supabase.functions.invoke('strava-stats', {
+              body: { userId }
+            });
+
+            if (!error && data && !data.error) {
+              setStats(data);
+            }
+          } catch (err) {
+            console.error('Failed to refresh Strava stats:', err);
+          } finally {
+            setIsRefreshing(false);
+          }
+        }
+        return;
+      }
+
+      // No cached stats, fetch fresh data
       try {
         const { data, error } = await supabase.functions.invoke('strava-stats', {
           body: { userId }

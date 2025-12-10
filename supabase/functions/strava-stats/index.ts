@@ -203,6 +203,9 @@ async function checkClubMembership(accessToken: string): Promise<boolean> {
   }
 }
 
+// Cache duration in milliseconds (1 hour)
+const CACHE_DURATION_MS = 60 * 60 * 1000;
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -210,7 +213,7 @@ serve(async (req) => {
   }
 
   try {
-    const { userId } = await req.json();
+    const { userId, forceRefresh } = await req.json();
     
     if (!userId) {
       return new Response(
@@ -234,10 +237,10 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get user's Strava tokens and current club membership status
+    // Get user's Strava tokens, cached stats, and current club membership status
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('strava_id, strava_access_token, strava_refresh_token, strava_token_expires_at, is_strava_club_member, full_name, nickname')
+      .select('strava_id, strava_access_token, strava_refresh_token, strava_token_expires_at, is_strava_club_member, full_name, nickname, strava_stats_cached_at, strava_monthly_stats, strava_ytd_distance, strava_ytd_count')
       .eq('id', userId)
       .maybeSingle();
 
@@ -256,6 +259,29 @@ serve(async (req) => {
       );
     }
 
+    // Check if we have valid cached data (less than 1 hour old)
+    if (!forceRefresh && profile.strava_stats_cached_at && profile.strava_monthly_stats) {
+      const cacheAge = Date.now() - new Date(profile.strava_stats_cached_at).getTime();
+      
+      if (cacheAge < CACHE_DURATION_MS) {
+        console.log(`Returning cached stats (age: ${Math.round(cacheAge / 1000 / 60)} minutes)`);
+        
+        // Return cached data
+        return new Response(
+          JSON.stringify({
+            cached: true,
+            all_ride_totals: profile.strava_monthly_stats.all_ride_totals || { count: 0, distance: 0, moving_time: 0, elevation_gain: 0 },
+            ytd_ride_totals: profile.strava_monthly_stats.ytd_ride_totals || { count: 0, distance: 0, moving_time: 0, elevation_gain: 0 },
+            recent_ride_totals: profile.strava_monthly_stats.recent_ride_totals || { count: 0, distance: 0, moving_time: 0, elevation_gain: 0 },
+            monthly_stats: profile.strava_monthly_stats.monthly_stats || [],
+            is_club_member: profile.is_strava_club_member || false,
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    console.log('Cache expired or not available, fetching fresh data from Strava API...');
     let accessToken = profile.strava_access_token;
 
     // Check if token is expired
@@ -441,8 +467,24 @@ serve(async (req) => {
       is_club_member: isClubMember,
     };
 
+    // Cache the stats in the database
+    const ytdDistanceKm = Math.round((stats.ytd_ride_totals?.distance || 0) / 1000);
+    const ytdCount = stats.ytd_ride_totals?.count || 0;
+    
+    await supabase
+      .from('profiles')
+      .update({
+        strava_monthly_stats: result,
+        strava_ytd_distance: ytdDistanceKm,
+        strava_ytd_count: ytdCount,
+        strava_stats_cached_at: new Date().toISOString(),
+      })
+      .eq('id', userId);
+
+    console.log('Stats cached successfully');
+
     return new Response(
-      JSON.stringify(result),
+      JSON.stringify({ ...result, cached: false }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
