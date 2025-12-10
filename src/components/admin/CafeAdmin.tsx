@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -159,6 +160,7 @@ const CafeAdmin = () => {
 
   const handleCategorySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("handleCategorySubmit called", { editingCategory, categoryForm });
     setSaving(true);
 
     try {
@@ -167,20 +169,31 @@ const CafeAdmin = () => {
         parent_id: categoryForm.parent_id || null,
       };
 
+      console.log("Saving category data:", data);
+
       if (editingCategory) {
+        console.log("Updating category with id:", editingCategory.id);
         const { error } = await supabase
           .from("cafe_menu_categories")
           .update(data)
           .eq("id", editingCategory.id);
-        if (error) throw error;
+        if (error) {
+          console.error("Update error:", error);
+          throw error;
+        }
         toast.success("Kategorie upravena");
       } else {
+        console.log("Inserting new category");
         const { error } = await supabase.from("cafe_menu_categories").insert(data);
-        if (error) throw error;
+        if (error) {
+          console.error("Insert error:", error);
+          throw error;
+        }
         toast.success("Kategorie přidána");
       }
 
       setCategoryDialogOpen(false);
+      setEditingCategory(null);
       fetchData();
     } catch (error) {
       console.error("Error saving category:", error);
@@ -449,11 +462,14 @@ const CafeAdmin = () => {
                   Přidat kategorii
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent aria-describedby={undefined}>
                 <DialogHeader>
                   <DialogTitle>
                     {editingCategory ? "Upravit kategorii" : "Nová kategorie"}
                   </DialogTitle>
+                  <DialogDescription>
+                    {editingCategory ? "Upravte název nebo nadřazenou kategorii" : "Vytvořte novou kategorii pro menu"}
+                  </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleCategorySubmit} className="space-y-4">
                   <div className="space-y-2">
@@ -491,7 +507,18 @@ const CafeAdmin = () => {
                     <Button type="button" variant="outline" onClick={() => setCategoryDialogOpen(false)}>
                       Zrušit
                     </Button>
-                    <Button type="submit" disabled={saving}>
+                    <Button 
+                      type="submit" 
+                      disabled={saving}
+                      onClick={(e) => {
+                        // Fallback for form submit if native submit doesn't work
+                        const form = e.currentTarget.closest('form');
+                        if (form) {
+                          e.preventDefault();
+                          handleCategorySubmit(e as unknown as React.FormEvent);
+                        }
+                      }}
+                    >
                       {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                       {editingCategory ? "Uložit" : "Přidat"}
                     </Button>
@@ -506,11 +533,14 @@ const CafeAdmin = () => {
                   Přidat položku
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent aria-describedby={undefined}>
                 <DialogHeader>
                   <DialogTitle>
                     {editingItem ? "Upravit položku" : "Nová položka"}
                   </DialogTitle>
+                  <DialogDescription>
+                    {editingItem ? "Upravte detaily položky menu" : "Přidejte novou položku do menu"}
+                  </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleMenuSubmit} className="space-y-4">
                   <div className="space-y-2">
