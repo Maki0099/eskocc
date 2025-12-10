@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Bike, Mountain, TrendingUp, Loader2, LinkIcon, Users, RefreshCw, Clock } from "lucide-react";
+import { Bike, Mountain, TrendingUp, Loader2, LinkIcon, Users, ExternalLink, RefreshCw, Clock } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { STRAVA_CLUB_URL } from "@/lib/constants";
-import StravaFollowBadge from "@/components/strava/StravaFollowBadge";
 interface StravaWidgetProps {
   userId: string;
   isClubMember?: boolean;
@@ -373,9 +372,15 @@ export const StravaWidget = ({ userId, isClubMember = false }: StravaWidgetProps
           <p className="text-xs text-muted-foreground">
             Letos: <span className="text-foreground font-medium">{ytd.count} jízd</span> · <span className="text-foreground font-medium">{formatDistance(ytd.distance)} km</span>
           </p>
-          {stravaId && (
-            <StravaFollowBadge stravaId={stravaId} size="sm" />
-          )}
+          <a 
+            href={stravaProfileUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 text-xs text-orange-600 dark:text-orange-400 hover:underline"
+          >
+            <ExternalLink className="w-3 h-3" />
+            Zobrazit na Stravě
+          </a>
         </div>
       </div>
     </div>
