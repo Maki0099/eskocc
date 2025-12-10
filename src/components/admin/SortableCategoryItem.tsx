@@ -18,6 +18,7 @@ interface SortableCategoryItemProps {
   onDelete: (id: string) => void;
   itemCount: number;
   children?: React.ReactNode;
+  isDragActive?: boolean;
 }
 
 export const SortableCategoryItem = ({
@@ -28,6 +29,7 @@ export const SortableCategoryItem = ({
   onDelete,
   itemCount,
   children,
+  isDragActive = false,
 }: SortableCategoryItemProps) => {
   const {
     attributes,
@@ -36,6 +38,7 @@ export const SortableCategoryItem = ({
     transform,
     transition,
     isDragging,
+    isOver,
   } = useSortable({ id: category.id });
 
   const style = {
@@ -47,12 +50,16 @@ export const SortableCategoryItem = ({
     <div
       ref={setNodeRef}
       style={style}
-      className={`${isDragging ? "opacity-50 shadow-lg z-50" : ""}`}
+      className={`transition-all duration-200 ${isDragging ? "opacity-50 shadow-lg z-50 scale-[1.02]" : ""} ${
+        isOver && !isDragging ? "ring-2 ring-primary ring-offset-2" : ""
+      }`}
     >
       <div
-        className={`flex items-center gap-2 p-3 bg-muted/50 border border-border rounded-lg ${
+        className={`flex items-center gap-2 p-3 bg-muted/50 border rounded-lg transition-all duration-200 ${
           isExpanded ? "rounded-b-none border-b-0" : ""
-        }`}
+        } ${isDragging ? "border-primary" : "border-border"} ${
+          isOver && !isDragging ? "border-primary bg-primary/5" : ""
+        } ${isDragActive && !isDragging && !isOver ? "border-dashed" : ""}`}
       >
         <button
           {...attributes}
