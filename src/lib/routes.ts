@@ -25,11 +25,13 @@ export const ROUTES = {
 export const ROUTE_PATTERNS = {
   EVENT_DETAIL: '/events/:id',
   MEMBER_PROFILE: '/member/:userId',
+  ROUTE_DETAIL: '/routes/:id',
 } as const;
 
 // Helper functions for dynamic routes
 export const getEventDetailPath = (id: string): string => `/events/${id}`;
 export const getMemberProfilePath = (userId: string): string => `/member/${userId}`;
+export const getRouteDetailPath = (id: string): string => `/routes/${id}`;
 
 // Navigation items for header/footer
 export const NAV_ITEMS = [

@@ -294,6 +294,54 @@ export type Database = {
           },
         ]
       }
+      favorite_routes: {
+        Row: {
+          cover_image_url: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          difficulty: string | null
+          distance_km: number | null
+          elevation_m: number | null
+          gpx_file_url: string | null
+          id: string
+          route_link: string | null
+          terrain_type: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          cover_image_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          difficulty?: string | null
+          distance_km?: number | null
+          elevation_m?: number | null
+          gpx_file_url?: string | null
+          id?: string
+          route_link?: string | null
+          terrain_type?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          cover_image_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          difficulty?: string | null
+          distance_km?: number | null
+          elevation_m?: number | null
+          gpx_file_url?: string | null
+          id?: string
+          route_link?: string | null
+          terrain_type?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       gallery_items: {
         Row: {
           caption: string | null
