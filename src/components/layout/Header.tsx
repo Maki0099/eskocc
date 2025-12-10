@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, User, ChevronRight, Moon, Sun, Download, Bell } from "lucide-react";
+import { Menu, X, User, ChevronRight, Moon, Sun, Sunrise, Download, Bell } from "lucide-react";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/components/ThemeProvider";
@@ -32,11 +32,40 @@ const MobileNotificationLink = () => {
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, loading } = useAuth();
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, effectiveTheme, sunTimes } = useTheme();
   const location = useLocation();
 
-  const toggleTheme = () => {
-    setTheme(theme === "dark" ? "light" : "dark");
+  const cycleTheme = () => {
+    if (theme === "auto") {
+      setTheme("light");
+    } else if (theme === "light") {
+      setTheme("dark");
+    } else {
+      setTheme("auto");
+    }
+  };
+
+  const getThemeIcon = () => {
+    if (theme === "auto") return <Sunrise className="h-5 w-5" />;
+    if (theme === "light") return <Sun className="h-5 w-5" />;
+    return <Moon className="h-5 w-5" />;
+  };
+
+  const getThemeLabel = () => {
+    if (theme === "auto") {
+      if (sunTimes) {
+        const isDay = effectiveTheme === "light";
+        const nextSwitch = isDay ? sunTimes.sunset : sunTimes.sunrise;
+        const timeStr = nextSwitch.toLocaleTimeString("cs-CZ", {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+        return `Auto (${isDay ? "západ" : "východ"} ${timeStr})`;
+      }
+      return "Auto režim";
+    }
+    if (theme === "light") return "Světlý režim";
+    return "Tmavý režim";
   };
 
   // Close menu on route change
@@ -98,12 +127,11 @@ const Header = () => {
 
             <div className="hidden md:flex items-center gap-2">
               <button
-                onClick={toggleTheme}
+                onClick={cycleTheme}
                 className="relative p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
-                aria-label="Přepnout tmavý/světlý režim"
+                aria-label="Přepnout režim zobrazení"
               >
-                <Sun className="h-5 w-5 transition-all dark:scale-0 dark:opacity-0" />
-                <Moon className="absolute inset-0 m-auto h-5 w-5 scale-0 opacity-0 transition-all dark:scale-100 dark:opacity-100" />
+                {getThemeIcon()}
               </button>
               {loading ? (
                 <div className="w-20 h-8 bg-muted animate-pulse rounded-lg"></div>
@@ -188,12 +216,17 @@ const Header = () => {
             </Link>
             
             <button
-              onClick={toggleTheme}
+              onClick={cycleTheme}
               className="flex items-center justify-between w-full px-4 py-3 rounded-xl bg-background hover:bg-muted/50 transition-colors"
             >
-              <span className="text-sm font-medium">Tmavý režim</span>
-              <div className="relative w-10 h-6 rounded-full bg-muted transition-colors">
-                <div className={`absolute top-1 w-4 h-4 rounded-full bg-foreground transition-all ${theme === "dark" ? "left-5" : "left-1"}`} />
+              <span className="text-sm font-medium flex items-center gap-2">
+                {theme === "auto" ? <Sunrise className="w-4 h-4" /> : theme === "light" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                {getThemeLabel()}
+              </span>
+              <div className="flex gap-1">
+                <div className={`w-2 h-2 rounded-full transition-colors ${theme === "light" ? "bg-primary" : "bg-muted-foreground/30"}`} />
+                <div className={`w-2 h-2 rounded-full transition-colors ${theme === "auto" ? "bg-primary" : "bg-muted-foreground/30"}`} />
+                <div className={`w-2 h-2 rounded-full transition-colors ${theme === "dark" ? "bg-primary" : "bg-muted-foreground/30"}`} />
               </div>
             </button>
             

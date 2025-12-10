@@ -1,28 +1,63 @@
-import { Moon, Sun } from "lucide-react";
+import { Moon, Sun, Sunrise } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/ThemeProvider";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export function ThemeToggle() {
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, effectiveTheme, sunTimes } = useTheme();
 
-  const toggleTheme = () => {
-    if (theme === "dark") {
+  const cycleTheme = () => {
+    if (theme === "auto") {
       setTheme("light");
-    } else {
+    } else if (theme === "light") {
       setTheme("dark");
+    } else {
+      setTheme("auto");
     }
   };
 
+  const getTooltipText = () => {
+    if (theme === "auto" && sunTimes) {
+      const now = new Date();
+      const isDay = effectiveTheme === "light";
+      const nextSwitch = isDay ? sunTimes.sunset : sunTimes.sunrise;
+      const timeStr = nextSwitch.toLocaleTimeString("cs-CZ", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+      return `Auto režim (${isDay ? "západ" : "východ"} v ${timeStr})`;
+    }
+    if (theme === "auto") return "Auto režim";
+    if (theme === "light") return "Světlý režim";
+    return "Tmavý režim";
+  };
+
   return (
-    <Button
-      variant="ghost"
-      size="icon"
-      onClick={toggleTheme}
-      className="h-9 w-9 rounded-lg"
-      aria-label="Přepnout tmavý/světlý režim"
-    >
-      <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-      <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-    </Button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={cycleTheme}
+          className="h-9 w-9 rounded-lg"
+          aria-label="Přepnout režim zobrazení"
+        >
+          {theme === "auto" ? (
+            <Sunrise className="h-4 w-4" />
+          ) : theme === "light" ? (
+            <Sun className="h-4 w-4" />
+          ) : (
+            <Moon className="h-4 w-4" />
+          )}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>
+        <p>{getTooltipText()}</p>
+      </TooltipContent>
+    </Tooltip>
   );
 }
