@@ -6,6 +6,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import EditEventDialog from "@/components/events/EditEventDialog";
+import EventNotificationToggle from "@/components/events/EventNotificationToggle";
 import PhotoGrid from "@/components/gallery/PhotoGrid";
 import PhotoUpload from "@/components/gallery/PhotoUpload";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -244,13 +245,16 @@ const EventDetail = () => {
             Zpět na vyjížďky
           </Link>
 
-          <div className="flex items-start justify-between gap-4 mb-6">
-            <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
+            <div className="flex flex-wrap items-center gap-3">
               <h1 className="text-3xl font-bold">{event.title}</h1>
               {isPastEvent(event.event_date) && (
                 <Badge variant="outline" className="text-muted-foreground">
                   Proběhlo
                 </Badge>
+              )}
+              {user && !isPastEvent(event.event_date) && (
+                <EventNotificationToggle eventId={id!} userId={user.id} />
               )}
             </div>
             {canEdit && (
