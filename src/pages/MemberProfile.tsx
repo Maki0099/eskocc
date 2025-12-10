@@ -2,8 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { ArrowLeft, Calendar, MapPin, Check } from "lucide-react";
-import StravaFollowBadge from "@/components/strava/StravaFollowBadge";
+import { ArrowLeft, Calendar, MapPin, ExternalLink, Check } from "lucide-react";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
@@ -189,8 +188,19 @@ const MemberProfile = () => {
             </p>
 
             {member.strava_id && (
-              <div className="flex flex-col items-center gap-3 mt-4">
-                <StravaFollowBadge stravaId={member.strava_id} size="lg" />
+              <div className="flex flex-col items-center gap-2 mt-3">
+                <a
+                  href={`https://www.strava.com/athletes/${member.strava_id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#FC4C02]/10 text-[#FC4C02] hover:bg-[#FC4C02]/20 transition-colors text-sm font-medium"
+                >
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7.015 13.828h4.169" />
+                  </svg>
+                  Strava profil
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
                 {member.is_strava_club_member && (
                   <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
                     <Check className="w-3.5 h-3.5" />

@@ -7,7 +7,6 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import MemberOnlyContent from "@/components/MemberOnlyContent";
 import StravaClubBanner from "@/components/strava/StravaClubBanner";
-import StravaFollowBadge from "@/components/strava/StravaFollowBadge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -421,9 +420,6 @@ const Statistics = () => {
                                   </p>
                                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                     <span>{getAgeCategoryLabel(member.age_category)}</span>
-                                    {member.strava_id && (
-                                      <StravaFollowBadge stravaId={member.strava_id} size="sm" showText={false} />
-                                    )}
                                     {member.is_strava_club_member && (
                                       <span className="inline-flex items-center gap-0.5 text-primary">
                                         <Check className="w-3 h-3" />
