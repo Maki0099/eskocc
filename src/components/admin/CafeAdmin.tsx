@@ -88,11 +88,26 @@ const CafeAdmin = () => {
   });
 
   const scrollPositionRef = useRef<number>(0);
+  const shouldRestoreScrollRef = useRef<boolean>(false);
+
+  // Restore scroll position after state updates complete
+  useEffect(() => {
+    if (shouldRestoreScrollRef.current && !loading) {
+      // Use double requestAnimationFrame to wait for full render cycle
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          window.scrollTo(0, scrollPositionRef.current);
+          shouldRestoreScrollRef.current = false;
+        });
+      });
+    }
+  }, [menuItems, categories, loading]);
 
   const fetchData = async (preserveScroll = false) => {
     // Save current scroll position if preserving
     if (preserveScroll) {
       scrollPositionRef.current = window.scrollY;
+      shouldRestoreScrollRef.current = true;
     }
 
     try {
@@ -112,13 +127,6 @@ const CafeAdmin = () => {
       setMenuItems(menuRes.data || []);
       setCategories(categoriesRes.data || []);
       setGalleryPhotos(galleryRes.data || []);
-
-      // Restore scroll position after state updates
-      if (preserveScroll) {
-        requestAnimationFrame(() => {
-          window.scrollTo(0, scrollPositionRef.current);
-        });
-      }
     } catch (error) {
       console.error("Error fetching cafe data:", error);
       toast.error("Nepodařilo se načíst data kavárny");
