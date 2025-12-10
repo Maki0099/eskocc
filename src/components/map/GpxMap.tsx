@@ -139,13 +139,8 @@ const GpxMap = ({ gpxUrl, showElevationProfile = true }: GpxMapProps) => {
           return;
         }
 
-        // Get Mapbox token from env
-        const mapboxToken = import.meta.env.VITE_MAPBOX_PUBLIC_TOKEN;
-        if (!mapboxToken) {
-          setError('Mapbox token není nastaven');
-          setLoading(false);
-          return;
-        }
+        // Mapbox public token - safe to expose in frontend
+        const mapboxToken = "pk.eyJ1IjoibWFraTA5OSIsImEiOiJjbWdydmlmYTgwN3NvMnNyNXg0NjgzYW5iIn0.AiNtdl1RlCCszZnRDT8zUw";
 
         mapboxgl.accessToken = mapboxToken;
 
