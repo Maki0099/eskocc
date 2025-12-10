@@ -87,7 +87,14 @@ const CafeAdmin = () => {
     parent_id: "",
   });
 
-  const fetchData = async () => {
+  const scrollPositionRef = useRef<number>(0);
+
+  const fetchData = async (preserveScroll = false) => {
+    // Save current scroll position if preserving
+    if (preserveScroll) {
+      scrollPositionRef.current = window.scrollY;
+    }
+
     try {
       const [hoursRes, menuRes, categoriesRes, galleryRes] = await Promise.all([
         supabase.from("cafe_opening_hours").select("*").order("day_of_week"),
@@ -105,6 +112,13 @@ const CafeAdmin = () => {
       setMenuItems(menuRes.data || []);
       setCategories(categoriesRes.data || []);
       setGalleryPhotos(galleryRes.data || []);
+
+      // Restore scroll position after state updates
+      if (preserveScroll) {
+        requestAnimationFrame(() => {
+          window.scrollTo(0, scrollPositionRef.current);
+        });
+      }
     } catch (error) {
       console.error("Error fetching cafe data:", error);
       toast.error("Nepodařilo se načíst data kavárny");
@@ -160,7 +174,6 @@ const CafeAdmin = () => {
 
   const handleCategorySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("handleCategorySubmit called", { editingCategory, categoryForm });
     setSaving(true);
 
     try {
@@ -169,32 +182,22 @@ const CafeAdmin = () => {
         parent_id: categoryForm.parent_id || null,
       };
 
-      console.log("Saving category data:", data);
-
       if (editingCategory) {
-        console.log("Updating category with id:", editingCategory.id);
         const { error } = await supabase
           .from("cafe_menu_categories")
           .update(data)
           .eq("id", editingCategory.id);
-        if (error) {
-          console.error("Update error:", error);
-          throw error;
-        }
+        if (error) throw error;
         toast.success("Kategorie upravena");
       } else {
-        console.log("Inserting new category");
         const { error } = await supabase.from("cafe_menu_categories").insert(data);
-        if (error) {
-          console.error("Insert error:", error);
-          throw error;
-        }
+        if (error) throw error;
         toast.success("Kategorie přidána");
       }
 
       setCategoryDialogOpen(false);
       setEditingCategory(null);
-      fetchData();
+      fetchData(true);
     } catch (error) {
       console.error("Error saving category:", error);
       toast.error("Nepodařilo se uložit kategorii");
@@ -266,7 +269,7 @@ const CafeAdmin = () => {
       }
 
       setMenuDialogOpen(false);
-      fetchData();
+      fetchData(true);
     } catch (error) {
       console.error("Error saving menu item:", error);
       toast.error("Nepodařilo se uložit položku");
@@ -507,18 +510,7 @@ const CafeAdmin = () => {
                     <Button type="button" variant="outline" onClick={() => setCategoryDialogOpen(false)}>
                       Zrušit
                     </Button>
-                    <Button 
-                      type="submit" 
-                      disabled={saving}
-                      onClick={(e) => {
-                        // Fallback for form submit if native submit doesn't work
-                        const form = e.currentTarget.closest('form');
-                        if (form) {
-                          e.preventDefault();
-                          handleCategorySubmit(e as unknown as React.FormEvent);
-                        }
-                      }}
-                    >
+                    <Button type="submit" disabled={saving}>
                       {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                       {editingCategory ? "Uložit" : "Přidat"}
                     </Button>
