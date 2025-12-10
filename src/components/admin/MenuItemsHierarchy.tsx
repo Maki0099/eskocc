@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   DndContext,
   DragEndEvent,
@@ -67,13 +67,14 @@ export const MenuItemsHierarchy = ({
   const [activeDragType, setActiveDragType] = useState<"category" | "subcategory" | "item" | null>(null);
   const [localMenuItems, setLocalMenuItems] = useState(menuItems);
 
-  // Update local state when props change
-  if (categories !== localCategories && categories.length !== localCategories.length) {
+  // Update local state when props change - proper useEffect hooks
+  useEffect(() => {
     setLocalCategories(categories);
-  }
-  if (menuItems !== localMenuItems && menuItems.length !== localMenuItems.length) {
+  }, [categories]);
+
+  useEffect(() => {
     setLocalMenuItems(menuItems);
-  }
+  }, [menuItems]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
