@@ -357,7 +357,14 @@ serve(async (req) => {
         break;
     }
 
-    const notificationUrl = eventId ? `/events/${eventId}` : '/events';
+    // Set URL based on notification type - only event-related notifications get event URLs
+    let notificationUrl: string | null = null;
+    if (eventId) {
+      notificationUrl = `/events/${eventId}`;
+    } else if (type === 'new_event' || type === 'event_updated' || type === 'event_reminder') {
+      notificationUrl = '/events';
+    }
+    // For broadcast, test, and other types - notificationUrl remains null
     
     const payload = JSON.stringify({
       title,
