@@ -24,7 +24,20 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Calendar, MapPin, ExternalLink, ArrowLeft, Users, Trash2, ImageIcon } from "lucide-react";
+import { 
+  Calendar, 
+  MapPin, 
+  ExternalLink, 
+  ArrowLeft, 
+  Users, 
+  Trash2, 
+  ImageIcon,
+  Download,
+  Route,
+  Mountain,
+  Gauge,
+  Bike
+} from "lucide-react";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
 import { toast } from "sonner";
@@ -38,6 +51,12 @@ interface EventData {
   location: string;
   route_link: string | null;
   created_by: string | null;
+  cover_image_url: string | null;
+  gpx_file_url: string | null;
+  distance_km: number | null;
+  elevation_m: number | null;
+  difficulty: string | null;
+  terrain_type: string | null;
 }
 
 interface Participant {
@@ -61,6 +80,25 @@ interface Photo {
     full_name: string | null;
   } | null;
 }
+
+const DIFFICULTY_LABELS: Record<string, string> = {
+  easy: "Lehká",
+  medium: "Střední",
+  hard: "Náročná",
+};
+
+const DIFFICULTY_COLORS: Record<string, string> = {
+  easy: "bg-green-500/10 text-green-600 border-green-500/20",
+  medium: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20",
+  hard: "bg-red-500/10 text-red-600 border-red-500/20",
+};
+
+const TERRAIN_LABELS: Record<string, string> = {
+  road: "Silnice",
+  gravel: "Gravel",
+  mtb: "MTB",
+  mixed: "Mix",
+};
 
 const EventDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -212,7 +250,6 @@ const EventDetail = () => {
     }
   };
 
-
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col bg-background">
@@ -232,6 +269,8 @@ const EventDetail = () => {
     return null;
   }
 
+  const hasRouteParams = event.distance_km || event.elevation_m || event.difficulty || event.terrain_type;
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
@@ -244,6 +283,18 @@ const EventDetail = () => {
             <ArrowLeft className="w-4 h-4" />
             Zpět na vyjížďky
           </Link>
+
+          {/* Cover Image */}
+          {event.cover_image_url && (
+            <div className="relative rounded-xl overflow-hidden mb-6 aspect-[21/9]">
+              <img
+                src={event.cover_image_url}
+                alt={event.title}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+            </div>
+          )}
 
           <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
             <div className="flex flex-wrap items-center gap-3">
@@ -286,6 +337,39 @@ const EventDetail = () => {
             )}
           </div>
 
+          {/* Route Parameters Badges */}
+          {hasRouteParams && (
+            <div className="flex flex-wrap gap-2 mb-6">
+              {event.distance_km && (
+                <Badge variant="outline" className="gap-1.5 py-1.5 px-3">
+                  <Route className="w-3.5 h-3.5" />
+                  {event.distance_km} km
+                </Badge>
+              )}
+              {event.elevation_m && (
+                <Badge variant="outline" className="gap-1.5 py-1.5 px-3">
+                  <Mountain className="w-3.5 h-3.5" />
+                  {event.elevation_m} m
+                </Badge>
+              )}
+              {event.difficulty && (
+                <Badge 
+                  variant="outline" 
+                  className={`gap-1.5 py-1.5 px-3 ${DIFFICULTY_COLORS[event.difficulty] || ""}`}
+                >
+                  <Gauge className="w-3.5 h-3.5" />
+                  {DIFFICULTY_LABELS[event.difficulty] || event.difficulty}
+                </Badge>
+              )}
+              {event.terrain_type && (
+                <Badge variant="outline" className="gap-1.5 py-1.5 px-3">
+                  <Bike className="w-3.5 h-3.5" />
+                  {TERRAIN_LABELS[event.terrain_type] || event.terrain_type}
+                </Badge>
+              )}
+            </div>
+          )}
+
           <Card className="mb-6">
             <CardContent className="pt-6 space-y-4">
               {event.description && (
@@ -307,7 +391,7 @@ const EventDetail = () => {
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 pt-4 border-t">
+              <div className="flex flex-wrap items-center gap-3 pt-4 border-t">
                 {event.route_link && (
                   <Button variant="outline" asChild>
                     <a
@@ -317,6 +401,20 @@ const EventDetail = () => {
                     >
                       <ExternalLink className="w-4 h-4 mr-2" />
                       Zobrazit trasu
+                    </a>
+                  </Button>
+                )}
+
+                {event.gpx_file_url && (
+                  <Button variant="outline" asChild>
+                    <a
+                      href={event.gpx_file_url}
+                      download
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      Stáhnout GPX
                     </a>
                   </Button>
                 )}
