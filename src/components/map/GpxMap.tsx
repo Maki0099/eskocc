@@ -168,15 +168,15 @@ const GpxMap = ({ gpxUrl, showElevationProfile = true }: GpxMapProps) => {
         // Add fullscreen control
         map.current.addControl(new mapboxgl.FullscreenControl());
 
+        // Generate elevation profile data immediately
+        if (showElevationProfile) {
+          const profile = getElevationProfile(coordinates);
+          setElevationData(profile);
+        }
+
         // Wait for map to load
         map.current.on('load', () => {
           if (!map.current) return;
-
-          // Generate elevation profile data
-          if (showElevationProfile) {
-            const profile = getElevationProfile(coordinates);
-            setElevationData(profile);
-          }
 
           // Add the GPX track as a GeoJSON source
           map.current.addSource('gpx-track', {
@@ -237,6 +237,8 @@ const GpxMap = ({ gpxUrl, showElevationProfile = true }: GpxMapProps) => {
             .setPopup(new mapboxgl.Popup().setHTML('<strong>Cíl</strong>'))
             .addTo(map.current);
 
+          // Resize map to ensure proper rendering
+          map.current.resize();
           setLoading(false);
         });
 
@@ -273,13 +275,13 @@ const GpxMap = ({ gpxUrl, showElevationProfile = true }: GpxMapProps) => {
 
   return (
     <div className="space-y-4">
-      <div className="relative w-full h-64 md:h-80 rounded-lg overflow-hidden">
+      <div className="relative w-full h-64 md:h-80 rounded-lg overflow-hidden bg-muted">
         {loading && (
           <div className="absolute inset-0 bg-muted flex items-center justify-center z-10">
             <Loader2 className="w-6 h-6 animate-spin text-primary" />
           </div>
         )}
-        <div ref={mapContainer} className="absolute inset-0" />
+        <div ref={mapContainer} className="w-full h-full" />
       </div>
       
       {showElevationProfile && elevationData.length > 0 && (
