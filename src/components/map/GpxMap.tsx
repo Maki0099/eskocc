@@ -201,7 +201,7 @@ const GpxMap = ({ gpxUrl, showElevationProfile = true }: GpxMapProps) => {
               'line-cap': 'round'
             },
             paint: {
-              'line-color': '#B7A99A',
+              'line-color': '#e63946',
               'line-width': 4,
               'line-opacity': 0.9
             }
@@ -217,7 +217,7 @@ const GpxMap = ({ gpxUrl, showElevationProfile = true }: GpxMapProps) => {
               'line-cap': 'round'
             },
             paint: {
-              'line-color': '#B7A99A',
+              'line-color': '#e63946',
               'line-width': 8,
               'line-opacity': 0.3
             }
