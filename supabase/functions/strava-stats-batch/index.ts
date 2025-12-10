@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const CACHE_DURATION_MS = 60 * 60 * 1000; // 1 hour
+const CACHE_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
 const STRAVA_CLUB_ID = 1860524; // ESKO.cc club ID
 
 interface StravaProfile {
@@ -175,7 +175,7 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { userIds, refreshAll } = body;
+    const { userIds, refreshAll, forceRefresh } = body;
     
     // If refreshAll is true (from cron job), fetch all users with Strava connected
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -245,9 +245,10 @@ serve(async (req) => {
 
     console.log(`Found ${stravaProfiles.length} users with Strava connected`);
 
-    // Process all users in parallel (force refresh if refreshAll)
+    // Process all users in parallel (force refresh if refreshAll or forceRefresh)
+    const shouldForceRefresh = !!refreshAll || !!forceRefresh;
     const statsPromises = stravaProfiles.map(profile => 
-      fetchStravaStats(profile as StravaProfile, supabaseUrl, supabaseServiceKey, clientId, clientSecret, !!refreshAll)
+      fetchStravaStats(profile as StravaProfile, supabaseUrl, supabaseServiceKey, clientId, clientSecret, shouldForceRefresh)
     );
 
     const statsResults = await Promise.all(statsPromises);
