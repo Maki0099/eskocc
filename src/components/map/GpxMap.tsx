@@ -2,15 +2,73 @@ import { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Loader2 } from 'lucide-react';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface GpxMapProps {
   gpxUrl: string;
+  showElevationProfile?: boolean;
 }
 
 interface GpxCoordinate {
   lng: number;
   lat: number;
   ele?: number;
+}
+
+interface ElevationPoint {
+  distance: number;
+  elevation: number;
+}
+
+/**
+ * Calculate distance between two GPS points using Haversine formula
+ */
+function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+/**
+ * Convert coordinates to elevation profile data
+ */
+function getElevationProfile(coordinates: GpxCoordinate[]): ElevationPoint[] {
+  const points: ElevationPoint[] = [];
+  let cumulativeDistance = 0;
+  
+  for (let i = 0; i < coordinates.length; i++) {
+    if (i > 0) {
+      cumulativeDistance += haversineDistance(
+        coordinates[i - 1].lat,
+        coordinates[i - 1].lng,
+        coordinates[i].lat,
+        coordinates[i].lng
+      );
+    }
+    
+    if (coordinates[i].ele !== undefined) {
+      points.push({
+        distance: Math.round(cumulativeDistance * 10) / 10,
+        elevation: Math.round(coordinates[i].ele!)
+      });
+    }
+  }
+  
+  // Sample points to max 200 for performance
+  if (points.length > 200) {
+    const step = Math.ceil(points.length / 200);
+    return points.filter((_, i) => i % step === 0 || i === points.length - 1);
+  }
+  
+  return points;
 }
 
 /**
@@ -57,11 +115,12 @@ function getBounds(coordinates: GpxCoordinate[]): mapboxgl.LngLatBoundsLike {
   ];
 }
 
-const GpxMap = ({ gpxUrl }: GpxMapProps) => {
+const GpxMap = ({ gpxUrl, showElevationProfile = true }: GpxMapProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [elevationData, setElevationData] = useState<ElevationPoint[]>([]);
 
   useEffect(() => {
     if (!mapContainer.current || !gpxUrl) return;
@@ -117,6 +176,12 @@ const GpxMap = ({ gpxUrl }: GpxMapProps) => {
         // Wait for map to load
         map.current.on('load', () => {
           if (!map.current) return;
+
+          // Generate elevation profile data
+          if (showElevationProfile) {
+            const profile = getElevationProfile(coordinates);
+            setElevationData(profile);
+          }
 
           // Add the GPX track as a GeoJSON source
           map.current.addSource('gpx-track', {
@@ -212,13 +277,60 @@ const GpxMap = ({ gpxUrl }: GpxMapProps) => {
   }
 
   return (
-    <div className="relative w-full h-64 md:h-80 rounded-lg overflow-hidden">
-      {loading && (
-        <div className="absolute inset-0 bg-muted flex items-center justify-center z-10">
-          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+    <div className="space-y-4">
+      <div className="relative w-full h-64 md:h-80 rounded-lg overflow-hidden">
+        {loading && (
+          <div className="absolute inset-0 bg-muted flex items-center justify-center z-10">
+            <Loader2 className="w-6 h-6 animate-spin text-primary" />
+          </div>
+        )}
+        <div ref={mapContainer} className="absolute inset-0" />
+      </div>
+      
+      {showElevationProfile && elevationData.length > 0 && (
+        <div className="w-full h-32 md:h-40 bg-card rounded-lg p-3 border">
+          <p className="text-xs text-muted-foreground mb-2">Výškový profil</p>
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={elevationData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+              <defs>
+                <linearGradient id="elevationGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.4} />
+                  <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <XAxis 
+                dataKey="distance" 
+                tick={{ fontSize: 10 }} 
+                tickFormatter={(v) => `${v} km`}
+                stroke="hsl(var(--muted-foreground))"
+              />
+              <YAxis 
+                tick={{ fontSize: 10 }} 
+                tickFormatter={(v) => `${v} m`}
+                stroke="hsl(var(--muted-foreground))"
+                domain={['dataMin - 50', 'dataMax + 50']}
+              />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: 'hsl(var(--card))', 
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '8px',
+                  fontSize: '12px'
+                }}
+                formatter={(value: number) => [`${value} m`, 'Nadm. výška']}
+                labelFormatter={(label) => `${label} km`}
+              />
+              <Area 
+                type="monotone" 
+                dataKey="elevation" 
+                stroke="hsl(var(--primary))" 
+                strokeWidth={2}
+                fill="url(#elevationGradient)" 
+              />
+            </AreaChart>
+          </ResponsiveContainer>
         </div>
       )}
-      <div ref={mapContainer} className="absolute inset-0" />
     </div>
   );
 };
