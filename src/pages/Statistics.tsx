@@ -21,8 +21,12 @@ import {
   Bike,
   AlertCircle,
   CheckCircle2,
-  Check
+  Check,
+  RefreshCw,
+  Clock
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { toast } from "@/hooks/use-toast";
 import type { AppRole } from "@/lib/types";
 import type { ChallengeSettings } from "@/lib/types";
 import { getInitials } from "@/lib/user-utils";
@@ -49,8 +53,60 @@ const Statistics = () => {
   const [clubTotal, setClubTotal] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [userStravaId, setUserStravaId] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   const currentYear = new Date().getFullYear();
+
+  const formatTimeAgo = (date: Date): string => {
+    const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+    if (seconds < 60) return "právě teď";
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `před ${minutes} min`;
+    const hours = Math.floor(minutes / 60);
+    return `před ${hours} hod`;
+  };
+
+  const handleRefreshStats = async () => {
+    if (isRefreshing || members.length === 0) return;
+    setIsRefreshing(true);
+
+    try {
+      const userIds = members.map(m => m.id);
+      const { data, error: refreshError } = await supabase.functions.invoke(
+        "strava-stats-batch",
+        { body: { userIds, forceRefresh: true } }
+      );
+
+      if (refreshError) {
+        throw refreshError;
+      }
+
+      if (data?.stats) {
+        const updatedMembers = members.map(member => ({
+          ...member,
+          ytd_distance: data.stats[member.id]?.ytd_distance ?? member.ytd_distance,
+        })).sort((a, b) => b.ytd_distance - a.ytd_distance);
+
+        setMembers(updatedMembers);
+        setClubTotal(updatedMembers.reduce((sum, m) => sum + m.ytd_distance, 0));
+        setLastUpdated(new Date());
+        toast({
+          title: "Statistiky aktualizovány",
+          description: "Data byla úspěšně načtena ze Strava.",
+        });
+      }
+    } catch (err) {
+      console.error("Refresh error:", err);
+      toast({
+        title: "Chyba",
+        description: "Nepodařilo se aktualizovat statistiky.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   const getTargetForAgeCategory = (ageCategory: string, settings: ChallengeSettings): number => {
     if (ageCategory === 'over_60') return settings.target_over_60;
@@ -209,11 +265,33 @@ const Statistics = () => {
                 <Target className="w-4 h-4" />
                 <span className="text-sm font-medium">Výzva {currentYear}</span>
               </div>
-              <h1 className="text-display font-bold">Statistiky klubu</h1>
-              <p className="text-lg text-muted-foreground max-w-md mx-auto">
-                Sleduj pokrok členů a celého klubu ve splnění ročního cíle
-              </p>
-            </div>
+            <h1 className="text-display font-bold">Statistiky klubu</h1>
+            <p className="text-lg text-muted-foreground max-w-md mx-auto">
+              Sleduj pokrok členů a celého klubu ve splnění ročního cíle
+            </p>
+            
+            {/* Refresh button and last updated */}
+            {isMember && !error && (
+              <div className="flex items-center justify-center gap-3 pt-4">
+                {lastUpdated && (
+                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    Aktualizováno {formatTimeAgo(lastUpdated)}
+                  </span>
+                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRefreshStats}
+                  disabled={isRefreshing}
+                  className="gap-2"
+                >
+                  <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                  {isRefreshing ? 'Aktualizuji...' : 'Aktualizovat'}
+                </Button>
+              </div>
+            )}
+          </div>
             <StatisticsPageSkeleton />
           </div>
         </main>
