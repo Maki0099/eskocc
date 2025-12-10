@@ -1,13 +1,33 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, User, ChevronRight, Moon, Sun, Download } from "lucide-react";
+import { Menu, X, User, ChevronRight, Moon, Sun, Download, Bell } from "lucide-react";
+import { useNotifications } from "@/hooks/useNotifications";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/components/ThemeProvider";
 import logoWhite from "@/assets/logo-horizontal-white.png";
 import logoDark from "@/assets/logo-horizontal-dark.png";
 import { ROUTES, NAV_ITEMS } from "@/lib/routes";
 import NotificationBell from "./NotificationBell";
+
+// Mobile notification link component
+const MobileNotificationLink = () => {
+  const { unreadCount } = useNotifications();
+  
+  return (
+    <Link to={ROUTES.NOTIFICATIONS} className="block">
+      <Button variant="outline" className="w-full h-12 gap-2 text-base rounded-xl relative">
+        <Bell className="w-5 h-5" />
+        Notifikace
+        {unreadCount > 0 && (
+          <span className="absolute right-4 top-1/2 -translate-y-1/2 bg-primary text-primary-foreground text-xs font-medium px-2 py-0.5 rounded-full">
+            {unreadCount > 99 ? "99+" : unreadCount}
+          </span>
+        )}
+      </Button>
+    </Link>
+  );
+};
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -180,12 +200,15 @@ const Header = () => {
             {loading ? (
               <div className="h-12 bg-muted animate-pulse rounded-xl"></div>
             ) : user ? (
-              <Link to={ROUTES.DASHBOARD} className="block">
-                <Button variant="apple" className="w-full h-12 gap-2 text-base rounded-xl">
-                  <User className="w-5 h-5" />
-                  Dashboard
-                </Button>
-              </Link>
+              <div className="flex flex-col gap-3">
+                <Link to={ROUTES.DASHBOARD} className="block">
+                  <Button variant="apple" className="w-full h-12 gap-2 text-base rounded-xl">
+                    <User className="w-5 h-5" />
+                    Dashboard
+                  </Button>
+                </Link>
+                <MobileNotificationLink />
+              </div>
             ) : (
               <div className="flex flex-col gap-3">
                 <Link to={ROUTES.REGISTER} className="block">
