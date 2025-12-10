@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Bike, Mountain, TrendingUp, Loader2, LinkIcon, Users, ExternalLink } from "lucide-react";
+import { Bike, Mountain, TrendingUp, Loader2, LinkIcon, Users, ExternalLink, RefreshCw } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { STRAVA_CLUB_URL } from "@/lib/constants";
@@ -143,6 +143,25 @@ export const StravaWidget = ({ userId, isClubMember = false }: StravaWidgetProps
     checkStravaAndFetchStats();
   }, [userId]);
 
+  const handleManualRefresh = async () => {
+    if (isRefreshing) return;
+    
+    setIsRefreshing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('strava-stats', {
+        body: { userId, forceRefresh: true }
+      });
+
+      if (!error && data && !data.error) {
+        setStats(data);
+      }
+    } catch (err) {
+      console.error('Failed to refresh Strava stats:', err);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-6 rounded-2xl border border-orange-500/20 bg-gradient-to-br from-orange-500/10 to-orange-600/5">
@@ -219,19 +238,29 @@ export const StravaWidget = ({ userId, isClubMember = false }: StravaWidgetProps
           />
           <span className="text-xs text-muted-foreground">Moje statistiky</span>
         </a>
-        {isClubMember && (
-          <a
-            href={STRAVA_CLUB_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:opacity-80 transition-opacity"
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleManualRefresh}
+            disabled={isRefreshing}
+            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-orange-500/10 transition-colors disabled:opacity-50"
+            title="Obnovit statistiky"
           >
-            <Badge variant="secondary" className="gap-1 text-xs bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20">
-              <Users className="w-3 h-3" />
-              Člen klubu
-            </Badge>
-          </a>
-        )}
+            <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+          </button>
+          {isClubMember && (
+            <a
+              href={STRAVA_CLUB_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:opacity-80 transition-opacity"
+            >
+              <Badge variant="secondary" className="gap-1 text-xs bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20">
+                <Users className="w-3 h-3" />
+                Člen klubu
+              </Badge>
+            </a>
+          )}
+        </div>
       </div>
 
       {/* Main stats */}
