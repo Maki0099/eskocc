@@ -13,7 +13,7 @@ import { SkeletonEventCard } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Calendar, MapPin, Users, ChevronRight, Camera, History, Loader2 } from "lucide-react";
+import { Calendar, MapPin, Users, ChevronRight, Camera, History, Loader2, Route, Mountain, Gauge } from "lucide-react";
 import { format, isSameMonth, isSameYear } from "date-fns";
 import { cs } from "date-fns/locale";
 import { toast } from "sonner";
@@ -28,6 +28,11 @@ interface Event {
   participant_count: number;
   is_participating: boolean;
   photo_count?: number;
+  cover_image_url?: string | null;
+  distance_km?: number | null;
+  elevation_m?: number | null;
+  difficulty?: string | null;
+  terrain_type?: string | null;
 }
 
 interface GroupedEvents {
@@ -37,6 +42,18 @@ interface GroupedEvents {
 }
 
 const EVENTS_PER_PAGE = 10;
+
+const DIFFICULTY_LABELS: Record<string, string> = {
+  easy: "Lehká",
+  medium: "Střední",
+  hard: "Náročná",
+};
+
+const DIFFICULTY_COLORS: Record<string, string> = {
+  easy: "bg-green-500/10 text-green-600 border-green-500/20",
+  medium: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20",
+  hard: "bg-red-500/10 text-red-600 border-red-500/20",
+};
 
 const Events = () => {
   const { user } = useAuth();
@@ -196,12 +213,23 @@ const Events = () => {
   const renderEventCard = (event: Event, index: number, isPast: boolean = false) => (
     <Link key={event.id} to={`/events/${event.id}`}>
       <Card
-        className={`hover:shadow-md transition-all cursor-pointer group hover:-translate-y-1 animate-on-scroll slide-up ${listVisible ? "is-visible" : ""}`}
+        className={`hover:shadow-md transition-all cursor-pointer group hover:-translate-y-1 overflow-hidden animate-on-scroll slide-up ${listVisible ? "is-visible" : ""}`}
         style={{ transitionDelay: `${index * 100}ms` }}
       >
-        <CardHeader>
+        {/* Cover Image Thumbnail */}
+        {event.cover_image_url && (
+          <div className="relative h-32 overflow-hidden">
+            <img 
+              src={event.cover_image_url} 
+              alt={event.title}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+          </div>
+        )}
+        <CardHeader className={event.cover_image_url ? "pt-4" : ""}>
           <div className="flex items-start justify-between gap-4">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <CardTitle className="text-xl group-hover:text-primary transition-colors">
                 {event.title}
               </CardTitle>
@@ -229,6 +257,33 @@ const Events = () => {
         <CardContent className="space-y-4">
           {event.description && (
             <p className="text-muted-foreground line-clamp-2">{event.description}</p>
+          )}
+
+          {/* Route Parameters Mini Badges */}
+          {(event.distance_km || event.difficulty) && (
+            <div className="flex flex-wrap gap-2">
+              {event.distance_km && (
+                <Badge variant="outline" className="gap-1 text-xs">
+                  <Route className="w-3 h-3" />
+                  {event.distance_km} km
+                </Badge>
+              )}
+              {event.elevation_m && (
+                <Badge variant="outline" className="gap-1 text-xs">
+                  <Mountain className="w-3 h-3" />
+                  {event.elevation_m} m
+                </Badge>
+              )}
+              {event.difficulty && (
+                <Badge 
+                  variant="outline" 
+                  className={`gap-1 text-xs ${DIFFICULTY_COLORS[event.difficulty] || ""}`}
+                >
+                  <Gauge className="w-3 h-3" />
+                  {DIFFICULTY_LABELS[event.difficulty] || event.difficulty}
+                </Badge>
+              )}
+            </div>
           )}
 
           <div className="flex flex-wrap gap-4 text-sm">
