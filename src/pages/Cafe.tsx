@@ -29,7 +29,16 @@ interface MenuItem {
   description: string | null;
   price: number;
   category: string;
+  category_id: string | null;
   is_available: boolean;
+  sort_order: number;
+}
+
+interface MenuCategory {
+  id: string;
+  name: string;
+  parent_id: string | null;
+  sort_order: number | null;
 }
 
 interface GalleryPhoto {
@@ -47,6 +56,7 @@ const defaultPhotos = [cafeInterior1, cafeInterior2, cafeInterior3, cafeTerrace]
 const Cafe = () => {
   const [openingHours, setOpeningHours] = useState<OpeningHour[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [galleryPhotos, setGalleryPhotos] = useState<GalleryPhoto[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -57,18 +67,21 @@ const Cafe = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [hoursRes, menuRes, galleryRes] = await Promise.all([
+        const [hoursRes, menuRes, categoriesRes, galleryRes] = await Promise.all([
           supabase.from("cafe_opening_hours").select("*").order("day_of_week"),
           supabase.from("cafe_menu_items").select("*").eq("is_available", true).order("sort_order"),
+          supabase.from("cafe_menu_categories").select("*").order("sort_order"),
           supabase.from("cafe_gallery").select("*").order("sort_order"),
         ]);
 
         if (hoursRes.error) throw hoursRes.error;
         if (menuRes.error) throw menuRes.error;
+        if (categoriesRes.error) throw categoriesRes.error;
         if (galleryRes.error) throw galleryRes.error;
 
         setOpeningHours(hoursRes.data || []);
         setMenuItems(menuRes.data || []);
+        setCategories(categoriesRes.data || []);
         setGalleryPhotos(galleryRes.data || []);
       } catch (error) {
         console.error("Error fetching cafe data:", error);
@@ -91,14 +104,112 @@ const Cafe = () => {
     return orderA - orderB;
   });
 
-  // Group menu items by category
-  const menuByCategory = menuItems.reduce((acc, item) => {
-    if (!acc[item.category]) {
-      acc[item.category] = [];
+  // Build hierarchical menu structure
+  const buildMenuStructure = () => {
+    // If no categories exist, fall back to simple grouping by category text
+    if (categories.length === 0) {
+      return menuItems.reduce((acc, item) => {
+        if (!acc[item.category]) {
+          acc[item.category] = { items: [], subcategories: {} };
+        }
+        acc[item.category].items.push(item);
+        return acc;
+      }, {} as Record<string, { items: MenuItem[]; subcategories: Record<string, MenuItem[]> }>);
     }
-    acc[item.category].push(item);
-    return acc;
-  }, {} as Record<string, MenuItem[]>);
+
+    // Get parent categories (no parent_id)
+    const parentCategories = categories.filter(c => !c.parent_id);
+    // Get child categories
+    const childCategories = categories.filter(c => c.parent_id);
+
+    // Build structure
+    const structure: Record<string, { 
+      category: MenuCategory;
+      items: MenuItem[]; 
+      subcategories: { category: MenuCategory; items: MenuItem[] }[] 
+    }> = {};
+
+    // Initialize parent categories
+    parentCategories.forEach(parent => {
+      structure[parent.id] = {
+        category: parent,
+        items: [],
+        subcategories: []
+      };
+
+      // Find child categories for this parent
+      const children = childCategories.filter(c => c.parent_id === parent.id);
+      children.forEach(child => {
+        structure[parent.id].subcategories.push({
+          category: child,
+          items: []
+        });
+      });
+    });
+
+    // Assign menu items to categories
+    menuItems.forEach(item => {
+      if (item.category_id) {
+        // Find category
+        const category = categories.find(c => c.id === item.category_id);
+        if (category) {
+          if (category.parent_id) {
+            // It's a subcategory
+            const parent = structure[category.parent_id];
+            if (parent) {
+              const subcat = parent.subcategories.find(s => s.category.id === category.id);
+              if (subcat) {
+                subcat.items.push(item);
+              }
+            }
+          } else {
+            // It's a parent category - add directly
+            if (structure[category.id]) {
+              structure[category.id].items.push(item);
+            }
+          }
+        }
+      } else {
+        // No category_id - try to match by category text (legacy)
+        // Find matching category by name
+        const matchingCat = categories.find(c => c.name === item.category);
+        if (matchingCat) {
+          if (matchingCat.parent_id) {
+            const parent = structure[matchingCat.parent_id];
+            if (parent) {
+              const subcat = parent.subcategories.find(s => s.category.id === matchingCat.id);
+              if (subcat) {
+                subcat.items.push(item);
+              }
+            }
+          } else if (structure[matchingCat.id]) {
+            structure[matchingCat.id].items.push(item);
+          }
+        }
+      }
+    });
+
+    // Also handle items that don't match any category
+    const unmatchedItems = menuItems.filter(item => {
+      if (item.category_id) {
+        return !categories.find(c => c.id === item.category_id);
+      }
+      return !categories.find(c => c.name === item.category);
+    });
+
+    // Group unmatched by category text
+    const unmatchedByCategory: Record<string, MenuItem[]> = {};
+    unmatchedItems.forEach(item => {
+      if (!unmatchedByCategory[item.category]) {
+        unmatchedByCategory[item.category] = [];
+      }
+      unmatchedByCategory[item.category].push(item);
+    });
+
+    return { structure, unmatchedByCategory };
+  };
+
+  const menuStructure = buildMenuStructure();
 
   const formatTime = (time: string | null) => {
     if (!time) return "";
@@ -108,6 +219,94 @@ const Cafe = () => {
   const photosToShow = galleryPhotos.length > 0 
     ? galleryPhotos.map(p => ({ src: p.file_url, alt: p.caption || p.file_name }))
     : defaultPhotos.map((photo, i) => ({ src: photo, alt: `ESKO Kafe ${i + 1}` }));
+
+  // Render menu items list
+  const renderMenuItems = (items: MenuItem[]) => (
+    <div className="space-y-2">
+      {items.map((item) => (
+        <div
+          key={item.id}
+          className="flex justify-between items-center py-2 border-b border-border/50 last:border-0"
+        >
+          <div>
+            <span className="font-medium">{item.name}</span>
+            {item.description && (
+              <p className="text-sm text-muted-foreground">
+                {item.description}
+              </p>
+            )}
+          </div>
+          <span className="font-semibold whitespace-nowrap ml-4">
+            {item.price} Kč
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+
+  // Render hierarchical menu
+  const renderHierarchicalMenu = () => {
+    if (categories.length === 0) {
+      // Simple category grouping (fallback)
+      const simpleStructure = menuStructure as Record<string, { items: MenuItem[]; subcategories: Record<string, MenuItem[]> }>;
+      return Object.entries(simpleStructure).map(([category, data]) => (
+        <div key={category}>
+          <h3 className="font-semibold text-lg mb-3 text-primary">
+            {category}
+          </h3>
+          {renderMenuItems(data.items)}
+        </div>
+      ));
+    }
+
+    const { structure, unmatchedByCategory } = menuStructure as { 
+      structure: Record<string, { category: MenuCategory; items: MenuItem[]; subcategories: { category: MenuCategory; items: MenuItem[] }[] }>;
+      unmatchedByCategory: Record<string, MenuItem[]>;
+    };
+
+    return (
+      <>
+        {Object.values(structure)
+          .filter(parent => parent.items.length > 0 || parent.subcategories.some(s => s.items.length > 0))
+          .map((parent) => (
+            <div key={parent.category.id} className="mb-8 last:mb-0">
+              <h3 className="font-bold text-xl mb-4 text-primary border-b border-primary/20 pb-2">
+                {parent.category.name}
+              </h3>
+              
+              {/* Items directly under parent */}
+              {parent.items.length > 0 && (
+                <div className="mb-4">
+                  {renderMenuItems(parent.items)}
+                </div>
+              )}
+              
+              {/* Subcategories */}
+              {parent.subcategories
+                .filter(sub => sub.items.length > 0)
+                .map((sub) => (
+                  <div key={sub.category.id} className="mb-4 last:mb-0">
+                    <h4 className="font-semibold text-base mb-2 text-muted-foreground">
+                      {sub.category.name}
+                    </h4>
+                    {renderMenuItems(sub.items)}
+                  </div>
+                ))}
+            </div>
+          ))}
+        
+        {/* Unmatched categories (legacy items without category_id) */}
+        {Object.entries(unmatchedByCategory).map(([category, items]) => (
+          <div key={category} className="mb-8 last:mb-0">
+            <h3 className="font-bold text-xl mb-4 text-primary border-b border-primary/20 pb-2">
+              {category}
+            </h3>
+            {renderMenuItems(items)}
+          </div>
+        ))}
+      </>
+    );
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -228,33 +427,7 @@ const Cafe = () => {
                   </div>
                 ) : (
                   <div className="space-y-6">
-                    {Object.entries(menuByCategory).map(([category, items]) => (
-                      <div key={category}>
-                        <h3 className="font-semibold text-lg mb-3 text-primary">
-                          {category}
-                        </h3>
-                        <div className="space-y-2">
-                          {items.map((item) => (
-                            <div
-                              key={item.id}
-                              className="flex justify-between items-center py-2 border-b border-border/50 last:border-0"
-                            >
-                              <div>
-                                <span className="font-medium">{item.name}</span>
-                                {item.description && (
-                                  <p className="text-sm text-muted-foreground">
-                                    {item.description}
-                                  </p>
-                                )}
-                              </div>
-                              <span className="font-semibold whitespace-nowrap ml-4">
-                                {item.price} Kč
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
+                    {renderHierarchicalMenu()}
                   </div>
                 )}
               </CardContent>
