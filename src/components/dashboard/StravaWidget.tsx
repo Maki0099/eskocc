@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Bike, Mountain, TrendingUp, Loader2, LinkIcon, Users, ExternalLink, RefreshCw } from "lucide-react";
+import { Bike, Mountain, TrendingUp, Loader2, LinkIcon, Users, ExternalLink, RefreshCw, Clock } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { STRAVA_CLUB_URL } from "@/lib/constants";
@@ -67,6 +67,18 @@ const CustomTooltip = ({ active, payload, label, metric }: { active?: boolean; p
   return null;
 };
 
+const formatTimeAgo = (date: Date): string => {
+  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+  
+  if (seconds < 60) return 'právě teď';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `před ${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `před ${hours} hod`;
+  const days = Math.floor(hours / 24);
+  return `před ${days} dny`;
+};
+
 export const StravaWidget = ({ userId, isClubMember = false }: StravaWidgetProps) => {
   const [stats, setStats] = useState<StatsData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -74,6 +86,7 @@ export const StravaWidget = ({ userId, isClubMember = false }: StravaWidgetProps
   const [stravaId, setStravaId] = useState<string | null>(null);
   const [chartMetric, setChartMetric] = useState<'distance' | 'count'>('distance');
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [cachedAt, setCachedAt] = useState<Date | null>(null);
 
   useEffect(() => {
     const checkStravaAndFetchStats = async () => {
@@ -96,6 +109,9 @@ export const StravaWidget = ({ userId, isClubMember = false }: StravaWidgetProps
       // If we have cached stats, show them immediately
       if (profile.strava_monthly_stats) {
         setStats(profile.strava_monthly_stats as unknown as StatsData);
+        if (profile.strava_stats_cached_at) {
+          setCachedAt(new Date(profile.strava_stats_cached_at));
+        }
         setLoading(false);
         
         // Check if cache is stale (older than 1 hour)
@@ -114,6 +130,7 @@ export const StravaWidget = ({ userId, isClubMember = false }: StravaWidgetProps
 
             if (!error && data && !data.error) {
               setStats(data);
+              setCachedAt(new Date());
             }
           } catch (err) {
             console.error('Failed to refresh Strava stats:', err);
@@ -154,6 +171,7 @@ export const StravaWidget = ({ userId, isClubMember = false }: StravaWidgetProps
 
       if (!error && data && !data.error) {
         setStats(data);
+        setCachedAt(new Date());
       }
     } catch (err) {
       console.error('Failed to refresh Strava stats:', err);
@@ -239,6 +257,12 @@ export const StravaWidget = ({ userId, isClubMember = false }: StravaWidgetProps
           <span className="text-xs text-muted-foreground">Moje statistiky</span>
         </a>
         <div className="flex items-center gap-2">
+          {cachedAt && (
+            <span className="text-xs text-muted-foreground flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              {formatTimeAgo(cachedAt)}
+            </span>
+          )}
           <button
             onClick={handleManualRefresh}
             disabled={isRefreshing}
