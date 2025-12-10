@@ -265,9 +265,9 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { type, eventId, eventTitle, message, targetUserId, title: customTitle } = await req.json();
+    const { type, eventId, eventTitle, message, targetUserId, targetUserIds, title: customTitle } = await req.json();
 
-    console.log(`Sending push notification: type=${type}, eventId=${eventId}, targetUserId=${targetUserId}`);
+    console.log(`Sending push notification: type=${type}, eventId=${eventId}, targetUserId=${targetUserId}, targetUserIds=${targetUserIds?.length || 0}`);
 
     // Get VAPID keys
     const { data: vapidKeys, error: vapidError } = await supabase
@@ -281,14 +281,23 @@ serve(async (req) => {
       throw new Error('VAPID keys not configured');
     }
 
-    // Get subscriptions - either for specific user or all members
+    // Determine targeting mode:
+    // 1. targetUserId (single user) - backward compatibility
+    // 2. targetUserIds (array of users) - new multi-select feature
+    // 3. neither - broadcast to all members
+    const hasSpecificTargets = targetUserId || (targetUserIds && targetUserIds.length > 0);
+
+    // Get subscriptions based on targeting mode
     let subscriptionsQuery = supabase
       .from('push_subscriptions')
       .select('endpoint, p256dh, auth, user_id');
     
-    // If targetUserId is specified, only get that user's subscriptions
     if (targetUserId) {
+      // Single user targeting (backward compatibility)
       subscriptionsQuery = subscriptionsQuery.eq('user_id', targetUserId);
+    } else if (targetUserIds && targetUserIds.length > 0) {
+      // Multi-user targeting (new feature)
+      subscriptionsQuery = subscriptionsQuery.in('user_id', targetUserIds);
     }
 
     const { data: subscriptions, error: subError } = await subscriptionsQuery;
@@ -301,15 +310,15 @@ serve(async (req) => {
     if (!subscriptions || subscriptions.length === 0) {
       console.log('No subscriptions found');
       return new Response(
-        JSON.stringify({ sent: 0, message: targetUserId ? 'Nemáte aktivní push subscription. Povolte notifikace v nastavení účtu.' : 'No subscriptions found' }),
+        JSON.stringify({ sent: 0, message: hasSpecificTargets ? 'Vybraní uživatelé nemají aktivní push subscription.' : 'No subscriptions found' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     let targetSubscriptions = subscriptions;
 
-    // If not targeting specific user, filter to only members
-    if (!targetUserId) {
+    // If not targeting specific users, filter to only members
+    if (!hasSpecificTargets) {
       const { data: memberRoles } = await supabase
         .from('user_roles')
         .select('user_id')
