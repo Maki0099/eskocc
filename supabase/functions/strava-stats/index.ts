@@ -154,6 +154,35 @@ async function sendPushNotification(subscription: PushSubscription, payload: str
   }
 }
 
+// Retry helper for network requests
+async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3): Promise<Response> {
+  let lastError: Error | null = null;
+  
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+      
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+      });
+      
+      clearTimeout(timeoutId);
+      return response;
+    } catch (error) {
+      lastError = error as Error;
+      console.log(`Fetch attempt ${attempt + 1} failed:`, error);
+      
+      if (attempt < maxRetries - 1) {
+        await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1))); // Exponential backoff
+      }
+    }
+  }
+  
+  throw lastError || new Error('Network request failed after retries');
+}
+
 async function refreshStravaToken(
   refreshToken: string,
   clientId: string,
@@ -161,30 +190,35 @@ async function refreshStravaToken(
 ): Promise<{ access_token: string; refresh_token: string; expires_at: number } | null> {
   console.log('Refreshing Strava token...');
   
-  const response = await fetch('https://www.strava.com/oauth/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      client_id: clientId,
-      client_secret: clientSecret,
-      refresh_token: refreshToken,
-      grant_type: 'refresh_token',
-    }),
-  });
+  try {
+    const response = await fetchWithRetry('https://www.strava.com/oauth/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        client_id: clientId,
+        client_secret: clientSecret,
+        refresh_token: refreshToken,
+        grant_type: 'refresh_token',
+      }),
+    });
 
-  if (!response.ok) {
-    console.error('Token refresh failed:', await response.text());
+    if (!response.ok) {
+      console.error('Token refresh failed:', await response.text());
+      return null;
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error('Token refresh network error:', error);
     return null;
   }
-
-  return response.json();
 }
 
 async function checkClubMembership(accessToken: string): Promise<boolean> {
   console.log('Checking Strava club membership...');
   
   try {
-    const response = await fetch('https://www.strava.com/api/v3/athlete/clubs', {
+    const response = await fetchWithRetry('https://www.strava.com/api/v3/athlete/clubs', {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
 
@@ -371,7 +405,7 @@ serve(async (req) => {
 
     // Fetch athlete stats from Strava
     console.log('Fetching Strava stats for athlete:', profile.strava_id);
-    const statsResponse = await fetch(
+    const statsResponse = await fetchWithRetry(
       `https://www.strava.com/api/v3/athletes/${profile.strava_id}/stats`,
       {
         headers: { Authorization: `Bearer ${accessToken}` },
@@ -394,7 +428,7 @@ serve(async (req) => {
     const oneYearAgo = Math.floor(Date.now() / 1000) - (365 * 24 * 60 * 60);
     console.log('Fetching activities since:', new Date(oneYearAgo * 1000).toISOString());
     
-    const activitiesResponse = await fetch(
+    const activitiesResponse = await fetchWithRetry(
       `https://www.strava.com/api/v3/athlete/activities?after=${oneYearAgo}&per_page=200`,
       {
         headers: { Authorization: `Bearer ${accessToken}` },
