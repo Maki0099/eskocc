@@ -93,23 +93,21 @@ const CafeAdmin = () => {
   // Restore scroll position after state updates complete
   useEffect(() => {
     if (shouldRestoreScrollRef.current && !loading) {
-      // Use double requestAnimationFrame to wait for full render cycle
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          window.scrollTo(0, scrollPositionRef.current);
-          shouldRestoreScrollRef.current = false;
-        });
-      });
+      // Use setTimeout to ensure DOM is fully updated
+      setTimeout(() => {
+        window.scrollTo({ top: scrollPositionRef.current, behavior: 'instant' });
+        shouldRestoreScrollRef.current = false;
+      }, 50);
     }
   }, [menuItems, categories, loading]);
 
-  const fetchData = async (preserveScroll = false) => {
-    // Save current scroll position if preserving
-    if (preserveScroll) {
-      scrollPositionRef.current = window.scrollY;
-      shouldRestoreScrollRef.current = true;
-    }
+  // Save scroll position when opening dialogs
+  const saveScrollPosition = () => {
+    scrollPositionRef.current = window.scrollY;
+    shouldRestoreScrollRef.current = true;
+  };
 
+  const fetchData = async () => {
     try {
       const [hoursRes, menuRes, categoriesRes, galleryRes] = await Promise.all([
         supabase.from("cafe_opening_hours").select("*").order("day_of_week"),
@@ -167,6 +165,7 @@ const CafeAdmin = () => {
 
   // Category handlers
   const openCategoryDialog = (category?: MenuCategory) => {
+    saveScrollPosition();
     if (category) {
       setEditingCategory(category);
       setCategoryForm({
@@ -205,7 +204,7 @@ const CafeAdmin = () => {
 
       setCategoryDialogOpen(false);
       setEditingCategory(null);
-      fetchData(true);
+      fetchData();
     } catch (error) {
       console.error("Error saving category:", error);
       toast.error("Nepodařilo se uložit kategorii");
@@ -216,12 +215,13 @@ const CafeAdmin = () => {
 
   const handleDeleteCategory = async (id: string) => {
     if (!confirm("Opravdu chcete smazat tuto kategorii? Položky menu zůstanou zachovány.")) return;
+    saveScrollPosition();
 
     try {
       const { error } = await supabase.from("cafe_menu_categories").delete().eq("id", id);
       if (error) throw error;
       toast.success("Kategorie smazána");
-      fetchData(true);
+      fetchData();
     } catch (error) {
       console.error("Error deleting category:", error);
       toast.error("Nepodařilo se smazat kategorii");
@@ -229,6 +229,7 @@ const CafeAdmin = () => {
   };
 
   const openMenuDialog = (item?: MenuItem) => {
+    saveScrollPosition();
     if (item) {
       setEditingItem(item);
       setMenuForm({
@@ -277,7 +278,7 @@ const CafeAdmin = () => {
       }
 
       setMenuDialogOpen(false);
-      fetchData(true);
+      fetchData();
     } catch (error) {
       console.error("Error saving menu item:", error);
       toast.error("Nepodařilo se uložit položku");
@@ -288,12 +289,13 @@ const CafeAdmin = () => {
 
   const handleDeleteMenuItem = async (id: string) => {
     if (!confirm("Opravdu chcete smazat tuto položku?")) return;
+    saveScrollPosition();
 
     try {
       const { error } = await supabase.from("cafe_menu_items").delete().eq("id", id);
       if (error) throw error;
       toast.success("Položka smazána");
-      fetchData(true);
+      fetchData();
     } catch (error) {
       console.error("Error deleting menu item:", error);
       toast.error("Nepodařilo se smazat položku");
@@ -301,13 +303,14 @@ const CafeAdmin = () => {
   };
 
   const toggleItemAvailability = async (item: MenuItem) => {
+    saveScrollPosition();
     try {
       const { error } = await supabase
         .from("cafe_menu_items")
         .update({ is_available: !item.is_available })
         .eq("id", item.id);
       if (error) throw error;
-      fetchData(true);
+      fetchData();
     } catch (error) {
       console.error("Error toggling availability:", error);
       toast.error("Nepodařilo se změnit dostupnost");
