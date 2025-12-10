@@ -100,15 +100,17 @@ export default defineConfig(({ mode }) => ({
             }
           }
         ],
-        navigateFallback: "/offline.html",
+        navigateFallback: "/index.html",
         navigateFallbackDenylist: [
           /^\/api/,
-          /^\/dashboard/,
-          /^\/login/,
+          /^\/supabase/,
           /\?code=/,
           /\?error=/,
           /#access_token=/,
-          /#error=/
+          /#error=/,
+          /#error_description=/,
+          /\.pdf$/,
+          /^\/documents\//
         ]
       }
     })

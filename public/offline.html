@@ -79,28 +79,50 @@
       margin-bottom: 1.5rem;
       stroke: #B7A99A;
     }
+    
+    .status {
+      font-size: 0.75rem;
+      color: #666;
+      margin-top: 1.5rem;
+    }
   </style>
   <script>
-    // Detect OAuth callback and redirect properly
     (function() {
       var url = window.location.href;
       var hash = window.location.hash;
       
-      // Check if this is an OAuth callback (has access_token in hash or code in query)
+      // OAuth callback - immediately reload to let app handle it
       if (hash.includes('access_token=') || url.includes('code=') || url.includes('error=')) {
-        // This is an OAuth callback - reload to let the app handle it
-        // The service worker update should allow this through
         window.location.reload();
         return;
       }
       
-      // Check if we actually have network connectivity
+      // We're online but seeing offline page - service worker issue
       if (navigator.onLine) {
-        // We're online but got this page - likely a service worker issue
-        // Try reloading after a short delay
-        setTimeout(function() {
-          window.location.reload();
-        }, 1000);
+        // Try to clear workbox caches and reload
+        if ('caches' in window) {
+          caches.keys().then(function(names) {
+            var workboxCaches = names.filter(function(name) {
+              return name.includes('workbox');
+            });
+            
+            Promise.all(workboxCaches.map(function(name) {
+              return caches.delete(name);
+            })).then(function() {
+              setTimeout(function() {
+                window.location.reload();
+              }, 500);
+            });
+          }).catch(function() {
+            setTimeout(function() {
+              window.location.reload();
+            }, 1000);
+          });
+        } else {
+          setTimeout(function() {
+            window.location.reload();
+          }, 1000);
+        }
       }
     })();
   </script>
@@ -127,6 +149,21 @@
       </svg>
       Zkusit znovu
     </button>
+    
+    <p class="status" id="status"></p>
   </div>
+  
+  <script>
+    // Show status for debugging
+    var statusEl = document.getElementById('status');
+    statusEl.textContent = navigator.onLine ? 'Online - načítám...' : 'Offline';
+    
+    window.addEventListener('online', function() {
+      statusEl.textContent = 'Připojení obnoveno...';
+      setTimeout(function() {
+        window.location.reload();
+      }, 500);
+    });
+  </script>
 </body>
 </html>
