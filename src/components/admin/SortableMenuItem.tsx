@@ -20,6 +20,7 @@ interface SortableMenuItemProps {
   onEdit: (item: MenuItem) => void;
   onDelete: (id: string) => void;
   onToggleAvailability: (item: MenuItem) => void;
+  isDragActive?: boolean;
 }
 
 export const SortableMenuItem = ({
@@ -27,6 +28,7 @@ export const SortableMenuItem = ({
   onEdit,
   onDelete,
   onToggleAvailability,
+  isDragActive = false,
 }: SortableMenuItemProps) => {
   const {
     attributes,
@@ -35,6 +37,7 @@ export const SortableMenuItem = ({
     transform,
     transition,
     isDragging,
+    isOver,
   } = useSortable({ id: item.id });
 
   const style = {
@@ -46,9 +49,11 @@ export const SortableMenuItem = ({
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-3 p-3 bg-card border border-border rounded-lg group ${
-        isDragging ? "opacity-50 shadow-lg z-50" : ""
-      } ${!item.is_available ? "opacity-60" : ""}`}
+      className={`flex items-center gap-3 p-3 bg-card border rounded-lg group transition-all duration-200 ${
+        isDragging ? "opacity-50 shadow-lg z-50 scale-105 border-primary" : ""
+      } ${!item.is_available ? "opacity-60" : ""} ${
+        isOver && !isDragging ? "border-primary border-2 bg-primary/5" : "border-border"
+      } ${isDragActive && !isDragging && !isOver ? "border-dashed" : ""}`}
     >
       <button
         {...attributes}

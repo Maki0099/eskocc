@@ -2,6 +2,8 @@ import { useState } from "react";
 import {
   DndContext,
   DragEndEvent,
+  DragStartEvent,
+  DragOverlay,
   closestCenter,
   KeyboardSensor,
   PointerSensor,
@@ -14,6 +16,7 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
+import { GripVertical } from "lucide-react";
 import { SortableCategoryItem } from "./SortableCategoryItem";
 import { SortableMenuItem } from "./SortableMenuItem";
 import { supabase } from "@/integrations/supabase/client";
@@ -60,6 +63,8 @@ export const MenuItemsHierarchy = ({
 }: MenuItemsHierarchyProps) => {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [localCategories, setLocalCategories] = useState(categories);
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
+  const [activeDragType, setActiveDragType] = useState<"category" | "subcategory" | "item" | null>(null);
   const [localMenuItems, setLocalMenuItems] = useState(menuItems);
 
   // Update local state when props change
@@ -118,7 +123,29 @@ export const MenuItemsHierarchy = ({
     });
   };
 
+  const handleCategoryDragStart = (event: DragStartEvent) => {
+    setActiveDragId(event.active.id as string);
+    setActiveDragType("category");
+  };
+
+  const handleSubcategoryDragStart = (event: DragStartEvent) => {
+    setActiveDragId(event.active.id as string);
+    setActiveDragType("subcategory");
+  };
+
+  const handleItemDragStart = (event: DragStartEvent) => {
+    setActiveDragId(event.active.id as string);
+    setActiveDragType("item");
+  };
+
+  const handleDragCancel = () => {
+    setActiveDragId(null);
+    setActiveDragType(null);
+  };
+
   const handleCategoryDragEnd = async (event: DragEndEvent) => {
+    setActiveDragId(null);
+    setActiveDragType(null);
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
@@ -165,6 +192,8 @@ export const MenuItemsHierarchy = ({
   };
 
   const handleSubcategoryDragEnd = async (event: DragEndEvent, parentId: string) => {
+    setActiveDragId(null);
+    setActiveDragType(null);
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
@@ -205,6 +234,8 @@ export const MenuItemsHierarchy = ({
   };
 
   const handleItemDragEnd = async (event: DragEndEvent, categoryId: string) => {
+    setActiveDragId(null);
+    setActiveDragType(null);
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
@@ -255,72 +286,82 @@ export const MenuItemsHierarchy = ({
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
+        onDragStart={handleCategoryDragStart}
         onDragEnd={handleCategoryDragEnd}
+        onDragCancel={handleDragCancel}
       >
         <SortableContext
           items={mainCategories.map((c) => c.id)}
           strategy={verticalListSortingStrategy}
         >
-          {mainCategories.map((mainCat) => {
-            const subcategories = getSubcategories(mainCat.id);
-            const directItems = getItemsForSubcategory(mainCat.id);
-            const totalItems = getItemsForCategory(mainCat.id).length;
+          <div className={`space-y-2 transition-all duration-200 ${activeDragType === "category" ? "rounded-lg ring-2 ring-primary/20 ring-offset-2 p-2 -m-2" : ""}`}>
+            {mainCategories.map((mainCat) => {
+              const subcategories = getSubcategories(mainCat.id);
+              const directItems = getItemsForSubcategory(mainCat.id);
+              const totalItems = getItemsForCategory(mainCat.id).length;
 
-            return (
-              <SortableCategoryItem
-                key={mainCat.id}
-                category={mainCat}
-                isExpanded={expandedCategories.has(mainCat.id)}
-                onToggleExpand={() => toggleExpand(mainCat.id)}
-                onEdit={onEditCategory}
-                onDelete={onDeleteCategory}
-                itemCount={totalItems}
-              >
-                {/* Subcategories */}
-                {subcategories.length > 0 && (
-                  <DndContext
-                    sensors={sensors}
-                    collisionDetection={closestCenter}
-                    onDragEnd={(e) => handleSubcategoryDragEnd(e, mainCat.id)}
-                  >
-                    <SortableContext
-                      items={subcategories.map((c) => c.id)}
-                      strategy={verticalListSortingStrategy}
+              return (
+                <SortableCategoryItem
+                  key={mainCat.id}
+                  category={mainCat}
+                  isExpanded={expandedCategories.has(mainCat.id)}
+                  onToggleExpand={() => toggleExpand(mainCat.id)}
+                  onEdit={onEditCategory}
+                  onDelete={onDeleteCategory}
+                  itemCount={totalItems}
+                  isDragActive={activeDragType === "category"}
+                >
+                  {/* Subcategories */}
+                  {subcategories.length > 0 && (
+                    <DndContext
+                      sensors={sensors}
+                      collisionDetection={closestCenter}
+                      onDragStart={handleSubcategoryDragStart}
+                      onDragEnd={(e) => handleSubcategoryDragEnd(e, mainCat.id)}
+                      onDragCancel={handleDragCancel}
                     >
-                      <div className="space-y-2 mb-3">
-                        {subcategories.map((subCat) => {
-                          const subItems = getItemsForSubcategory(subCat.id);
-                          return (
-                            <SortableCategoryItem
-                              key={subCat.id}
-                              category={subCat}
-                              isExpanded={expandedCategories.has(subCat.id)}
-                              onToggleExpand={() => toggleExpand(subCat.id)}
-                              onEdit={onEditCategory}
-                              onDelete={onDeleteCategory}
-                              itemCount={subItems.length}
-                            >
-                              {/* Items in subcategory */}
-                              <DndContext
-                                sensors={sensors}
-                                collisionDetection={closestCenter}
-                                onDragEnd={(e) => handleItemDragEnd(e, subCat.id)}
+                      <SortableContext
+                        items={subcategories.map((c) => c.id)}
+                        strategy={verticalListSortingStrategy}
+                      >
+                        <div className={`space-y-2 mb-3 transition-all duration-200 ${activeDragType === "subcategory" ? "rounded-lg ring-2 ring-primary/20 p-2 -m-2" : ""}`}>
+                          {subcategories.map((subCat) => {
+                            const subItems = getItemsForSubcategory(subCat.id);
+                            return (
+                              <SortableCategoryItem
+                                key={subCat.id}
+                                category={subCat}
+                                isExpanded={expandedCategories.has(subCat.id)}
+                                onToggleExpand={() => toggleExpand(subCat.id)}
+                                onEdit={onEditCategory}
+                                onDelete={onDeleteCategory}
+                                itemCount={subItems.length}
+                                isDragActive={activeDragType === "subcategory"}
                               >
-                                <SortableContext
-                                  items={subItems.map((i) => i.id)}
-                                  strategy={verticalListSortingStrategy}
+                                {/* Items in subcategory */}
+                                <DndContext
+                                  sensors={sensors}
+                                  collisionDetection={closestCenter}
+                                  onDragStart={handleItemDragStart}
+                                  onDragEnd={(e) => handleItemDragEnd(e, subCat.id)}
+                                  onDragCancel={handleDragCancel}
                                 >
-                                  {subItems.length > 0 ? (
-                                    <div className="space-y-2">
-                                      {subItems.map((item) => (
-                                        <SortableMenuItem
-                                          key={item.id}
-                                          item={item}
-                                          onEdit={onEditItem}
-                                          onDelete={onDeleteItem}
-                                          onToggleAvailability={onToggleItemAvailability}
-                                        />
-                                      ))}
+                                  <SortableContext
+                                    items={subItems.map((i) => i.id)}
+                                    strategy={verticalListSortingStrategy}
+                                  >
+                                    {subItems.length > 0 ? (
+                                      <div className={`space-y-2 transition-all duration-200 ${activeDragType === "item" ? "rounded-lg ring-2 ring-primary/20 p-2 -m-2" : ""}`}>
+                                        {subItems.map((item) => (
+                                          <SortableMenuItem
+                                            key={item.id}
+                                            item={item}
+                                            onEdit={onEditItem}
+                                            onDelete={onDeleteItem}
+                                            onToggleAvailability={onToggleItemAvailability}
+                                            isDragActive={activeDragType === "item"}
+                                          />
+                                        ))}
                                     </div>
                                   ) : (
                                     <p className="text-sm text-muted-foreground text-center py-2">
@@ -342,13 +383,15 @@ export const MenuItemsHierarchy = ({
                   <DndContext
                     sensors={sensors}
                     collisionDetection={closestCenter}
+                    onDragStart={handleItemDragStart}
                     onDragEnd={(e) => handleItemDragEnd(e, mainCat.id)}
+                    onDragCancel={handleDragCancel}
                   >
                     <SortableContext
                       items={directItems.map((i) => i.id)}
                       strategy={verticalListSortingStrategy}
                     >
-                      <div className="space-y-2">
+                      <div className={`space-y-2 transition-all duration-200 ${activeDragType === "item" ? "rounded-lg ring-2 ring-primary/20 p-2 -m-2" : ""}`}>
                         {subcategories.length > 0 && (
                           <p className="text-xs text-muted-foreground font-medium mt-2">
                             Přímo v kategorii:
@@ -361,6 +404,7 @@ export const MenuItemsHierarchy = ({
                             onEdit={onEditItem}
                             onDelete={onDeleteItem}
                             onToggleAvailability={onToggleItemAvailability}
+                            isDragActive={activeDragType === "item"}
                           />
                         ))}
                       </div>
@@ -376,6 +420,7 @@ export const MenuItemsHierarchy = ({
               </SortableCategoryItem>
             );
           })}
+          </div>
         </SortableContext>
       </DndContext>
 
