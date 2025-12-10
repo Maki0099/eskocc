@@ -1,6 +1,12 @@
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+
+// Static cafe photos from assets
+import cafeInterior1 from "@/assets/cafe/cafe-interior-1.jpg";
+import cafeInterior2 from "@/assets/cafe/cafe-interior-2.jpeg";
+import cafeInterior3 from "@/assets/cafe/cafe-interior-3.jpeg";
+import cafeTerrace from "@/assets/cafe/cafe-terrace.jpg";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -61,6 +67,19 @@ interface GalleryPhoto {
 
 const dayNames = ["Neděle", "Pondělí", "Úterý", "Středa", "Čtvrtek", "Pátek", "Sobota"];
 
+interface SystemPhoto {
+  src: string;
+  name: string;
+  caption: string;
+}
+
+const systemPhotos: SystemPhoto[] = [
+  { src: cafeInterior1, name: "cafe-interior-1.jpg", caption: "Interiér kavárny" },
+  { src: cafeInterior2, name: "cafe-interior-2.jpeg", caption: "Interiér 2" },
+  { src: cafeInterior3, name: "cafe-interior-3.jpeg", caption: "Interiér 3" },
+  { src: cafeTerrace, name: "cafe-terrace.jpg", caption: "Terasa" },
+];
+
 const CafeAdmin = () => {
   const { user } = useAuth();
   const [openingHours, setOpeningHours] = useState<OpeningHour[]>([]);
@@ -70,6 +89,7 @@ const CafeAdmin = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [migrating, setMigrating] = useState<string | null>(null);
   const [menuDialogOpen, setMenuDialogOpen] = useState(false);
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
@@ -386,7 +406,56 @@ const CafeAdmin = () => {
     }
   };
 
-  // Reorder hours to start with Monday
+  // Migrate system photo to database
+  const migrateSystemPhoto = async (photo: SystemPhoto) => {
+    setMigrating(photo.name);
+    try {
+      // Fetch the static image as blob
+      const response = await fetch(photo.src);
+      const blob = await response.blob();
+
+      // Generate unique filename
+      const fileExt = photo.name.split(".").pop();
+      const fileName = `cafe/${Date.now()}-${photo.name}`;
+
+      // Upload to storage
+      const { error: uploadError } = await supabase.storage
+        .from("gallery")
+        .upload(fileName, blob);
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from("gallery")
+        .getPublicUrl(fileName);
+
+      // Insert into cafe_gallery table
+      const { error: insertError } = await supabase.from("cafe_gallery").insert({
+        file_url: urlData.publicUrl,
+        file_name: photo.name,
+        caption: photo.caption,
+        sort_order: galleryPhotos.length,
+      });
+
+      if (insertError) throw insertError;
+
+      toast.success(`Fotka "${photo.caption}" přidána do galerie`);
+      fetchData();
+    } catch (error) {
+      console.error("Error migrating system photo:", error);
+      toast.error("Nepodařilo se přidat fotku do galerie");
+    } finally {
+      setMigrating(null);
+    }
+  };
+
+  // Filter out system photos already in database
+  const availableSystemPhotos = systemPhotos.filter(
+    (sp) => !galleryPhotos.some((gp) => gp.file_name === sp.name)
+  );
+
+
   const orderedHours = [...openingHours].sort((a, b) => {
     const orderA = a.day_of_week === 0 ? 7 : a.day_of_week;
     const orderB = b.day_of_week === 0 ? 7 : b.day_of_week;
@@ -675,31 +744,74 @@ const CafeAdmin = () => {
           </div>
         </CardHeader>
         <CardContent>
-          {galleryPhotos.length === 0 ? (
+          {/* System photos section */}
+          {availableSystemPhotos.length > 0 && (
+            <div className="mb-6">
+              <h4 className="text-sm font-medium text-muted-foreground mb-3">
+                Systémové fotky (nepřidané do galerie)
+              </h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {availableSystemPhotos.map((photo) => (
+                  <div key={photo.name} className="relative group aspect-square">
+                    <img
+                      src={photo.src}
+                      alt={photo.caption}
+                      className="w-full h-full object-cover rounded-lg opacity-75"
+                    />
+                    <div className="absolute inset-0 flex items-end p-2">
+                      <Button
+                        size="sm"
+                        className="w-full"
+                        onClick={() => migrateSystemPhoto(photo)}
+                        disabled={migrating === photo.name}
+                      >
+                        {migrating === photo.name ? (
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        ) : (
+                          <Plus className="w-4 h-4 mr-2" />
+                        )}
+                        Přidat do galerie
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Existing gallery photos */}
+          {galleryPhotos.length === 0 && availableSystemPhotos.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">
               Žádné fotky v galerii
             </p>
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {galleryPhotos.map((photo) => (
-                <div key={photo.id} className="relative group aspect-square">
-                  <img
-                    src={photo.file_url}
-                    alt={photo.caption || photo.file_name}
-                    className="w-full h-full object-cover rounded-lg"
-                  />
-                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
-                    <Button
-                      variant="destructive"
-                      size="icon"
-                      onClick={() => handleDeletePhoto(photo)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+          ) : galleryPhotos.length > 0 && (
+            <>
+              {availableSystemPhotos.length > 0 && (
+                <h4 className="text-sm font-medium text-muted-foreground mb-3">
+                  Fotky v galerii
+                </h4>
+              )}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {galleryPhotos.map((photo) => (
+                  <div key={photo.id} className="relative group aspect-square">
+                    <img
+                      src={photo.file_url}
+                      alt={photo.caption || photo.file_name}
+                      className="w-full h-full object-cover rounded-lg"
+                    />
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        onClick={() => handleDeletePhoto(photo)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
