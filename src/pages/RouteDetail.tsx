@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -8,6 +8,7 @@ import Footer from "@/components/layout/Footer";
 import MemberOnlyContent from "@/components/MemberOnlyContent";
 import GpxMap from "@/components/map/GpxMap";
 import CreateEventDialog from "@/components/events/CreateEventDialog";
+import EditRouteDialog from "@/components/routes/EditRouteDialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,7 +23,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Route, Mountain, Gauge, Download, ExternalLink, Trash2, MapIcon, CalendarPlus } from "lucide-react";
+import { ArrowLeft, Route, Mountain, Gauge, Download, ExternalLink, Trash2, MapIcon, CalendarPlus, Bike, Map } from "lucide-react";
 import { toast } from "sonner";
 import { ROUTES } from "@/lib/routes";
 
@@ -70,29 +71,29 @@ const RouteDetail = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  useEffect(() => {
-    const fetchRoute = async () => {
-      if (!id) return;
+  const fetchRoute = useCallback(async () => {
+    if (!id) return;
 
-      try {
-        const { data, error } = await supabase
-          .from("favorite_routes")
-          .select("*")
-          .eq("id", id)
-          .maybeSingle();
+    try {
+      const { data, error } = await supabase
+        .from("favorite_routes")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
 
-        if (error) throw error;
-        setRoute(data);
-      } catch (error) {
-        console.error("Error fetching route:", error);
-        toast.error("Nepodařilo se načíst trasu");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchRoute();
+      if (error) throw error;
+      setRoute(data);
+    } catch (error) {
+      console.error("Error fetching route:", error);
+      toast.error("Nepodařilo se načíst trasu");
+    } finally {
+      setLoading(false);
+    }
   }, [id]);
+
+  useEffect(() => {
+    fetchRoute();
+  }, [fetchRoute]);
 
   const handleDelete = async () => {
     if (!route) return;
@@ -107,7 +108,7 @@ const RouteDetail = () => {
       if (error) throw error;
 
       toast.success("Trasa byla smazána");
-      navigate(ROUTES.EVENTS);
+      navigate("/events?tab=routes");
     } catch (error) {
       console.error("Error deleting route:", error);
       toast.error("Nepodařilo se smazat trasu");
@@ -118,15 +119,16 @@ const RouteDetail = () => {
   };
 
   const canEdit = user && (route?.created_by === user.id || isAdmin);
+  const hasRouteParams = route?.distance_km || route?.elevation_m || route?.difficulty || route?.terrain_type;
 
   if (loading || roleLoading) {
     return (
       <div className="min-h-screen flex flex-col bg-background">
         <Header />
         <main className="flex-1 container mx-auto px-4 pt-24 pb-12">
-          <div className="max-w-4xl mx-auto space-y-6">
+          <div className="max-w-3xl mx-auto space-y-6">
             <Skeleton className="h-8 w-48" />
-            <Skeleton className="h-64 w-full" />
+            <Skeleton className="h-64 w-full rounded-xl" />
             <Skeleton className="h-32 w-full" />
           </div>
         </main>
@@ -155,14 +157,14 @@ const RouteDetail = () => {
       <div className="min-h-screen flex flex-col bg-background">
         <Header />
         <main className="flex-1 container mx-auto px-4 pt-24 pb-12">
-          <div className="max-w-4xl mx-auto text-center py-12">
+          <div className="max-w-3xl mx-auto text-center py-12">
             <MapIcon className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
             <h1 className="text-2xl font-bold mb-2">Trasa nenalezena</h1>
             <p className="text-muted-foreground mb-6">
               Požadovaná trasa neexistuje nebo byla smazána.
             </p>
             <Button asChild>
-              <Link to={ROUTES.EVENTS}>Zpět na vyjížďky</Link>
+              <Link to="/events?tab=routes">Zpět na oblíbené trasy</Link>
             </Button>
           </div>
         </main>
@@ -174,54 +176,118 @@ const RouteDetail = () => {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
-      <main className="flex-1">
-        {/* Hero Section with Cover Image */}
-        {route.cover_image_url && (
-          <div className="relative h-64 md:h-80 overflow-hidden">
-            <img
-              src={route.cover_image_url}
-              alt={route.title}
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent" />
-          </div>
-        )}
+      <main className="flex-1 container mx-auto px-4 pt-24 pb-12">
+        <div className="max-w-3xl mx-auto">
+          {/* Back Link */}
+          <Link
+            to="/events?tab=routes"
+            className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Zpět na oblíbené trasy
+          </Link>
 
-        <div className={`container mx-auto px-4 ${route.cover_image_url ? "-mt-20 relative z-10" : "pt-24"} pb-12`}>
-          <div className="max-w-4xl mx-auto">
-            {/* Back Button */}
-            <Button
-              variant="ghost"
-              className="mb-4"
-              onClick={() => navigate(ROUTES.EVENTS)}
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Zpět na vyjížďky
-            </Button>
+          {/* Cover Image */}
+          {route.cover_image_url && (
+            <div className="relative rounded-xl overflow-hidden mb-6 aspect-[21/9]">
+              <img
+                src={route.cover_image_url}
+                alt={route.title}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+            </div>
+          )}
 
-            {/* Title and Actions */}
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
-              <div>
-                <h1 className="text-3xl font-bold mb-2">{route.title}</h1>
-                <div className="flex flex-wrap gap-2">
-                  {route.terrain_type && (
-                    <Badge variant="outline">
-                      {TERRAIN_LABELS[route.terrain_type] || route.terrain_type}
-                    </Badge>
-                  )}
-                  {route.difficulty && (
-                    <Badge 
-                      variant="outline"
-                      className={DIFFICULTY_COLORS[route.difficulty] || ""}
-                    >
-                      <Gauge className="w-3 h-3 mr-1" />
-                      {DIFFICULTY_LABELS[route.difficulty] || route.difficulty}
-                    </Badge>
-                  )}
-                </div>
+          {/* Title and Actions */}
+          <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
+            <h1 className="text-3xl font-bold">{route.title}</h1>
+            {canEdit && (
+              <div className="flex gap-2">
+                <EditRouteDialog route={route} onRouteUpdated={fetchRoute} />
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setShowDeleteDialog(true)}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
               </div>
+            )}
+          </div>
 
-              <div className="flex flex-wrap gap-2">
+          {/* Route Parameters Badges */}
+          {hasRouteParams && (
+            <div className="flex flex-wrap gap-2 mb-6">
+              {route.distance_km && (
+                <Badge variant="outline" className="gap-1.5 py-1.5 px-3">
+                  <Route className="w-3.5 h-3.5" />
+                  {route.distance_km} km
+                </Badge>
+              )}
+              {route.elevation_m && (
+                <Badge variant="outline" className="gap-1.5 py-1.5 px-3">
+                  <Mountain className="w-3.5 h-3.5" />
+                  {route.elevation_m} m
+                </Badge>
+              )}
+              {route.difficulty && (
+                <Badge 
+                  variant="outline" 
+                  className={`gap-1.5 py-1.5 px-3 ${DIFFICULTY_COLORS[route.difficulty] || ""}`}
+                >
+                  <Gauge className="w-3.5 h-3.5" />
+                  {DIFFICULTY_LABELS[route.difficulty] || route.difficulty}
+                </Badge>
+              )}
+              {route.terrain_type && (
+                <Badge variant="outline" className="gap-1.5 py-1.5 px-3">
+                  <Bike className="w-3.5 h-3.5" />
+                  {TERRAIN_LABELS[route.terrain_type] || route.terrain_type}
+                </Badge>
+              )}
+            </div>
+          )}
+
+          {/* GPX Map */}
+          {route.gpx_file_url && (
+            <Card className="mb-6">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Map className="w-5 h-5" />
+                  Trasa
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <GpxMap gpxUrl={route.gpx_file_url} />
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Description and Actions */}
+          <Card className="mb-6">
+            <CardContent className="pt-6 space-y-4">
+              {route.description && (
+                <p className="text-muted-foreground whitespace-pre-wrap">{route.description}</p>
+              )}
+
+              <div className="flex flex-wrap items-center gap-3 pt-4 border-t">
+                {route.gpx_file_url && (
+                  <Button variant="outline" asChild>
+                    <a href={route.gpx_file_url} download target="_blank" rel="noopener noreferrer">
+                      <Download className="w-4 h-4 mr-2" />
+                      Stáhnout GPX
+                    </a>
+                  </Button>
+                )}
+                {route.route_link && (
+                  <Button variant="outline" asChild>
+                    <a href={route.route_link} target="_blank" rel="noopener noreferrer">
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      Zobrazit trasu
+                    </a>
+                  </Button>
+                )}
                 {canCreateEvents && (
                   <CreateEventDialog
                     onEventCreated={() => navigate(ROUTES.EVENTS)}
@@ -244,87 +310,9 @@ const RouteDetail = () => {
                     }
                   />
                 )}
-                {route.gpx_file_url && (
-                  <Button variant="outline" asChild>
-                    <a href={route.gpx_file_url} download>
-                      <Download className="w-4 h-4 mr-2" />
-                      Stáhnout GPX
-                    </a>
-                  </Button>
-                )}
-                {route.route_link && (
-                  <Button variant="outline" asChild>
-                    <a href={route.route_link} target="_blank" rel="noopener noreferrer">
-                      <ExternalLink className="w-4 h-4 mr-2" />
-                      Mapy
-                    </a>
-                  </Button>
-                )}
-                {canEdit && (
-                  <Button
-                    variant="destructive"
-                    size="icon"
-                    onClick={() => setShowDeleteDialog(true)}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                )}
               </div>
-            </div>
-
-            {/* Route Stats */}
-            {(route.distance_km || route.elevation_m) && (
-              <div className="flex gap-6 mb-6">
-                {route.distance_km && (
-                  <div className="flex items-center gap-2">
-                    <Route className="w-5 h-5 text-primary" />
-                    <div>
-                      <p className="text-2xl font-bold">{route.distance_km} km</p>
-                      <p className="text-sm text-muted-foreground">Vzdálenost</p>
-                    </div>
-                  </div>
-                )}
-                {route.elevation_m && (
-                  <div className="flex items-center gap-2">
-                    <Mountain className="w-5 h-5 text-primary" />
-                    <div>
-                      <p className="text-2xl font-bold">{route.elevation_m} m</p>
-                      <p className="text-sm text-muted-foreground">Převýšení</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Description */}
-            {route.description && (
-              <Card className="mb-6">
-                <CardHeader>
-                  <CardTitle className="text-lg">Popis trasy</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground whitespace-pre-wrap">
-                    {route.description}
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* GPX Map */}
-            {route.gpx_file_url && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <MapIcon className="w-5 h-5" />
-                    Mapa trasy
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <GpxMap gpxUrl={route.gpx_file_url} />
-                </CardContent>
-              </Card>
-            )}
-          </div>
+            </CardContent>
+          </Card>
         </div>
       </main>
       <Footer />
