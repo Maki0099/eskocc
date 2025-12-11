@@ -842,6 +842,278 @@ async function parseGarminConnect(html: string, baseUrl: string): Promise<Parsed
   return routes;
 }
 
+async function parseAllTrails(html: string, baseUrl: string): Promise<ParsedRoute[]> {
+  const routes: ParsedRoute[] = [];
+  
+  console.log('Parsing AllTrails page...');
+  
+  // AllTrails trail patterns:
+  // /trail/czech-republic/xxx--trail-name
+  // /explore/trail/czech-republic/xxx
+  // /trail/xxx (numeric ID)
+  const trailSlugs = new Set<string>();
+  
+  // Pattern 1: Full trail URLs with country/region
+  const trailPattern = /\/trail\/([a-z-]+\/[a-z0-9-]+)/gi;
+  let match;
+  while ((match = trailPattern.exec(html)) !== null) {
+    trailSlugs.add(match[1]);
+  }
+  
+  // Pattern 2: Explore trail URLs
+  const explorePattern = /\/explore\/trail\/([a-z-]+\/[a-z0-9-]+)/gi;
+  while ((match = explorePattern.exec(html)) !== null) {
+    trailSlugs.add(match[1]);
+  }
+  
+  // Pattern 3: Data attributes
+  const dataPattern = /data-trail-(?:slug|id)="([^"]+)"/g;
+  while ((match = dataPattern.exec(html)) !== null) {
+    trailSlugs.add(match[1]);
+  }
+  
+  console.log(`Found ${trailSlugs.size} AllTrails trails`);
+  
+  for (const trailSlug of trailSlugs) {
+    let title = trailSlug.split('/').pop()?.replace(/-/g, ' ') || `AllTrails Trail`;
+    title = title.charAt(0).toUpperCase() + title.slice(1);
+    let distance_km: number | undefined;
+    let elevation_m: number | undefined;
+    let coverUrl: string | undefined;
+    let description: string | undefined;
+    
+    // Try to extract details from surrounding HTML
+    const slugEscaped = trailSlug.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const trailSection = html.match(new RegExp(`[\\s\\S]{0,1200}${slugEscaped}[\\s\\S]{0,1200}`, 'i'));
+    if (trailSection) {
+      const section = trailSection[0];
+      
+      // Better title
+      const titleMatch = section.match(/(?:data-title|itemprop="name"|aria-label)="([^"]+)"/i) ||
+                        section.match(/<h[1-3][^>]*>([^<]{5,80})<\/h[1-3]>/i);
+      if (titleMatch && !titleMatch[1].toLowerCase().includes('alltrails')) {
+        title = titleMatch[1].trim();
+      }
+      
+      // Distance - AllTrails uses miles primarily
+      const distMiMatch = section.match(/([\d.]+)\s*mi(?:les?)?/i);
+      const distKmMatch = section.match(/([\d.]+)\s*km/i);
+      if (distKmMatch) {
+        distance_km = parseFloat(distKmMatch[1]);
+      } else if (distMiMatch) {
+        distance_km = Math.round(parseFloat(distMiMatch[1]) * 1.60934 * 10) / 10;
+      }
+      
+      // Elevation - AllTrails uses feet primarily
+      const elevFtMatch = section.match(/([\d,]+)\s*ft\s*(?:elevation|gain)?/i);
+      const elevMMatch = section.match(/([\d,]+)\s*m\s*(?:elevation|gain|↑)/i);
+      if (elevMMatch) {
+        elevation_m = parseInt(elevMMatch[1].replace(/,/g, ''), 10);
+      } else if (elevFtMatch) {
+        elevation_m = Math.round(parseInt(elevFtMatch[1].replace(/,/g, ''), 10) * 0.3048);
+      }
+      
+      // Cover image
+      const imgMatch = section.match(/src="([^"]*(?:alltrails|cloudfront)[^"]*\.(?:jpg|jpeg|png|webp)[^"]*)"/i);
+      if (imgMatch) {
+        coverUrl = imgMatch[1];
+      }
+      
+      // Description
+      const descMatch = section.match(/(?:itemprop="description"|class="[^"]*description[^"]*")[^>]*>([^<]{10,200})/i);
+      if (descMatch) {
+        description = descMatch[1].trim();
+      }
+    }
+    
+    routes.push({
+      id: `alltrails-${trailSlug.replace(/\//g, '-')}`,
+      title,
+      description,
+      distance_km,
+      elevation_m,
+      gpx_url: undefined, // AllTrails requires Pro subscription for GPX
+      gpx_accessible: false,
+      cover_url: coverUrl,
+      route_link: `https://www.alltrails.com/trail/${trailSlug}`
+    });
+  }
+  
+  // Test GPX accessibility
+  for (const route of routes) {
+    if (route.gpx_url) {
+      route.gpx_accessible = await testGpxAccessibility(route.gpx_url);
+    }
+  }
+  
+  return routes;
+}
+
+async function parseTrailforks(html: string, baseUrl: string): Promise<ParsedRoute[]> {
+  const routes: ParsedRoute[] = [];
+  
+  console.log('Parsing Trailforks page...');
+  
+  // Trailforks patterns:
+  // /trail/12345/ or /trails/trail-name/
+  // /route/12345/
+  // /ridelog/12345/
+  const trailIds = new Set<string>();
+  const routeIds = new Set<string>();
+  
+  // Pattern 1: Numeric trail IDs
+  const trailIdPattern = /\/trail\/(\d+)/g;
+  let match;
+  while ((match = trailIdPattern.exec(html)) !== null) {
+    trailIds.add(match[1]);
+  }
+  
+  // Pattern 2: Trail slugs
+  const trailSlugPattern = /\/trails\/([a-z0-9-]+)/gi;
+  while ((match = trailSlugPattern.exec(html)) !== null) {
+    if (!match[1].match(/^\d+$/)) { // Skip numeric-only (already captured)
+      trailIds.add(`slug-${match[1]}`);
+    }
+  }
+  
+  // Pattern 3: Route IDs
+  const routePattern = /\/route\/(\d+)/g;
+  while ((match = routePattern.exec(html)) !== null) {
+    routeIds.add(match[1]);
+  }
+  
+  // Pattern 4: Data attributes
+  const dataPattern = /data-(?:trail|route)-id="(\d+)"/g;
+  while ((match = dataPattern.exec(html)) !== null) {
+    trailIds.add(match[1]);
+  }
+  
+  console.log(`Found ${trailIds.size} trails and ${routeIds.size} routes on Trailforks`);
+  
+  // Process trails
+  for (const trailId of trailIds) {
+    const isSlug = trailId.startsWith('slug-');
+    const cleanId = isSlug ? trailId.replace('slug-', '') : trailId;
+    let title = isSlug ? cleanId.replace(/-/g, ' ') : `Trailforks Trail ${cleanId}`;
+    if (isSlug) {
+      title = title.charAt(0).toUpperCase() + title.slice(1);
+    }
+    let distance_km: number | undefined;
+    let elevation_m: number | undefined;
+    let coverUrl: string | undefined;
+    let difficulty: string | undefined;
+    
+    const trailSection = html.match(new RegExp(`[\\s\\S]{0,1000}(?:trail|trails)\\/(?:${cleanId}|${trailId.replace('slug-', '')})[\\s\\S]{0,1000}`, 'i'));
+    if (trailSection) {
+      const section = trailSection[0];
+      
+      // Title
+      const titleMatch = section.match(/(?:data-title|title)="([^"]+)"/i) ||
+                        section.match(/<h[1-3][^>]*>([^<]{3,60})<\/h[1-3]>/i);
+      if (titleMatch && !titleMatch[1].toLowerCase().includes('trailforks')) {
+        title = titleMatch[1].trim();
+      }
+      
+      // Distance
+      const distMatch = section.match(/([\d.]+)\s*(?:km|mi)/i);
+      if (distMatch) {
+        const value = parseFloat(distMatch[1]);
+        distance_km = distMatch[0].toLowerCase().includes('mi') ? Math.round(value * 1.60934 * 10) / 10 : value;
+      }
+      
+      // Elevation
+      const elevMatch = section.match(/([\d,]+)\s*(?:m|ft)\s*(?:↑|climb|gain|descent)/i);
+      if (elevMatch) {
+        const value = parseInt(elevMatch[1].replace(/,/g, ''), 10);
+        elevation_m = elevMatch[0].toLowerCase().includes('ft') ? Math.round(value * 0.3048) : value;
+      }
+      
+      // Difficulty (Trailforks uses color ratings)
+      const diffMatch = section.match(/(?:difficulty|rating)[^>]*(?:green|blue|black|double-black|proline)/i);
+      if (diffMatch) {
+        difficulty = diffMatch[0].toLowerCase().includes('green') ? 'easy' :
+                    diffMatch[0].toLowerCase().includes('blue') ? 'medium' : 'hard';
+      }
+      
+      // Cover image
+      const imgMatch = section.match(/src="([^"]*(?:trailforks|pinkbike)[^"]*\.(?:jpg|jpeg|png|webp)[^"]*)"/i);
+      if (imgMatch) {
+        coverUrl = imgMatch[1];
+      }
+    }
+    
+    const routeLink = isSlug 
+      ? `https://www.trailforks.com/trails/${cleanId}/`
+      : `https://www.trailforks.com/trail/${cleanId}/`;
+    
+    routes.push({
+      id: `trailforks-trail-${cleanId}`,
+      title,
+      distance_km,
+      elevation_m,
+      gpx_url: isSlug ? undefined : `https://www.trailforks.com/trail/${cleanId}/gpx/`,
+      gpx_accessible: false, // Trailforks requires login
+      cover_url: coverUrl,
+      route_link: routeLink
+    });
+  }
+  
+  // Process routes
+  for (const routeId of routeIds) {
+    let title = `Trailforks Route ${routeId}`;
+    let distance_km: number | undefined;
+    let elevation_m: number | undefined;
+    let coverUrl: string | undefined;
+    
+    const routeSection = html.match(new RegExp(`[\\s\\S]{0,800}route\\/${routeId}[\\s\\S]{0,800}`, 'i'));
+    if (routeSection) {
+      const section = routeSection[0];
+      
+      const titleMatch = section.match(/(?:data-title|title)="([^"]+)"/i);
+      if (titleMatch) {
+        title = titleMatch[1].trim();
+      }
+      
+      const distMatch = section.match(/([\d.]+)\s*(?:km|mi)/i);
+      if (distMatch) {
+        const value = parseFloat(distMatch[1]);
+        distance_km = distMatch[0].toLowerCase().includes('mi') ? Math.round(value * 1.60934 * 10) / 10 : value;
+      }
+      
+      const elevMatch = section.match(/([\d,]+)\s*(?:m|ft)/i);
+      if (elevMatch) {
+        const value = parseInt(elevMatch[1].replace(/,/g, ''), 10);
+        elevation_m = elevMatch[0].toLowerCase().includes('ft') ? Math.round(value * 0.3048) : value;
+      }
+      
+      const imgMatch = section.match(/src="([^"]*\.(?:jpg|jpeg|png|webp)[^"]*)"/i);
+      if (imgMatch) {
+        coverUrl = imgMatch[1];
+      }
+    }
+    
+    routes.push({
+      id: `trailforks-route-${routeId}`,
+      title,
+      distance_km,
+      elevation_m,
+      gpx_url: `https://www.trailforks.com/route/${routeId}/gpx/`,
+      gpx_accessible: false,
+      cover_url: coverUrl,
+      route_link: `https://www.trailforks.com/route/${routeId}/`
+    });
+  }
+  
+  // Test GPX accessibility
+  for (const route of routes) {
+    if (route.gpx_url) {
+      route.gpx_accessible = await testGpxAccessibility(route.gpx_url);
+    }
+  }
+  
+  return routes;
+}
+
 async function parseGenericPage(html: string, baseUrl: string): Promise<ParsedRoute[]> {
   const routes: ParsedRoute[] = [];
   
@@ -1004,6 +1276,64 @@ async function parseGenericPage(html: string, baseUrl: string): Promise<ParsedRo
     }
   }
   
+  // Pattern 8: Look for AllTrails embeds/links
+  const alltrailsEmbed = html.match(/alltrails\.com\/(?:trail|explore\/trail)\/([a-z-]+\/[a-z0-9-]+)/gi);
+  if (alltrailsEmbed) {
+    for (const embed of alltrailsEmbed) {
+      const slugMatch = embed.match(/(?:trail|explore\/trail)\/([a-z-]+\/[a-z0-9-]+)/i);
+      if (slugMatch) {
+        const slug = slugMatch[1];
+        const routeId = `alltrails-${slug.replace(/\//g, '-')}`;
+        if (!routes.find(r => r.id === routeId)) {
+          const title = slug.split('/').pop()?.replace(/-/g, ' ') || 'AllTrails Trail';
+          routes.push({
+            id: routeId,
+            title: title.charAt(0).toUpperCase() + title.slice(1),
+            gpx_url: undefined, // AllTrails requires Pro
+            gpx_accessible: false,
+            route_link: `https://www.alltrails.com/trail/${slug}`
+          });
+        }
+      }
+    }
+  }
+  
+  // Pattern 9: Look for Trailforks embeds/links
+  const trailforksEmbed = html.match(/trailforks\.com\/(?:trail|route|trails)\/([a-z0-9-]+)/gi);
+  if (trailforksEmbed) {
+    for (const embed of trailforksEmbed) {
+      const idMatch = embed.match(/\/(\d+)/);
+      const slugMatch = embed.match(/(?:trail|trails)\/([a-z0-9-]+)/i);
+      if (idMatch) {
+        const id = idMatch[1];
+        const isRoute = embed.includes('/route/');
+        const routeId = isRoute ? `trailforks-route-${id}` : `trailforks-trail-${id}`;
+        if (!routes.find(r => r.id === routeId)) {
+          routes.push({
+            id: routeId,
+            title: `Trailforks ${isRoute ? 'Route' : 'Trail'} ${id}`,
+            gpx_url: `https://www.trailforks.com/${isRoute ? 'route' : 'trail'}/${id}/gpx/`,
+            gpx_accessible: false,
+            route_link: `https://www.trailforks.com/${isRoute ? 'route' : 'trail'}/${id}/`
+          });
+        }
+      } else if (slugMatch && !slugMatch[1].match(/^\d+$/)) {
+        const slug = slugMatch[1];
+        const routeId = `trailforks-trail-${slug}`;
+        if (!routes.find(r => r.id === routeId)) {
+          const title = slug.replace(/-/g, ' ');
+          routes.push({
+            id: routeId,
+            title: title.charAt(0).toUpperCase() + title.slice(1),
+            gpx_url: undefined,
+            gpx_accessible: false,
+            route_link: `https://www.trailforks.com/trails/${slug}/`
+          });
+        }
+      }
+    }
+  }
+  
   // Test accessibility for found GPX URLs
   for (const route of routes) {
     if (route.gpx_url) {
@@ -1067,6 +1397,10 @@ serve(async (req) => {
       routes = await parseWikiloc(html, url);
     } else if (url.includes('garmin.com') || url.includes('connect.garmin')) {
       routes = await parseGarminConnect(html, url);
+    } else if (url.includes('alltrails.com')) {
+      routes = await parseAllTrails(html, url);
+    } else if (url.includes('trailforks.com')) {
+      routes = await parseTrailforks(html, url);
     } else {
       routes = await parseGenericPage(html, url);
     }
