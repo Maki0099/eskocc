@@ -43,60 +43,135 @@ function extractNumber(text: string): number | undefined {
 async function parseBicycleHoliday(html: string, baseUrl: string): Promise<ParsedRoute[]> {
   const routes: ParsedRoute[] = [];
   
-  // Match article cards with route information
-  const articlePattern = /<article[^>]*class="[^"]*elementor-post[^"]*"[^>]*>[\s\S]*?<\/article>/gi;
-  const articles = html.match(articlePattern) || [];
+  // Try table-based parsing first (for /cs/trasy-a-vylety/ page)
+  const tableRowPattern = /<tr[^>]*>[\s\S]*?<\/tr>/gi;
+  const tableRows = html.match(tableRowPattern) || [];
   
-  console.log(`Found ${articles.length} article elements`);
+  console.log(`Found ${tableRows.length} table rows`);
   
-  for (let i = 0; i < articles.length; i++) {
-    const article = articles[i];
+  let tableRoutes: ParsedRoute[] = [];
+  
+  for (let i = 0; i < tableRows.length; i++) {
+    const row = tableRows[i];
     
-    // Extract title and link
-    const titleMatch = article.match(/<h3[^>]*class="[^"]*elementor-post__title[^"]*"[^>]*>[\s\S]*?<a[^>]*href="([^"]+)"[^>]*>([^<]+)<\/a>/i);
+    // Skip header rows (contain <th>)
+    if (row.includes('<th')) continue;
+    
+    // Extract title and link from h5 or strong tag with anchor
+    const titleMatch = row.match(/<(?:h5|h4|h3|strong)[^>]*>[\s\S]*?<a[^>]*href="([^"]+)"[^>]*>([^<]+)<\/a>/i) ||
+                       row.match(/<a[^>]*href="([^"]+)"[^>]*class="[^"]*route[^"]*"[^>]*>([^<]+)<\/a>/i) ||
+                       row.match(/<a[^>]*href="([^"]+)"[^>]*>[\s\S]*?<strong>([^<]+)<\/strong>/i);
+    
     if (!titleMatch) continue;
     
-    const routeLink = titleMatch[1];
-    const title = titleMatch[2].trim();
+    const routeLink = titleMatch[1].startsWith('http') ? titleMatch[1] : new URL(titleMatch[1], baseUrl).href;
+    const title = titleMatch[2].trim().replace(/&amp;/g, '&').replace(/&#8211;/g, '–');
     
     // Extract cover image
-    const imgMatch = article.match(/<img[^>]*src="([^"]+)"[^>]*>/i);
+    const imgMatch = row.match(/<img[^>]*src="([^"]+)"[^>]*>/i);
     const coverUrl = imgMatch ? imgMatch[1] : undefined;
     
-    // Extract description/excerpt
-    const excerptMatch = article.match(/<div[^>]*class="[^"]*elementor-post__excerpt[^"]*"[^>]*>[\s\S]*?<p>([^<]+)<\/p>/i);
-    const description = excerptMatch ? excerptMatch[1].trim() : undefined;
+    // Extract distance - look for pattern like "60,5 km" or "60.5 km"
+    const distanceMatch = row.match(/(\d+[.,]?\d*)\s*km/i);
+    const distance_km = distanceMatch ? parseFloat(distanceMatch[1].replace(',', '.')) : undefined;
     
-    // Try to extract distance and elevation from title or description
-    let distance_km: number | undefined;
-    let elevation_m: number | undefined;
+    // Extract elevation - look for pattern like "639 m" or "1 265 m" (with space in number)
+    const elevationMatch = row.match(/(?:převýšení|elevation|↑)[:\s]*(\d[\d\s]*)\s*m/i) ||
+                          row.match(/(\d[\d\s]*)\s*m\s*(?:převýšení|elevation|↑)/i) ||
+                          row.match(/<td[^>]*>[^<]*(\d[\d\s]+)\s*m[^<]*<\/td>/i);
+    const elevation_m = elevationMatch ? parseInt(elevationMatch[1].replace(/\s/g, ''), 10) : undefined;
     
-    // Pattern: "XX km" or "XXX m"
-    const distanceMatch = (title + ' ' + (description || '')).match(/(\d+)\s*km/i);
-    const elevationMatch = (title + ' ' + (description || '')).match(/(\d+)\s*m\b(?!\s*km)/i);
+    // Extract GPX URL directly from row (RideWithGPS links)
+    let gpx_url: string | undefined;
+    const gpxMatch = row.match(/href="([^"]*ridewithgps\.com\/(?:trips|routes)\/(\d+)[^"]*)"/i) ||
+                     row.match(/ridewithgps\.com\/(?:trips|routes)\/(\d+)/i);
     
-    if (distanceMatch) distance_km = parseInt(distanceMatch[1], 10);
-    if (elevationMatch) elevation_m = parseInt(elevationMatch[1], 10);
+    if (gpxMatch) {
+      const routeId = gpxMatch[2] || gpxMatch[1];
+      if (gpxMatch[0].includes('trips')) {
+        gpx_url = `https://ridewithgps.com/trips/${routeId}.gpx?sub_format=track`;
+      } else {
+        gpx_url = `https://ridewithgps.com/routes/${routeId}.gpx?sub_format=track`;
+      }
+    }
     
-    // Generate a unique ID
-    const id = `bh-${i}-${title.substring(0, 20).replace(/\s+/g, '-').toLowerCase()}`;
+    // Also check for direct .gpx links
+    if (!gpx_url) {
+      const directGpxMatch = row.match(/href="([^"]+\.gpx[^"]*)"/i);
+      if (directGpxMatch) {
+        gpx_url = directGpxMatch[1].startsWith('http') ? directGpxMatch[1] : new URL(directGpxMatch[1], baseUrl).href;
+      }
+    }
     
-    routes.push({
+    const id = `bh-table-${i}-${title.substring(0, 20).replace(/\s+/g, '-').toLowerCase()}`;
+    
+    tableRoutes.push({
       id,
       title,
-      description,
       distance_km,
       elevation_m,
-      gpx_url: undefined, // Will need to fetch from detail page
+      gpx_url,
       gpx_accessible: false,
       cover_url: coverUrl,
       route_link: routeLink
     });
   }
   
-  // For each route, try to fetch the detail page to get GPX link
+  console.log(`Parsed ${tableRoutes.length} routes from table structure`);
+  
+  // If table parsing found routes, use those
+  if (tableRoutes.length > 0) {
+    routes.push(...tableRoutes);
+  } else {
+    // Fallback to Elementor article structure
+    const articlePattern = /<article[^>]*class="[^"]*elementor-post[^"]*"[^>]*>[\s\S]*?<\/article>/gi;
+    const articles = html.match(articlePattern) || [];
+    
+    console.log(`Fallback: Found ${articles.length} article elements`);
+    
+    for (let i = 0; i < articles.length; i++) {
+      const article = articles[i];
+      
+      const titleMatch = article.match(/<h3[^>]*class="[^"]*elementor-post__title[^"]*"[^>]*>[\s\S]*?<a[^>]*href="([^"]+)"[^>]*>([^<]+)<\/a>/i);
+      if (!titleMatch) continue;
+      
+      const routeLink = titleMatch[1];
+      const title = titleMatch[2].trim();
+      
+      const imgMatch = article.match(/<img[^>]*src="([^"]+)"[^>]*>/i);
+      const coverUrl = imgMatch ? imgMatch[1] : undefined;
+      
+      const excerptMatch = article.match(/<div[^>]*class="[^"]*elementor-post__excerpt[^"]*"[^>]*>[\s\S]*?<p>([^<]+)<\/p>/i);
+      const description = excerptMatch ? excerptMatch[1].trim() : undefined;
+      
+      let distance_km: number | undefined;
+      let elevation_m: number | undefined;
+      
+      const distanceMatch = (title + ' ' + (description || '')).match(/(\d+)\s*km/i);
+      const elevationMatch = (title + ' ' + (description || '')).match(/(\d+)\s*m\b(?!\s*km)/i);
+      
+      if (distanceMatch) distance_km = parseInt(distanceMatch[1], 10);
+      if (elevationMatch) elevation_m = parseInt(elevationMatch[1], 10);
+      
+      const id = `bh-${i}-${title.substring(0, 20).replace(/\s+/g, '-').toLowerCase()}`;
+      
+      routes.push({
+        id,
+        title,
+        description,
+        distance_km,
+        elevation_m,
+        gpx_url: undefined,
+        gpx_accessible: false,
+        cover_url: coverUrl,
+        route_link: routeLink
+      });
+    }
+  }
+  
+  // For routes without GPX URL, try to fetch from detail page
   for (const route of routes) {
-    if (route.route_link) {
+    if (!route.gpx_url && route.route_link) {
       try {
         console.log(`Fetching detail page: ${route.route_link}`);
         const detailResponse = await fetch(route.route_link, {
@@ -108,19 +183,20 @@ async function parseBicycleHoliday(html: string, baseUrl: string): Promise<Parse
         if (detailResponse.ok) {
           const detailHtml = await detailResponse.text();
           
-          // Look for GPX download link - various patterns
           const gpxPatterns = [
-            /href="([^"]+\.gpx)"/i,
-            /href="([^"]+gpx[^"]*)"/i,
-            /data-gpx="([^"]+)"/i,
-            /ridewithgps\.com\/routes\/(\d+)/i
+            /href="([^"]*ridewithgps\.com\/(?:trips|routes)\/(\d+)[^"]*)"/i,
+            /ridewithgps\.com\/(?:trips|routes)\/(\d+)/i,
+            /href="([^"]+\.gpx[^"]*)"/i,
+            /data-gpx="([^"]+)"/i
           ];
           
           for (const pattern of gpxPatterns) {
             const gpxMatch = detailHtml.match(pattern);
             if (gpxMatch) {
               if (pattern.source.includes('ridewithgps')) {
-                route.gpx_url = `https://ridewithgps.com/routes/${gpxMatch[1]}.gpx`;
+                const routeId = gpxMatch[2] || gpxMatch[1];
+                const type = gpxMatch[0].includes('trips') ? 'trips' : 'routes';
+                route.gpx_url = `https://ridewithgps.com/${type}/${routeId}.gpx?sub_format=track`;
               } else {
                 route.gpx_url = gpxMatch[1].startsWith('http') ? gpxMatch[1] : new URL(gpxMatch[1], route.route_link).href;
               }
@@ -128,16 +204,15 @@ async function parseBicycleHoliday(html: string, baseUrl: string): Promise<Parse
             }
           }
           
-          // Extract distance and elevation from detail page if not found
           if (!route.distance_km) {
-            const distMatch = detailHtml.match(/(\d+)\s*km/i);
-            if (distMatch) route.distance_km = parseInt(distMatch[1], 10);
+            const distMatch = detailHtml.match(/(\d+[.,]?\d*)\s*km/i);
+            if (distMatch) route.distance_km = parseFloat(distMatch[1].replace(',', '.'));
           }
           if (!route.elevation_m) {
-            const elevMatch = detailHtml.match(/převýšení[:\s]*(\d+)\s*m/i) || 
-                             detailHtml.match(/elevation[:\s]*(\d+)\s*m/i) ||
+            const elevMatch = detailHtml.match(/převýšení[:\s]*(\d[\d\s]*)\s*m/i) || 
+                             detailHtml.match(/elevation[:\s]*(\d[\d\s]*)\s*m/i) ||
                              detailHtml.match(/(\d{3,4})\s*m\s*(?:převýšení|elevation|↑)/i);
-            if (elevMatch) route.elevation_m = parseInt(elevMatch[1], 10);
+            if (elevMatch) route.elevation_m = parseInt(elevMatch[1].replace(/\s/g, ''), 10);
           }
         }
       } catch (error) {
