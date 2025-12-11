@@ -38,7 +38,8 @@ import {
   Mountain,
   Gauge,
   Bike,
-  Map
+  Map,
+  Heart
 } from "lucide-react";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
@@ -115,6 +116,7 @@ const EventDetail = () => {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [isParticipating, setIsParticipating] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [addingToFavorites, setAddingToFavorites] = useState(false);
 
   const isCreator = user && event?.created_by === user.id;
   const canEdit = isCreator || isAdmin;
@@ -249,6 +251,40 @@ const EventDetail = () => {
     } catch (error: any) {
       console.error("Error deleting event:", error);
       toast.error("Nepodařilo se smazat vyjížďku");
+    }
+  };
+
+  const handleAddToFavorites = async () => {
+    if (!event || !user) return;
+
+    setAddingToFavorites(true);
+    try {
+      const { error } = await supabase.from("favorite_routes").insert({
+        title: event.title,
+        description: event.description,
+        distance_km: event.distance_km,
+        elevation_m: event.elevation_m,
+        difficulty: event.difficulty,
+        terrain_type: event.terrain_type,
+        route_link: event.route_link,
+        gpx_file_url: event.gpx_file_url,
+        cover_image_url: event.cover_image_url,
+        created_by: user.id,
+      });
+
+      if (error) throw error;
+
+      toast.success("Trasa přidána do oblíbených", {
+        action: {
+          label: "Zobrazit",
+          onClick: () => navigate("/events?tab=routes"),
+        },
+      });
+    } catch (error: any) {
+      console.error("Error adding to favorites:", error);
+      toast.error("Nepodařilo se přidat trasu do oblíbených");
+    } finally {
+      setAddingToFavorites(false);
     }
   };
 
@@ -423,17 +459,29 @@ const EventDetail = () => {
                 )}
 
                 {event.gpx_file_url && (
-                  <Button variant="outline" asChild>
-                    <a
-                      href={event.gpx_file_url}
-                      download
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <Download className="w-4 h-4 mr-2" />
-                      Stáhnout GPX
-                    </a>
-                  </Button>
+                  <>
+                    <Button variant="outline" asChild>
+                      <a
+                        href={event.gpx_file_url}
+                        download
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <Download className="w-4 h-4 mr-2" />
+                        Stáhnout GPX
+                      </a>
+                    </Button>
+                    {user && isMember && (
+                      <Button
+                        variant="outline"
+                        onClick={handleAddToFavorites}
+                        disabled={addingToFavorites}
+                      >
+                        <Heart className="w-4 h-4 mr-2" />
+                        {addingToFavorites ? "Ukládám..." : "Do oblíbených"}
+                      </Button>
+                    )}
+                  </>
                 )}
 
                 {user && !isPastEvent(event.event_date) &&
