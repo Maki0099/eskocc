@@ -17,16 +17,43 @@ interface UpdateResult {
   title: string;
   status: 'updated' | 'failed' | 'no_gpx_found';
   gpx_url?: string;
+  rwgps_id?: string;
   error?: string;
 }
 
-async function downloadGpx(url: string): Promise<ArrayBuffer | null> {
+// Direct mapping: page_id → RideWithGPS route ID
+const PAGE_TO_RWGPS: Record<string, string> = {
+  '1108': '32433475',  // Route 100
+  '1183': '32433476',  // Route 101
+  '1968': '32476757',  // Route 102
+  '1186': '32433478',  // Route 103
+  '1189': '32484270',  // Route 104
+  '1977': '32476952',  // Route 105
+  '1985': '32477068',  // Route 106
+  '1994': '32477321',  // Route 107
+  '1192': '32433481',  // Route 108
+  '1195': '32433482',  // Route 109
+  '1198': '32433483',  // Route 110
+  '1201': '32433484',  // Route 111
+  '1204': '32433485',  // Route 112
+};
+
+function extractPageId(url: string): string | null {
+  const match = url.match(/page_id=(\d+)/);
+  return match ? match[1] : null;
+}
+
+function extractRouteNumber(title: string): string {
+  const match = title.match(/^(\d+)\s*[–-]/);
+  return match ? match[1] : 'unknown';
+}
+
+async function downloadGpx(rwgpsId: string): Promise<ArrayBuffer | null> {
+  const url = `https://ridewithgps.com/routes/${rwgpsId}.gpx`;
   try {
-    console.log(`Attempting to download GPX from: ${url}`);
+    console.log(`Downloading GPX from: ${url}`);
     const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      }
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
     });
     
     if (!response.ok) {
@@ -36,7 +63,6 @@ async function downloadGpx(url: string): Promise<ArrayBuffer | null> {
     
     const text = await response.text();
     
-    // Verify it's actually GPX content
     if (!text.includes('<gpx') && !text.includes('<?xml')) {
       console.log(`Downloaded content is not GPX format`);
       return null;
@@ -45,46 +71,7 @@ async function downloadGpx(url: string): Promise<ArrayBuffer | null> {
     console.log(`Successfully downloaded GPX (${text.length} bytes)`);
     return new TextEncoder().encode(text).buffer;
   } catch (error) {
-    console.error(`Error downloading GPX from ${url}:`, error);
-    return null;
-  }
-}
-
-async function extractRideWithGpsId(pageUrl: string): Promise<string | null> {
-  try {
-    console.log(`Fetching page to find RideWithGPS route ID: ${pageUrl}`);
-    const response = await fetch(pageUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      }
-    });
-    
-    if (!response.ok) {
-      console.log(`Page fetch failed with status ${response.status}`);
-      return null;
-    }
-    
-    const html = await response.text();
-    
-    // Look for RideWithGPS route IDs in various patterns
-    const patterns = [
-      /ridewithgps\.com\/routes\/(\d+)/gi,
-      /ridewithgps\.com\/embeds\?id=(\d+)/gi,
-    ];
-    
-    for (const pattern of patterns) {
-      const matches = [...html.matchAll(pattern)];
-      if (matches.length > 0) {
-        const routeId = matches[0][1];
-        console.log(`Found RideWithGPS route ID: ${routeId}`);
-        return routeId;
-      }
-    }
-    
-    console.log('No RideWithGPS route ID found in page');
-    return null;
-  } catch (error) {
-    console.error(`Error fetching page ${pageUrl}:`, error);
+    console.error(`Error downloading GPX:`, error);
     return null;
   }
 }
@@ -99,12 +86,11 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get all routes without GPX that have a route_link
     const { data: routesWithoutGpx, error: fetchError } = await supabase
       .from('favorite_routes')
       .select('id, title, route_link')
       .is('gpx_file_url', null)
-      .not('route_link', 'is', null);
+      .ilike('route_link', '%bicycle.holiday%');
 
     if (fetchError) {
       throw new Error(`Failed to fetch routes: ${fetchError.message}`);
@@ -125,100 +111,70 @@ serve(async (req) => {
 
     for (const route of routesWithoutGpx as RouteToUpdate[]) {
       console.log(`\n--- Processing: ${route.title} ---`);
-      console.log(`Route link: ${route.route_link}`);
-
-      let gpxData: ArrayBuffer | null = null;
-
-      // Check if route_link contains bicycle.holiday - scrape for RideWithGPS ID
-      if (route.route_link.includes('bicycle.holiday')) {
-        const rwgpsId = await extractRideWithGpsId(route.route_link);
-        
-        if (rwgpsId) {
-          // Download GPX directly from RideWithGPS
-          const gpxUrl = `https://ridewithgps.com/routes/${rwgpsId}.gpx`;
-          gpxData = await downloadGpx(gpxUrl);
-        }
-      }
-
-      if (!gpxData) {
-        console.log(`No GPX found for: ${route.title}`);
-        results.push({
-          id: route.id,
-          title: route.title,
-          status: 'no_gpx_found'
-        });
+      
+      const pageId = extractPageId(route.route_link);
+      if (!pageId) {
+        results.push({ id: route.id, title: route.title, status: 'no_gpx_found', error: 'No page_id found' });
         failed++;
         continue;
       }
 
-      // Upload GPX to storage
-      const gpxFilename = `${route.title.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.gpx`;
-      const gpxPath = `gpx/${Date.now()}-${gpxFilename}`;
+      const rwgpsId = PAGE_TO_RWGPS[pageId];
+      if (!rwgpsId) {
+        results.push({ id: route.id, title: route.title, status: 'no_gpx_found', error: `No RWGPS mapping for page_id ${pageId}` });
+        failed++;
+        continue;
+      }
+
+      console.log(`Page ID ${pageId} → RWGPS ID ${rwgpsId}`);
+
+      const gpxData = await downloadGpx(rwgpsId);
+      if (!gpxData) {
+        results.push({ id: route.id, title: route.title, status: 'no_gpx_found', rwgps_id: rwgpsId, error: 'GPX download failed' });
+        failed++;
+        continue;
+      }
+
+      const routeNumber = extractRouteNumber(route.title);
+      const gpxPath = `gpx/${Date.now()}-route-${routeNumber}.gpx`;
 
       const { error: uploadError } = await supabase.storage
         .from('routes')
-        .upload(gpxPath, gpxData, {
-          contentType: 'application/gpx+xml',
-          upsert: false
-        });
+        .upload(gpxPath, gpxData, { contentType: 'application/gpx+xml', upsert: false });
 
       if (uploadError) {
-        console.error(`Upload error for ${route.title}:`, uploadError);
-        results.push({
-          id: route.id,
-          title: route.title,
-          status: 'failed',
-          error: uploadError.message
-        });
+        results.push({ id: route.id, title: route.title, status: 'failed', rwgps_id: rwgpsId, error: uploadError.message });
         failed++;
         continue;
       }
 
       const { data: { publicUrl } } = supabase.storage.from('routes').getPublicUrl(gpxPath);
 
-      // Update route with GPX URL
       const { error: updateError } = await supabase
         .from('favorite_routes')
         .update({ gpx_file_url: publicUrl })
         .eq('id', route.id);
 
       if (updateError) {
-        console.error(`Update error for ${route.title}:`, updateError);
-        results.push({
-          id: route.id,
-          title: route.title,
-          status: 'failed',
-          error: updateError.message
-        });
+        results.push({ id: route.id, title: route.title, status: 'failed', rwgps_id: rwgpsId, error: updateError.message });
         failed++;
         continue;
       }
 
-      console.log(`Successfully updated GPX for: ${route.title}`);
-      results.push({
-        id: route.id,
-        title: route.title,
-        status: 'updated',
-        gpx_url: publicUrl
-      });
+      console.log(`Successfully updated route ${routeNumber}`);
+      results.push({ id: route.id, title: route.title, status: 'updated', gpx_url: publicUrl, rwgps_id: rwgpsId });
       updated++;
     }
 
     console.log(`\n=== Complete: ${updated} updated, ${failed} failed ===`);
 
     return new Response(
-      JSON.stringify({
-        success: true,
-        total: routesWithoutGpx.length,
-        updated,
-        failed,
-        results
-      }),
+      JSON.stringify({ success: true, total: routesWithoutGpx.length, updated, failed, results }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error: unknown) {
-    console.error('Error in update-routes-gpx:', error);
+    console.error('Error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
       JSON.stringify({ success: false, error: errorMessage }),
