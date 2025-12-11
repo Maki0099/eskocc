@@ -198,8 +198,8 @@ serve(async (req) => {
           .insert({
             title: route.title,
             description: route.description || null,
-            distance_km: route.distance_km || null,
-            elevation_m: route.elevation_m || null,
+            distance_km: route.distance_km ? Math.round(route.distance_km) : null,
+            elevation_m: route.elevation_m ? Math.round(route.elevation_m) : null,
             difficulty,
             terrain_type: route.terrain_type || 'road',
             gpx_file_url: gpxFileUrl,
