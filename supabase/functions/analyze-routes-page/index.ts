@@ -611,6 +611,237 @@ async function parseMapyCz(html: string, baseUrl: string): Promise<ParsedRoute[]
   return routes;
 }
 
+async function parseWikiloc(html: string, baseUrl: string): Promise<ParsedRoute[]> {
+  const routes: ParsedRoute[] = [];
+  
+  console.log('Parsing Wikiloc page...');
+  
+  // Wikiloc trail pattern: /wikiloc/view.do?id=12345 or /trails/cycling/xxx-12345
+  const trailIds = new Set<string>();
+  
+  // Pattern 1: view.do?id=
+  const viewIdPattern = /view\.do\?id=(\d+)/g;
+  let match;
+  while ((match = viewIdPattern.exec(html)) !== null) {
+    trailIds.add(match[1]);
+  }
+  
+  // Pattern 2: trails URL with ID at end
+  const trailsPattern = /\/trails\/[^\/]+\/[^\/]+-(\d+)/g;
+  while ((match = trailsPattern.exec(html)) !== null) {
+    trailIds.add(match[1]);
+  }
+  
+  // Pattern 3: Direct trail ID in data attributes
+  const dataIdPattern = /data-trail-id="(\d+)"/g;
+  while ((match = dataIdPattern.exec(html)) !== null) {
+    trailIds.add(match[1]);
+  }
+  
+  console.log(`Found ${trailIds.size} Wikiloc trail IDs`);
+  
+  for (const trailId of trailIds) {
+    let title = `Wikiloc Trail ${trailId}`;
+    let distance_km: number | undefined;
+    let elevation_m: number | undefined;
+    let coverUrl: string | undefined;
+    let description: string | undefined;
+    
+    // Try to extract details from surrounding HTML
+    const trailSection = html.match(new RegExp(`[\\s\\S]{0,1000}(?:id=|-)${trailId}[\\s\\S]{0,1000}`, 'i'));
+    if (trailSection) {
+      const section = trailSection[0];
+      
+      // Title
+      const titleMatch = section.match(/(?:data-title|title|alt)="([^"]+)"/i) ||
+                        section.match(/<h[1-3][^>]*>([^<]{5,80})<\/h[1-3]>/i) ||
+                        section.match(/<a[^>]*>[^<]*([A-Za-zÁ-Žá-ž0-9][^<]{5,60})[^<]*<\/a>/i);
+      if (titleMatch && !titleMatch[1].includes('wikiloc')) {
+        title = titleMatch[1].trim();
+      }
+      
+      // Distance - Wikiloc uses km
+      const distMatch = section.match(/([\d,.]+)\s*km/i);
+      if (distMatch) {
+        distance_km = parseFloat(distMatch[1].replace(',', '.'));
+      }
+      
+      // Elevation
+      const elevMatch = section.match(/(?:elevation|↑|gain|D\+)[:\s]*([\d,.\s]+)\s*m/i) ||
+                       section.match(/([\d,.]+)\s*m\s*(?:↑|D\+|gain)/i);
+      if (elevMatch) {
+        elevation_m = parseInt(elevMatch[1].replace(/[,.\s]/g, ''), 10);
+      }
+      
+      // Cover image
+      const imgMatch = section.match(/src="([^"]*(?:wikiloc|static)[^"]*\.(?:jpg|jpeg|png|webp)[^"]*)"/i);
+      if (imgMatch) {
+        coverUrl = imgMatch[1].startsWith('//') ? `https:${imgMatch[1]}` : imgMatch[1];
+      }
+      
+      // Description
+      const descMatch = section.match(/<p[^>]*class="[^"]*description[^"]*"[^>]*>([^<]{10,200})/i);
+      if (descMatch) {
+        description = descMatch[1].trim();
+      }
+    }
+    
+    routes.push({
+      id: `wikiloc-${trailId}`,
+      title,
+      description,
+      distance_km,
+      elevation_m,
+      gpx_url: `https://www.wikiloc.com/wikiloc/download.do?id=${trailId}`,
+      gpx_accessible: false, // Wikiloc requires auth for GPX
+      cover_url: coverUrl,
+      route_link: `https://www.wikiloc.com/wikiloc/view.do?id=${trailId}`
+    });
+  }
+  
+  // Test GPX accessibility
+  for (const route of routes) {
+    if (route.gpx_url) {
+      route.gpx_accessible = await testGpxAccessibility(route.gpx_url);
+    }
+  }
+  
+  return routes;
+}
+
+async function parseGarminConnect(html: string, baseUrl: string): Promise<ParsedRoute[]> {
+  const routes: ParsedRoute[] = [];
+  
+  console.log('Parsing Garmin Connect page...');
+  
+  // Garmin Connect patterns:
+  // /modern/course/12345678 or /course/view/12345678
+  // /modern/activity/12345678
+  const courseIds = new Set<string>();
+  const activityIds = new Set<string>();
+  
+  // Course patterns
+  const coursePattern = /\/(?:modern\/)?course(?:\/view)?\/(\d+)/g;
+  let match;
+  while ((match = coursePattern.exec(html)) !== null) {
+    courseIds.add(match[1]);
+  }
+  
+  // Activity patterns
+  const activityPattern = /\/(?:modern\/)?activity\/(\d+)/g;
+  while ((match = activityPattern.exec(html)) !== null) {
+    activityIds.add(match[1]);
+  }
+  
+  // Data attributes
+  const dataPattern = /data-(?:course|activity)-id="(\d+)"/g;
+  while ((match = dataPattern.exec(html)) !== null) {
+    courseIds.add(match[1]);
+  }
+  
+  console.log(`Found ${courseIds.size} courses and ${activityIds.size} activities on Garmin Connect`);
+  
+  // Process courses
+  for (const courseId of courseIds) {
+    let title = `Garmin Course ${courseId}`;
+    let distance_km: number | undefined;
+    let elevation_m: number | undefined;
+    let coverUrl: string | undefined;
+    
+    const courseSection = html.match(new RegExp(`[\\s\\S]{0,800}course[^>]*${courseId}[\\s\\S]{0,800}`, 'i'));
+    if (courseSection) {
+      const section = courseSection[0];
+      
+      // Title
+      const titleMatch = section.match(/(?:data-name|courseName|title)="([^"]+)"/i) ||
+                        section.match(/<h[1-3][^>]*>([^<]{3,60})<\/h[1-3]>/i);
+      if (titleMatch) {
+        title = titleMatch[1].trim();
+      }
+      
+      // Distance
+      const distMatch = section.match(/([\d,.]+)\s*(?:km|mi)/i);
+      if (distMatch) {
+        const value = parseFloat(distMatch[1].replace(',', '.'));
+        distance_km = distMatch[0].toLowerCase().includes('mi') ? Math.round(value * 1.60934) : value;
+      }
+      
+      // Elevation
+      const elevMatch = section.match(/([\d,]+)\s*(?:m|ft)\s*(?:↑|gain|elevation)/i);
+      if (elevMatch) {
+        const value = parseInt(elevMatch[1].replace(',', ''), 10);
+        elevation_m = elevMatch[0].toLowerCase().includes('ft') ? Math.round(value * 0.3048) : value;
+      }
+      
+      // Cover image
+      const imgMatch = section.match(/src="([^"]*(?:garmin|connect)[^"]*\.(?:jpg|png|jpeg)[^"]*)"/i);
+      if (imgMatch) {
+        coverUrl = imgMatch[1];
+      }
+    }
+    
+    routes.push({
+      id: `garmin-course-${courseId}`,
+      title,
+      distance_km,
+      elevation_m,
+      gpx_url: `https://connect.garmin.com/modern/proxy/course-service/course/${courseId}/gpx`,
+      gpx_accessible: false, // Garmin requires auth
+      cover_url: coverUrl,
+      route_link: `https://connect.garmin.com/modern/course/${courseId}`
+    });
+  }
+  
+  // Process activities
+  for (const activityId of activityIds) {
+    let title = `Garmin Activity ${activityId}`;
+    let distance_km: number | undefined;
+    let elevation_m: number | undefined;
+    
+    const actSection = html.match(new RegExp(`[\\s\\S]{0,800}activity[^>]*${activityId}[\\s\\S]{0,800}`, 'i'));
+    if (actSection) {
+      const section = actSection[0];
+      
+      const titleMatch = section.match(/(?:data-name|activityName|title)="([^"]+)"/i);
+      if (titleMatch) {
+        title = titleMatch[1].trim();
+      }
+      
+      const distMatch = section.match(/([\d,.]+)\s*(?:km|mi)/i);
+      if (distMatch) {
+        const value = parseFloat(distMatch[1].replace(',', '.'));
+        distance_km = distMatch[0].toLowerCase().includes('mi') ? Math.round(value * 1.60934) : value;
+      }
+      
+      const elevMatch = section.match(/([\d,]+)\s*(?:m|ft)/i);
+      if (elevMatch) {
+        const value = parseInt(elevMatch[1].replace(',', ''), 10);
+        elevation_m = elevMatch[0].toLowerCase().includes('ft') ? Math.round(value * 0.3048) : value;
+      }
+    }
+    
+    routes.push({
+      id: `garmin-activity-${activityId}`,
+      title,
+      description: 'Garmin activity (recorded ride)',
+      distance_km,
+      elevation_m,
+      gpx_url: `https://connect.garmin.com/modern/proxy/download-service/export/gpx/activity/${activityId}`,
+      gpx_accessible: false, // Garmin requires auth
+      route_link: `https://connect.garmin.com/modern/activity/${activityId}`
+    });
+  }
+  
+  // Test GPX accessibility
+  for (const route of routes) {
+    if (route.gpx_url) {
+      route.gpx_accessible = await testGpxAccessibility(route.gpx_url);
+    }
+  }
+  
+  return routes;
+}
+
 async function parseGenericPage(html: string, baseUrl: string): Promise<ParsedRoute[]> {
   const routes: ParsedRoute[] = [];
   
@@ -727,6 +958,52 @@ async function parseGenericPage(html: string, baseUrl: string): Promise<ParsedRo
     }
   }
   
+  // Pattern 6: Look for Wikiloc embeds/links
+  const wikilocEmbed = html.match(/wikiloc\.com\/(?:wikiloc\/view\.do\?id=|trails\/[^\/]+\/[^-]+-)?(\d+)/gi);
+  if (wikilocEmbed) {
+    for (const embed of wikilocEmbed) {
+      const idMatch = embed.match(/(\d+)/);
+      if (idMatch) {
+        const trailId = idMatch[1];
+        if (!routes.find(r => r.id === `wikiloc-${trailId}`)) {
+          routes.push({
+            id: `wikiloc-${trailId}`,
+            title: `Wikiloc Trail ${trailId}`,
+            gpx_url: `https://www.wikiloc.com/wikiloc/download.do?id=${trailId}`,
+            gpx_accessible: false,
+            route_link: `https://www.wikiloc.com/wikiloc/view.do?id=${trailId}`
+          });
+        }
+      }
+    }
+  }
+  
+  // Pattern 7: Look for Garmin Connect embeds/links
+  const garminEmbed = html.match(/(?:connect\.)?garmin\.com\/(?:modern\/)?(?:course|activity)\/(\d+)/gi);
+  if (garminEmbed) {
+    for (const embed of garminEmbed) {
+      const idMatch = embed.match(/(\d+)/);
+      const typeMatch = embed.match(/(course|activity)/i);
+      if (idMatch && typeMatch) {
+        const id = idMatch[1];
+        const type = typeMatch[1].toLowerCase();
+        const routeId = `garmin-${type}-${id}`;
+        if (!routes.find(r => r.id === routeId)) {
+          const gpxUrl = type === 'course' 
+            ? `https://connect.garmin.com/modern/proxy/course-service/course/${id}/gpx`
+            : `https://connect.garmin.com/modern/proxy/download-service/export/gpx/activity/${id}`;
+          routes.push({
+            id: routeId,
+            title: `Garmin ${type === 'course' ? 'Course' : 'Activity'} ${id}`,
+            gpx_url: gpxUrl,
+            gpx_accessible: false,
+            route_link: `https://connect.garmin.com/modern/${type}/${id}`
+          });
+        }
+      }
+    }
+  }
+  
   // Test accessibility for found GPX URLs
   for (const route of routes) {
     if (route.gpx_url) {
@@ -786,6 +1063,10 @@ serve(async (req) => {
       routes = await parseKomoot(html, url);
     } else if (url.includes('mapy.cz')) {
       routes = await parseMapyCz(html, url);
+    } else if (url.includes('wikiloc.com')) {
+      routes = await parseWikiloc(html, url);
+    } else if (url.includes('garmin.com') || url.includes('connect.garmin')) {
+      routes = await parseGarminConnect(html, url);
     } else {
       routes = await parseGenericPage(html, url);
     }
