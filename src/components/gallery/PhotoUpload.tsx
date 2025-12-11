@@ -16,10 +16,11 @@ import { toast } from "sonner";
 
 interface PhotoUploadProps {
   eventId?: string;
+  routeId?: string;
   onUploadComplete: () => void;
 }
 
-const PhotoUpload = ({ eventId, onUploadComplete }: PhotoUploadProps) => {
+const PhotoUpload = ({ eventId, routeId, onUploadComplete }: PhotoUploadProps) => {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -69,6 +70,7 @@ const PhotoUpload = ({ eventId, onUploadComplete }: PhotoUploadProps) => {
       // Save to database
       const { error: dbError } = await supabase.from("gallery_items").insert({
         event_id: eventId || null,
+        route_id: routeId || null,
         user_id: user.id,
         file_url: urlData.publicUrl,
         file_name: selectedFile.name,
