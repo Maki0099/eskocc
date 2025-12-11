@@ -35,6 +35,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
@@ -57,8 +58,22 @@ const eventSchema = z.object({
 
 type EventFormData = z.infer<typeof eventSchema>;
 
+interface RouteInitialData {
+  title?: string;
+  description?: string | null;
+  distance_km?: number | null;
+  elevation_m?: number | null;
+  difficulty?: string | null;
+  terrain_type?: string | null;
+  route_link?: string | null;
+  gpx_file_url?: string | null;
+  cover_image_url?: string | null;
+}
+
 interface CreateEventDialogProps {
   onEventCreated: () => void;
+  initialData?: RouteInitialData;
+  customTrigger?: React.ReactNode;
 }
 
 const DIFFICULTY_LABELS = {
@@ -74,29 +89,31 @@ const TERRAIN_LABELS = {
   mixed: "Mix",
 };
 
-const CreateEventDialog = ({ onEventCreated }: CreateEventDialogProps) => {
+const CreateEventDialog = ({ onEventCreated, initialData, customTrigger }: CreateEventDialogProps) => {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [coverImage, setCoverImage] = useState<File | null>(null);
-  const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const [coverPreview, setCoverPreview] = useState<string | null>(initialData?.cover_image_url || null);
   const [gpxFile, setGpxFile] = useState<File | null>(null);
   const [parsingGpx, setParsingGpx] = useState(false);
+  const [existingGpxUrl, setExistingGpxUrl] = useState<string | null>(initialData?.gpx_file_url || null);
+  const [existingCoverUrl, setExistingCoverUrl] = useState<string | null>(initialData?.cover_image_url || null);
   const coverInputRef = useRef<HTMLInputElement>(null);
   const gpxInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<EventFormData>({
     resolver: zodResolver(eventSchema),
     defaultValues: {
-      title: "",
-      description: "",
+      title: initialData?.title || "",
+      description: initialData?.description || "",
       event_time: "09:00",
       location: "",
-      route_link: "",
-      distance_km: "",
-      elevation_m: "",
-      difficulty: "",
-      terrain_type: "",
+      route_link: initialData?.route_link || "",
+      distance_km: initialData?.distance_km || "",
+      elevation_m: initialData?.elevation_m || "",
+      difficulty: (initialData?.difficulty as "" | "easy" | "medium" | "hard") || "",
+      terrain_type: (initialData?.terrain_type as "" | "road" | "gravel" | "mtb" | "mixed") || "",
     },
   });
 
@@ -146,7 +163,13 @@ const CreateEventDialog = ({ onEventCreated }: CreateEventDialogProps) => {
 
   const removeGpx = () => {
     setGpxFile(null);
+    setExistingGpxUrl(null);
     if (gpxInputRef.current) gpxInputRef.current.value = "";
+  };
+
+  const removeExistingCover = () => {
+    setExistingCoverUrl(null);
+    setCoverPreview(null);
   };
 
   const uploadFile = async (file: File, path: string): Promise<string | null> => {
@@ -168,9 +191,9 @@ const CreateEventDialog = ({ onEventCreated }: CreateEventDialogProps) => {
       const eventDateTime = new Date(data.event_date);
       eventDateTime.setHours(hours, minutes, 0, 0);
 
-      // Upload files if present
-      let coverImageUrl: string | null = null;
-      let gpxFileUrl: string | null = null;
+      // Upload files if present, or use existing URLs
+      let coverImageUrl: string | null = existingCoverUrl;
+      let gpxFileUrl: string | null = existingGpxUrl;
       const timestamp = Date.now();
 
       if (coverImage) {
@@ -228,14 +251,18 @@ const CreateEventDialog = ({ onEventCreated }: CreateEventDialogProps) => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="gap-2">
-          <Plus className="w-4 h-4" />
-          Nová vyjížďka
-        </Button>
+        {customTrigger || (
+          <Button className="gap-2">
+            <Plus className="w-4 h-4" />
+            Nová vyjížďka
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Vytvořit novou vyjížďku</DialogTitle>
+          <DialogTitle>
+            {initialData ? "Vytvořit vyjížďku z trasy" : "Vytvořit novou vyjížďku"}
+          </DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -263,10 +290,10 @@ const CreateEventDialog = ({ onEventCreated }: CreateEventDialogProps) => {
                 onChange={handleCoverChange}
                 className="hidden"
               />
-              {coverPreview ? (
+              {coverPreview || existingCoverUrl ? (
                 <div className="relative rounded-lg overflow-hidden">
                   <img
-                    src={coverPreview}
+                    src={coverPreview || existingCoverUrl || ""}
                     alt="Preview"
                     className="w-full h-40 object-cover"
                   />
@@ -275,10 +302,17 @@ const CreateEventDialog = ({ onEventCreated }: CreateEventDialogProps) => {
                     variant="destructive"
                     size="icon"
                     className="absolute top-2 right-2 h-8 w-8"
-                    onClick={removeCover}
+                    onClick={coverImage ? removeCover : removeExistingCover}
                   >
                     <X className="w-4 h-4" />
                   </Button>
+                  {existingCoverUrl && !coverImage && (
+                    <div className="absolute bottom-2 left-2">
+                      <Badge variant="secondary" className="text-xs">
+                        Z oblíbené trasy
+                      </Badge>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <Button
