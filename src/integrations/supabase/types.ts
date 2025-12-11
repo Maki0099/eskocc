@@ -350,6 +350,7 @@ export type Database = {
           file_name: string
           file_url: string
           id: string
+          route_id: string | null
           user_id: string
         }
         Insert: {
@@ -359,6 +360,7 @@ export type Database = {
           file_name: string
           file_url: string
           id?: string
+          route_id?: string | null
           user_id: string
         }
         Update: {
@@ -368,6 +370,7 @@ export type Database = {
           file_name?: string
           file_url?: string
           id?: string
+          route_id?: string | null
           user_id?: string
         }
         Relationships: [
@@ -376,6 +379,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gallery_items_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "favorite_routes"
             referencedColumns: ["id"]
           },
           {

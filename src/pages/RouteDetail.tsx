@@ -9,6 +9,8 @@ import MemberOnlyContent from "@/components/MemberOnlyContent";
 import GpxMap from "@/components/map/GpxMap";
 import CreateEventDialog from "@/components/events/CreateEventDialog";
 import EditRouteDialog from "@/components/routes/EditRouteDialog";
+import PhotoUpload from "@/components/gallery/PhotoUpload";
+import PhotoGrid from "@/components/gallery/PhotoGrid";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,9 +25,21 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Route, Mountain, Gauge, Download, ExternalLink, Trash2, MapIcon, CalendarPlus, Bike, Map } from "lucide-react";
+import { ArrowLeft, Route, Mountain, Gauge, Download, ExternalLink, Trash2, MapIcon, CalendarPlus, Bike, Map, ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { ROUTES } from "@/lib/routes";
+
+interface Photo {
+  id: string;
+  file_url: string;
+  file_name: string;
+  caption: string | null;
+  created_at: string;
+  user_id: string;
+  profile?: {
+    full_name: string | null;
+  } | null;
+}
 
 interface FavoriteRoute {
   id: string;
@@ -67,6 +81,7 @@ const RouteDetail = () => {
   const { user } = useAuth();
   const { isMember, isAdmin, canCreateEvents, loading: roleLoading } = useUserRole();
   const [route, setRoute] = useState<FavoriteRoute | null>(null);
+  const [photos, setPhotos] = useState<Photo[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -91,9 +106,27 @@ const RouteDetail = () => {
     }
   }, [id]);
 
+  const fetchPhotos = useCallback(async () => {
+    if (!id) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("gallery_items")
+        .select(`*, profile:profiles(full_name)`)
+        .eq("route_id", id)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setPhotos(data || []);
+    } catch (error) {
+      console.error("Error fetching photos:", error);
+    }
+  }, [id]);
+
   useEffect(() => {
     fetchRoute();
-  }, [fetchRoute]);
+    fetchPhotos();
+  }, [fetchRoute, fetchPhotos]);
 
   const handleDelete = async () => {
     if (!route) return;
@@ -311,6 +344,30 @@ const RouteDetail = () => {
                   />
                 )}
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Photos Section */}
+          <Card className="mb-6">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <ImageIcon className="w-5 h-5" />
+                  Fotky ({photos.length})
+                </CardTitle>
+                {user && isMember && (
+                  <PhotoUpload routeId={route.id} onUploadComplete={fetchPhotos} />
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              {photos.length > 0 ? (
+                <PhotoGrid photos={photos} onPhotoDeleted={fetchPhotos} />
+              ) : (
+                <p className="text-muted-foreground text-center py-8">
+                  Zatím žádné fotky. Buď první, kdo přidá fotku z této trasy!
+                </p>
+              )}
             </CardContent>
           </Card>
         </div>
