@@ -9,14 +9,137 @@ import { toast } from "sonner";
 import { 
   Search, 
   Download, 
-  Upload, 
   Loader2, 
   CheckCircle, 
   AlertCircle, 
   XCircle,
   Route,
-  FileUp
+  FileUp,
+  ChevronDown,
+  Bike,
+  Map,
+  Mountain,
+  MapPin,
+  Compass,
+  Watch,
+  TreePine,
+  Scan,
+  ExternalLink
 } from "lucide-react";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+
+type GpxStatus = 'available' | 'auth-required' | 'premium' | 'varies' | 'detection';
+
+interface SupportedService {
+  id: string;
+  name: string;
+  icon: React.ElementType;
+  url: string;
+  gpxStatus: GpxStatus;
+  description: string;
+}
+
+const SUPPORTED_SERVICES: SupportedService[] = [
+  {
+    id: 'bicycle-holiday',
+    name: 'bicycle.holiday',
+    icon: Bike,
+    url: 'https://bicycle.holiday',
+    gpxStatus: 'available',
+    description: 'České cyklotrasy'
+  },
+  {
+    id: 'ridewithgps',
+    name: 'RideWithGPS',
+    icon: Route,
+    url: 'https://ridewithgps.com',
+    gpxStatus: 'auth-required',
+    description: 'Plánovač tras'
+  },
+  {
+    id: 'strava',
+    name: 'Strava',
+    icon: Mountain,
+    url: 'https://strava.com',
+    gpxStatus: 'auth-required',
+    description: 'Trasy a segmenty'
+  },
+  {
+    id: 'komoot',
+    name: 'Komoot',
+    icon: Compass,
+    url: 'https://komoot.com',
+    gpxStatus: 'auth-required',
+    description: 'Plánování túr'
+  },
+  {
+    id: 'mapy-cz',
+    name: 'Mapy.cz',
+    icon: MapPin,
+    url: 'https://mapy.cz',
+    gpxStatus: 'varies',
+    description: 'České mapy'
+  },
+  {
+    id: 'wikiloc',
+    name: 'Wikiloc',
+    icon: Map,
+    url: 'https://wikiloc.com',
+    gpxStatus: 'premium',
+    description: 'Světové stezky'
+  },
+  {
+    id: 'garmin',
+    name: 'Garmin Connect',
+    icon: Watch,
+    url: 'https://connect.garmin.com',
+    gpxStatus: 'auth-required',
+    description: 'Garmin kurzy'
+  },
+  {
+    id: 'alltrails',
+    name: 'AllTrails',
+    icon: TreePine,
+    url: 'https://alltrails.com',
+    gpxStatus: 'premium',
+    description: 'Turistické stezky'
+  },
+  {
+    id: 'trailforks',
+    name: 'Trailforks',
+    icon: Mountain,
+    url: 'https://trailforks.com',
+    gpxStatus: 'premium',
+    description: 'MTB stezky'
+  },
+  {
+    id: 'generic',
+    name: 'Ostatní',
+    icon: Scan,
+    url: '',
+    gpxStatus: 'detection',
+    description: 'Auto-detekce embedů'
+  }
+];
+
+const getGpxStatusBadge = (status: GpxStatus) => {
+  switch (status) {
+    case 'available':
+      return <Badge variant="default" className="bg-green-600 text-xs">GPX dostupný</Badge>;
+    case 'auth-required':
+      return <Badge variant="secondary" className="bg-yellow-600/20 text-yellow-600 text-xs">Vyžaduje přihlášení</Badge>;
+    case 'premium':
+      return <Badge variant="secondary" className="bg-orange-600/20 text-orange-600 text-xs">Premium účet</Badge>;
+    case 'varies':
+      return <Badge variant="secondary" className="bg-blue-600/20 text-blue-600 text-xs">Závisí na URL</Badge>;
+    case 'detection':
+      return <Badge variant="outline" className="text-xs">Auto-detekce</Badge>;
+  }
+};
 
 interface ParsedRoute {
   id: string;
@@ -45,6 +168,7 @@ export function RoutesImportAdmin() {
     skipped: number;
     errors: number;
   } | null>(null);
+  const [servicesOpen, setServicesOpen] = useState(false);
 
   const handleAnalyze = async () => {
     if (!url.trim()) {
@@ -223,6 +347,51 @@ export function RoutesImportAdmin() {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Supported Services */}
+        <Collapsible open={servicesOpen} onOpenChange={setServicesOpen}>
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" className="w-full justify-between px-3 py-2 h-auto">
+              <span className="text-sm font-medium">
+                Podporované služby ({SUPPORTED_SERVICES.length})
+              </span>
+              <ChevronDown className={`w-4 h-4 transition-transform ${servicesOpen ? 'rotate-180' : ''}`} />
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="pt-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 p-3 bg-muted/30 rounded-lg">
+              {SUPPORTED_SERVICES.map((service) => (
+                <div 
+                  key={service.id}
+                  className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50 transition-colors"
+                >
+                  <service.icon className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      {service.url ? (
+                        <a 
+                          href={service.url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="font-medium text-sm hover:text-primary flex items-center gap-1"
+                        >
+                          {service.name}
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      ) : (
+                        <span className="font-medium text-sm">{service.name}</span>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">{service.description}</p>
+                  </div>
+                  <div className="flex-shrink-0">
+                    {getGpxStatusBadge(service.gpxStatus)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+
         {/* URL Input */}
         <div className="flex gap-2">
           <Input
