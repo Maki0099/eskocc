@@ -155,25 +155,360 @@ async function parseBicycleHoliday(html: string, baseUrl: string): Promise<Parse
   return routes;
 }
 
+async function parseRideWithGps(html: string, baseUrl: string): Promise<ParsedRoute[]> {
+  const routes: ParsedRoute[] = [];
+  
+  console.log('Parsing RideWithGPS page...');
+  
+  // Pattern for route cards/list items
+  // RideWithGPS typically has route links like /routes/12345678
+  const routePattern = /<a[^>]*href="(\/routes\/(\d+))"[^>]*>[\s\S]*?<\/a>/gi;
+  const routeMatches = [...html.matchAll(routePattern)];
+  
+  // Also try to find route cards with more structure
+  const cardPattern = /<div[^>]*class="[^"]*route[^"]*"[^>]*>[\s\S]*?<\/div>/gi;
+  const cards = html.match(cardPattern) || [];
+  
+  // Extract route IDs from various patterns
+  const routeIds = new Set<string>();
+  
+  // From direct links
+  const idPattern = /\/routes\/(\d+)/g;
+  let match;
+  while ((match = idPattern.exec(html)) !== null) {
+    routeIds.add(match[1]);
+  }
+  
+  console.log(`Found ${routeIds.size} unique route IDs`);
+  
+  for (const routeId of routeIds) {
+    // Try to extract more details from the HTML
+    const routeSection = html.match(new RegExp(`<[^>]*href="[^"]*\\/routes\\/${routeId}"[^>]*>[\\s\\S]*?(?=<[^>]*href="[^"]*\\/routes\\/|$)`, 'i'));
+    
+    let title = `Route ${routeId}`;
+    let distance_km: number | undefined;
+    let elevation_m: number | undefined;
+    let coverUrl: string | undefined;
+    
+    if (routeSection) {
+      const section = routeSection[0];
+      
+      // Extract title
+      const titleMatch = section.match(/>([^<]{5,100})</);
+      if (titleMatch) {
+        title = titleMatch[1].trim();
+      }
+      
+      // Extract distance (mi or km)
+      const distMiMatch = section.match(/([\d.]+)\s*mi/i);
+      const distKmMatch = section.match(/([\d.]+)\s*km/i);
+      if (distKmMatch) {
+        distance_km = parseFloat(distKmMatch[1]);
+      } else if (distMiMatch) {
+        distance_km = Math.round(parseFloat(distMiMatch[1]) * 1.60934);
+      }
+      
+      // Extract elevation (ft or m)
+      const elevFtMatch = section.match(/([\d,]+)\s*ft/i);
+      const elevMMatch = section.match(/([\d,]+)\s*m(?!\s*i)/i);
+      if (elevMMatch) {
+        elevation_m = parseInt(elevMMatch[1].replace(/,/g, ''), 10);
+      } else if (elevFtMatch) {
+        elevation_m = Math.round(parseInt(elevFtMatch[1].replace(/,/g, ''), 10) * 0.3048);
+      }
+      
+      // Extract cover image
+      const imgMatch = section.match(/src="([^"]+(?:\.jpg|\.png|\.jpeg|static_map)[^"]*)"/i);
+      if (imgMatch) {
+        coverUrl = imgMatch[1];
+      }
+    }
+    
+    const gpxUrl = `https://ridewithgps.com/routes/${routeId}.gpx`;
+    
+    routes.push({
+      id: `rwgps-${routeId}`,
+      title,
+      distance_km,
+      elevation_m,
+      gpx_url: gpxUrl,
+      gpx_accessible: false, // RideWithGPS requires auth for GPX download
+      cover_url: coverUrl,
+      route_link: `https://ridewithgps.com/routes/${routeId}`
+    });
+  }
+  
+  // Test GPX accessibility (will likely be false for RWGPS)
+  for (const route of routes) {
+    if (route.gpx_url) {
+      route.gpx_accessible = await testGpxAccessibility(route.gpx_url);
+    }
+  }
+  
+  return routes;
+}
+
+async function parseStrava(html: string, baseUrl: string): Promise<ParsedRoute[]> {
+  const routes: ParsedRoute[] = [];
+  
+  console.log('Parsing Strava page...');
+  
+  // Strava routes pattern: /routes/12345678
+  const routeIds = new Set<string>();
+  const routePattern = /\/routes\/(\d+)/g;
+  let match;
+  while ((match = routePattern.exec(html)) !== null) {
+    routeIds.add(match[1]);
+  }
+  
+  // Also check for segments: /segments/12345678
+  const segmentIds = new Set<string>();
+  const segmentPattern = /\/segments\/(\d+)/g;
+  while ((match = segmentPattern.exec(html)) !== null) {
+    segmentIds.add(match[1]);
+  }
+  
+  console.log(`Found ${routeIds.size} routes and ${segmentIds.size} segments`);
+  
+  // Process routes
+  for (const routeId of routeIds) {
+    let title = `Strava Route ${routeId}`;
+    let distance_km: number | undefined;
+    let elevation_m: number | undefined;
+    let coverUrl: string | undefined;
+    
+    // Try to extract details from surrounding HTML
+    const routeSection = html.match(new RegExp(`[\\s\\S]{0,500}\\/routes\\/${routeId}[\\s\\S]{0,500}`, 'i'));
+    if (routeSection) {
+      const section = routeSection[0];
+      
+      // Extract title - look for text near the link
+      const titleMatch = section.match(/(?:title|name|data-name)="([^"]+)"/i) ||
+                        section.match(/>([A-Za-z0-9][^<]{3,60})</);
+      if (titleMatch) {
+        title = titleMatch[1].trim();
+      }
+      
+      // Distance
+      const distMatch = section.match(/([\d.]+)\s*km/i);
+      if (distMatch) {
+        distance_km = parseFloat(distMatch[1]);
+      }
+      
+      // Elevation
+      const elevMatch = section.match(/([\d,]+)\s*m\s*(?:elev|↑|gain)/i);
+      if (elevMatch) {
+        elevation_m = parseInt(elevMatch[1].replace(/,/g, ''), 10);
+      }
+      
+      // Cover image
+      const imgMatch = section.match(/src="([^"]+(?:cloudfront|strava)[^"]+)"/i);
+      if (imgMatch) {
+        coverUrl = imgMatch[1];
+      }
+    }
+    
+    routes.push({
+      id: `strava-route-${routeId}`,
+      title,
+      distance_km,
+      elevation_m,
+      gpx_url: `https://www.strava.com/routes/${routeId}/export_gpx`,
+      gpx_accessible: false, // Strava requires auth
+      cover_url: coverUrl,
+      route_link: `https://www.strava.com/routes/${routeId}`
+    });
+  }
+  
+  // Process segments (optional, usually shorter)
+  for (const segmentId of segmentIds) {
+    let title = `Strava Segment ${segmentId}`;
+    let distance_km: number | undefined;
+    let elevation_m: number | undefined;
+    
+    const segSection = html.match(new RegExp(`[\\s\\S]{0,500}\\/segments\\/${segmentId}[\\s\\S]{0,500}`, 'i'));
+    if (segSection) {
+      const section = segSection[0];
+      
+      const titleMatch = section.match(/(?:title|name)="([^"]+)"/i) ||
+                        section.match(/>([A-Za-z0-9][^<]{3,40})</);
+      if (titleMatch) {
+        title = titleMatch[1].trim();
+      }
+      
+      const distMatch = section.match(/([\d.]+)\s*km/i);
+      if (distMatch) {
+        distance_km = parseFloat(distMatch[1]);
+      }
+      
+      const elevMatch = section.match(/([\d,]+)\s*m/i);
+      if (elevMatch) {
+        elevation_m = parseInt(elevMatch[1].replace(/,/g, ''), 10);
+      }
+    }
+    
+    routes.push({
+      id: `strava-segment-${segmentId}`,
+      title,
+      description: 'Strava segment',
+      distance_km,
+      elevation_m,
+      gpx_url: undefined, // Segments don't have direct GPX export
+      gpx_accessible: false,
+      route_link: `https://www.strava.com/segments/${segmentId}`
+    });
+  }
+  
+  return routes;
+}
+
+async function parseKomoot(html: string, baseUrl: string): Promise<ParsedRoute[]> {
+  const routes: ParsedRoute[] = [];
+  
+  console.log('Parsing Komoot page...');
+  
+  // Komoot tour pattern: /tour/12345678
+  const tourIds = new Set<string>();
+  const tourPattern = /\/tour\/(\d+)/g;
+  let match;
+  while ((match = tourPattern.exec(html)) !== null) {
+    tourIds.add(match[1]);
+  }
+  
+  console.log(`Found ${tourIds.size} Komoot tours`);
+  
+  for (const tourId of tourIds) {
+    let title = `Komoot Tour ${tourId}`;
+    let distance_km: number | undefined;
+    let elevation_m: number | undefined;
+    let coverUrl: string | undefined;
+    
+    const tourSection = html.match(new RegExp(`[\\s\\S]{0,800}\\/tour\\/${tourId}[\\s\\S]{0,800}`, 'i'));
+    if (tourSection) {
+      const section = tourSection[0];
+      
+      // Title
+      const titleMatch = section.match(/(?:data-test-id="tour_name"|class="[^"]*name[^"]*")[^>]*>([^<]+)</i) ||
+                        section.match(/>([A-Za-z0-9][^<]{5,80})</);
+      if (titleMatch) {
+        title = titleMatch[1].trim();
+      }
+      
+      // Distance
+      const distMatch = section.match(/([\d.]+)\s*km/i);
+      if (distMatch) {
+        distance_km = parseFloat(distMatch[1]);
+      }
+      
+      // Elevation
+      const elevMatch = section.match(/([\d,]+)\s*m\s*(?:↑|up|elevation)/i);
+      if (elevMatch) {
+        elevation_m = parseInt(elevMatch[1].replace(/,/g, ''), 10);
+      }
+      
+      // Cover image
+      const imgMatch = section.match(/src="([^"]+(?:komoot|images)[^"]+\.(?:jpg|png|webp)[^"]*)"/i);
+      if (imgMatch) {
+        coverUrl = imgMatch[1];
+      }
+    }
+    
+    routes.push({
+      id: `komoot-${tourId}`,
+      title,
+      distance_km,
+      elevation_m,
+      gpx_url: `https://www.komoot.com/tour/${tourId}/download`,
+      gpx_accessible: false, // Komoot requires auth for GPX
+      cover_url: coverUrl,
+      route_link: `https://www.komoot.com/tour/${tourId}`
+    });
+  }
+  
+  return routes;
+}
+
 async function parseGenericPage(html: string, baseUrl: string): Promise<ParsedRoute[]> {
   const routes: ParsedRoute[] = [];
   
+  console.log('Using generic parser...');
+  
   // Look for common patterns of route listings
   // Pattern 1: Links with GPX references
-  const gpxLinkPattern = /<a[^>]*href="([^"]+)"[^>]*>[^<]*(?:trasa|route|gpx)[^<]*<\/a>/gi;
+  const gpxLinkPattern = /<a[^>]*href="([^"]+)"[^>]*>[^<]*(?:trasa|route|gpx|download)[^<]*<\/a>/gi;
   const gpxLinks = [...html.matchAll(gpxLinkPattern)];
   
   for (let i = 0; i < gpxLinks.length; i++) {
     const link = gpxLinks[i][1];
     const fullUrl = link.startsWith('http') ? link : new URL(link, baseUrl).href;
     
+    // Try to get a better title from the link text
+    const linkText = gpxLinks[i][0].match(/>([^<]+)</)?.[1]?.trim() || `Trasa ${i + 1}`;
+    
     routes.push({
       id: `generic-${i}`,
-      title: `Trasa ${i + 1}`,
+      title: linkText,
       gpx_url: fullUrl.endsWith('.gpx') ? fullUrl : undefined,
       gpx_accessible: false,
       route_link: fullUrl
     });
+  }
+  
+  // Pattern 2: Look for RideWithGPS, Strava, Komoot embeds
+  const rwgpsEmbed = html.match(/ridewithgps\.com\/(?:routes|embeds)\/(\d+)/gi);
+  const stravaEmbed = html.match(/strava\.com\/(?:routes|segments)\/(\d+)/gi);
+  const komootEmbed = html.match(/komoot\.com\/tour\/(\d+)/gi);
+  
+  if (rwgpsEmbed) {
+    for (const embed of rwgpsEmbed) {
+      const idMatch = embed.match(/(\d+)/);
+      if (idMatch) {
+        const routeId = idMatch[1];
+        if (!routes.find(r => r.id === `rwgps-${routeId}`)) {
+          routes.push({
+            id: `rwgps-${routeId}`,
+            title: `RideWithGPS Route ${routeId}`,
+            gpx_url: `https://ridewithgps.com/routes/${routeId}.gpx`,
+            gpx_accessible: false,
+            route_link: `https://ridewithgps.com/routes/${routeId}`
+          });
+        }
+      }
+    }
+  }
+  
+  if (stravaEmbed) {
+    for (const embed of stravaEmbed) {
+      const idMatch = embed.match(/(\d+)/);
+      const typeMatch = embed.match(/(routes|segments)/);
+      if (idMatch && typeMatch) {
+        const id = idMatch[1];
+        const type = typeMatch[1];
+        routes.push({
+          id: `strava-${type}-${id}`,
+          title: `Strava ${type === 'routes' ? 'Route' : 'Segment'} ${id}`,
+          gpx_url: type === 'routes' ? `https://www.strava.com/routes/${id}/export_gpx` : undefined,
+          gpx_accessible: false,
+          route_link: `https://www.strava.com/${type}/${id}`
+        });
+      }
+    }
+  }
+  
+  if (komootEmbed) {
+    for (const embed of komootEmbed) {
+      const idMatch = embed.match(/(\d+)/);
+      if (idMatch) {
+        const tourId = idMatch[1];
+        routes.push({
+          id: `komoot-${tourId}`,
+          title: `Komoot Tour ${tourId}`,
+          gpx_url: `https://www.komoot.com/tour/${tourId}/download`,
+          gpx_accessible: false,
+          route_link: `https://www.komoot.com/tour/${tourId}`
+        });
+      }
+    }
   }
   
   // Test accessibility for found GPX URLs
@@ -227,6 +562,12 @@ serve(async (req) => {
     // Detect site type and use appropriate parser
     if (url.includes('bicycle.holiday')) {
       routes = await parseBicycleHoliday(html, url);
+    } else if (url.includes('ridewithgps.com')) {
+      routes = await parseRideWithGps(html, url);
+    } else if (url.includes('strava.com')) {
+      routes = await parseStrava(html, url);
+    } else if (url.includes('komoot.com')) {
+      routes = await parseKomoot(html, url);
     } else {
       routes = await parseGenericPage(html, url);
     }
