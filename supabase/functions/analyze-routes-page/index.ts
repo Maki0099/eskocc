@@ -19,13 +19,27 @@ interface ParsedRoute {
 
 async function testGpxAccessibility(url: string): Promise<boolean> {
   try {
+    // RideWithGPS public trips/routes are always accessible
+    if (url.includes('ridewithgps.com/trips/') || url.includes('ridewithgps.com/routes/')) {
+      return true;
+    }
+    
+    // bicycle.holiday GPX files are always accessible
+    if (url.includes('bicycle.holiday')) {
+      return true;
+    }
+    
+    // For other services, try GET with range header (downloads only 1 byte)
     const response = await fetch(url, { 
-      method: 'HEAD',
+      method: 'GET',
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      }
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Range': 'bytes=0-0'
+      },
+      redirect: 'follow'
     });
-    return response.ok;
+    // 200 OK or 206 Partial Content = accessible
+    return response.status === 200 || response.status === 206;
   } catch {
     return false;
   }

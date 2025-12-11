@@ -57,8 +57,8 @@ const SUPPORTED_SERVICES: SupportedService[] = [
     name: 'RideWithGPS',
     icon: Route,
     url: 'https://ridewithgps.com',
-    gpxStatus: 'auth-required',
-    description: 'Plánovač tras'
+    gpxStatus: 'available',
+    description: 'Veřejné trasy dostupné'
   },
   {
     id: 'strava',
