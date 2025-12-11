@@ -21,8 +21,8 @@ interface UpdateResult {
   error?: string;
 }
 
-// Direct mapping: page_id → RideWithGPS route ID
-const PAGE_TO_RWGPS: Record<string, string> = {
+// Direct mapping: page_id → RideWithGPS trip ID (trips are public, routes require auth)
+const PAGE_TO_TRIPS: Record<string, string> = {
   '1108': '32433475',  // Route 100
   '1183': '32433476',  // Route 101
   '1968': '32476757',  // Route 102
@@ -48,8 +48,9 @@ function extractRouteNumber(title: string): string {
   return match ? match[1] : 'unknown';
 }
 
-async function downloadGpx(rwgpsId: string): Promise<ArrayBuffer | null> {
-  const url = `https://ridewithgps.com/routes/${rwgpsId}.gpx`;
+async function downloadGpx(tripId: string): Promise<ArrayBuffer | null> {
+  // Use trips endpoint with sub_format=track (public, no auth required)
+  const url = `https://ridewithgps.com/trips/${tripId}.gpx?sub_format=track`;
   try {
     console.log(`Downloading GPX from: ${url}`);
     const response = await fetch(url, {
@@ -119,18 +120,18 @@ serve(async (req) => {
         continue;
       }
 
-      const rwgpsId = PAGE_TO_RWGPS[pageId];
-      if (!rwgpsId) {
-        results.push({ id: route.id, title: route.title, status: 'no_gpx_found', error: `No RWGPS mapping for page_id ${pageId}` });
+      const tripId = PAGE_TO_TRIPS[pageId];
+      if (!tripId) {
+        results.push({ id: route.id, title: route.title, status: 'no_gpx_found', error: `No trip mapping for page_id ${pageId}` });
         failed++;
         continue;
       }
 
-      console.log(`Page ID ${pageId} → RWGPS ID ${rwgpsId}`);
+      console.log(`Page ID ${pageId} → Trip ID ${tripId}`);
 
-      const gpxData = await downloadGpx(rwgpsId);
+      const gpxData = await downloadGpx(tripId);
       if (!gpxData) {
-        results.push({ id: route.id, title: route.title, status: 'no_gpx_found', rwgps_id: rwgpsId, error: 'GPX download failed' });
+        results.push({ id: route.id, title: route.title, status: 'no_gpx_found', rwgps_id: tripId, error: 'GPX download failed' });
         failed++;
         continue;
       }
@@ -143,7 +144,7 @@ serve(async (req) => {
         .upload(gpxPath, gpxData, { contentType: 'application/gpx+xml', upsert: false });
 
       if (uploadError) {
-        results.push({ id: route.id, title: route.title, status: 'failed', rwgps_id: rwgpsId, error: uploadError.message });
+        results.push({ id: route.id, title: route.title, status: 'failed', rwgps_id: tripId, error: uploadError.message });
         failed++;
         continue;
       }
@@ -156,13 +157,13 @@ serve(async (req) => {
         .eq('id', route.id);
 
       if (updateError) {
-        results.push({ id: route.id, title: route.title, status: 'failed', rwgps_id: rwgpsId, error: updateError.message });
+        results.push({ id: route.id, title: route.title, status: 'failed', rwgps_id: tripId, error: updateError.message });
         failed++;
         continue;
       }
 
       console.log(`Successfully updated route ${routeNumber}`);
-      results.push({ id: route.id, title: route.title, status: 'updated', gpx_url: publicUrl, rwgps_id: rwgpsId });
+      results.push({ id: route.id, title: route.title, status: 'updated', gpx_url: publicUrl, rwgps_id: tripId });
       updated++;
     }
 
