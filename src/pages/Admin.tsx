@@ -28,7 +28,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Users, Shield, Loader2, Coffee, Target, Clock, KeyRound, Bell } from "lucide-react";
+import { Users, Shield, Loader2, Coffee, Target, Clock, KeyRound, Bell, Route, Download } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
@@ -50,6 +50,7 @@ const Admin = () => {
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
+  const [importingRoutes, setImportingRoutes] = useState(false);
   const [resettingPasswordUserId, setResettingPasswordUserId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -156,6 +157,22 @@ const Admin = () => {
     }
   };
 
+  const handleImportRoutes = async () => {
+    setImportingRoutes(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('import-bicycle-routes');
+      
+      if (error) throw error;
+      
+      toast.success(`Import dokončen: ${data.imported} tras importováno, ${data.skipped} přeskočeno`);
+    } catch (error: any) {
+      console.error("Error importing routes:", error);
+      toast.error(error.message || "Nepodařilo se importovat trasy");
+    } finally {
+      setImportingRoutes(false);
+    }
+  };
+
 
   const pendingCount = users.filter((u) => u.role === "pending").length;
 
@@ -209,6 +226,10 @@ const Admin = () => {
               <TabsTrigger value="notifications" className="gap-2">
                 <Bell className="w-4 h-4" />
                 Notifikace
+              </TabsTrigger>
+              <TabsTrigger value="routes" className="gap-2">
+                <Route className="w-4 h-4" />
+                Trasy
               </TabsTrigger>
             </TabsList>
 
@@ -386,6 +407,39 @@ const Admin = () => {
 
             <TabsContent value="notifications">
               <PushNotificationsAdmin />
+            </TabsContent>
+
+            <TabsContent value="routes" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Route className="w-5 h-5" />
+                    Import tras z bicycle.holiday
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-muted-foreground">
+                    Importuje 13 předefinovaných tras z webu bicycle.holiday včetně GPX souborů a náhledových obrázků.
+                  </p>
+                  <Button 
+                    onClick={handleImportRoutes} 
+                    disabled={importingRoutes}
+                    className="gap-2"
+                  >
+                    {importingRoutes ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Importuji...
+                      </>
+                    ) : (
+                      <>
+                        <Download className="w-4 h-4" />
+                        Importovat trasy
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
             </TabsContent>
           </Tabs>
         </div>
