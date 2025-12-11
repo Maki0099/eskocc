@@ -7,6 +7,7 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import MemberOnlyContent from "@/components/MemberOnlyContent";
 import GpxMap from "@/components/map/GpxMap";
+import CreateEventDialog from "@/components/events/CreateEventDialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,7 +22,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Route, Mountain, Gauge, Download, ExternalLink, Trash2, MapIcon } from "lucide-react";
+import { ArrowLeft, Route, Mountain, Gauge, Download, ExternalLink, Trash2, MapIcon, CalendarPlus } from "lucide-react";
 import { toast } from "sonner";
 import { ROUTES } from "@/lib/routes";
 
@@ -63,7 +64,7 @@ const RouteDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { isMember, isAdmin, loading: roleLoading } = useUserRole();
+  const { isMember, isAdmin, canCreateEvents, loading: roleLoading } = useUserRole();
   const [route, setRoute] = useState<FavoriteRoute | null>(null);
   const [loading, setLoading] = useState(true);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -220,7 +221,29 @@ const RouteDetail = () => {
                 </div>
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
+                {canCreateEvents && (
+                  <CreateEventDialog
+                    onEventCreated={() => navigate(ROUTES.EVENTS)}
+                    initialData={{
+                      title: route.title,
+                      description: route.description,
+                      distance_km: route.distance_km,
+                      elevation_m: route.elevation_m,
+                      difficulty: route.difficulty,
+                      terrain_type: route.terrain_type,
+                      route_link: route.route_link,
+                      gpx_file_url: route.gpx_file_url,
+                      cover_image_url: route.cover_image_url,
+                    }}
+                    customTrigger={
+                      <Button className="gap-2">
+                        <CalendarPlus className="w-4 h-4" />
+                        Vytvořit vyjížďku
+                      </Button>
+                    }
+                  />
+                )}
                 {route.gpx_file_url && (
                   <Button variant="outline" asChild>
                     <a href={route.gpx_file_url} download>
