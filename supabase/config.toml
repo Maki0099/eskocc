@@ -26,3 +26,9 @@ verify_jwt = false
 
 [functions.import-bicycle-routes]
 verify_jwt = false
+
+[functions.analyze-routes-page]
+verify_jwt = true
+
+[functions.import-selected-routes]
+verify_jwt = true
