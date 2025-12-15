@@ -78,11 +78,11 @@ const SUPPORTED_SERVICES: SupportedService[] = [
   },
   {
     id: 'mapy-cz',
-    name: 'Mapy.cz',
+    name: 'Mapy.cz / Mapy.com',
     icon: MapPin,
     url: 'https://mapy.cz',
-    gpxStatus: 'varies',
-    description: 'České mapy'
+    gpxStatus: 'available',
+    description: 'Zkrácené i plné URL, GPX export'
   },
   {
     id: 'wikiloc',
