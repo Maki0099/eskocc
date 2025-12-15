@@ -11,6 +11,7 @@ import CreateRouteDialog from "@/components/routes/CreateRouteDialog";
 import EditRouteDialog from "@/components/routes/EditRouteDialog";
 import RouteListItem from "@/components/routes/RouteListItem";
 import MemberOnlyContent from "@/components/MemberOnlyContent";
+import EventParticipationToggle from "@/components/events/EventParticipationToggle";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SkeletonEventCard } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -287,11 +288,12 @@ const Events = () => {
   const groupedPastEvents = groupEventsByMonth(pastEvents);
 
   const renderEventCard = (event: Event, index: number, isPast: boolean = false) => (
-    <Link key={event.id} to={`/events/${event.id}`}>
-      <Card
-        className={`hover:shadow-md transition-all cursor-pointer group hover:-translate-y-1 overflow-hidden animate-on-scroll slide-up ${listVisible ? "is-visible" : ""}`}
-        style={{ transitionDelay: `${index * 100}ms` }}
-      >
+    <Card
+      key={event.id}
+      className={`hover:shadow-md transition-all cursor-pointer group hover:-translate-y-1 overflow-hidden animate-on-scroll slide-up ${listVisible ? "is-visible" : ""}`}
+      style={{ transitionDelay: `${index * 100}ms` }}
+    >
+      <Link to={`/events/${event.id}`}>
         {/* Cover Image Thumbnail */}
         {event.cover_image_url && (
           <div className="relative h-32 overflow-hidden">
@@ -376,15 +378,28 @@ const Events = () => {
               <span>{event.location}</span>
             </div>
           </div>
-
-          {!isPast && event.is_participating && (
-            <Badge variant="default" className="mt-2">
-              Přihlášen/a
-            </Badge>
-          )}
         </CardContent>
-      </Card>
-    </Link>
+      </Link>
+      
+      {/* Participation Toggle - only for upcoming events */}
+      {!isPast && user && (
+        <CardContent className="pt-0 pb-4">
+          <div className="flex items-center justify-between border-t pt-4">
+            <div className="flex items-center gap-2">
+              {event.is_participating && (
+                <Badge variant="default">Přihlášen/a</Badge>
+              )}
+            </div>
+            <EventParticipationToggle
+              eventId={event.id}
+              userId={user.id}
+              isParticipating={event.is_participating}
+              onToggle={fetchUpcomingEvents}
+            />
+          </div>
+        </CardContent>
+      )}
+    </Card>
   );
 
   return (
