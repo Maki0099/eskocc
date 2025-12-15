@@ -1268,8 +1268,22 @@ export function RouteImportWizard() {
                                   alt={img.caption || `Foto ${imgIndex + 1}`}
                                   className="w-full h-full object-cover"
                                 />
-                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                  <span className="text-[10px] text-white text-center px-1 line-clamp-2">
+                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setRoutes(prev => prev.map(r => {
+                                        if (r.id !== route.id) return r;
+                                        const newImages = r.generated_images?.filter((_, i) => i !== imgIndex);
+                                        return { ...r, generated_images: newImages?.length ? newImages : undefined };
+                                      }));
+                                    }}
+                                    className="p-1 bg-destructive/80 hover:bg-destructive rounded-full transition-colors"
+                                    title="Odstranit fotografii"
+                                  >
+                                    <XCircle className="w-3 h-3 text-white" />
+                                  </button>
+                                  <span className="text-[9px] text-white text-center px-1 line-clamp-1">
                                     {img.caption || `Foto ${imgIndex + 1}`}
                                   </span>
                                 </div>
