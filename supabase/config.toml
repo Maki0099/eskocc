@@ -35,3 +35,6 @@ verify_jwt = true
 
 [functions.update-routes-gpx]
 verify_jwt = false
+
+[functions.generate-route-metadata]
+verify_jwt = true

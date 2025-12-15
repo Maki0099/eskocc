@@ -29,6 +29,10 @@ import {
   Zap,
   ClipboardCheck,
   RotateCcw,
+  Globe,
+  Upload,
+  Sparkles,
+  Pencil,
 } from "lucide-react";
 import {
   Collapsible,
@@ -40,8 +44,17 @@ import {
   RouteCompletionIndicator,
   calculateCompletionScore,
 } from "./RouteCompletionIndicator";
+import {
+  parseGpxMetadata,
+  calculateDifficulty,
+  generateStaticMapUrl,
+  readFileAsBase64,
+  GpxMetadata,
+} from "@/lib/gpx-utils";
 
 type GpxStatus = "available" | "auth-required" | "premium" | "varies" | "detection";
+type ImportSource = "url" | "gpx";
+type GpxImportMode = "auto" | "manual";
 
 interface SupportedService {
   id: string;
@@ -179,7 +192,7 @@ const getGpxStatusBadge = (status: GpxStatus) => {
   }
 };
 
-type WizardStep = "url" | "select" | "mode" | "review" | "summary";
+type WizardStep = "source" | "url" | "gpx-upload" | "gpx-mode" | "select" | "mode" | "review" | "summary";
 
 interface ImportResult {
   title: string;
@@ -196,6 +209,13 @@ interface WizardDraft {
   step: WizardStep;
   reviewIndex: number;
   savedAt: number;
+  importSource?: ImportSource;
+}
+
+interface GpxFileData {
+  file: File;
+  metadata: GpxMetadata;
+  base64: string;
 }
 
 function saveDraft(draft: Omit<WizardDraft, "savedAt">) {
@@ -232,25 +252,29 @@ export function RouteImportWizard() {
   const [url, setUrl] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [routes, setRoutes] = useState<EditableRoute[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [step, setStep] = useState<WizardStep>("url");
+  const [step, setStep] = useState<WizardStep>("source");
   const [reviewIndex, setReviewIndex] = useState(0);
   const [servicesOpen, setServicesOpen] = useState(false);
   const [importResults, setImportResults] = useState<ImportResult[]>([]);
   const [hasDraft, setHasDraft] = useState(false);
+  const [importSource, setImportSource] = useState<ImportSource>("url");
+  const [gpxFiles, setGpxFiles] = useState<GpxFileData[]>([]);
+  const [aiProgress, setAiProgress] = useState({ current: 0, total: 0 });
 
   // Load draft on mount
   useEffect(() => {
     const draft = loadDraft();
-    if (draft && draft.step !== "url" && draft.routes.length > 0) {
+    if (draft && draft.step !== "source" && draft.step !== "url" && draft.routes.length > 0) {
       setHasDraft(true);
     }
   }, []);
 
   // Save draft when state changes (debounced)
   useEffect(() => {
-    if (step === "url" && routes.length === 0) return;
+    if ((step === "source" || step === "url" || step === "gpx-upload") && routes.length === 0) return;
     if (importResults.length > 0) return; // Don't save after import complete
     
     const timeout = setTimeout(() => {
@@ -260,11 +284,12 @@ export function RouteImportWizard() {
         selectedIds: Array.from(selectedIds),
         step,
         reviewIndex,
+        importSource,
       });
     }, 500);
     
     return () => clearTimeout(timeout);
-  }, [url, routes, selectedIds, step, reviewIndex, importResults.length]);
+  }, [url, routes, selectedIds, step, reviewIndex, importResults.length, importSource]);
 
   const handleRestoreDraft = () => {
     const draft = loadDraft();
@@ -274,6 +299,7 @@ export function RouteImportWizard() {
       setSelectedIds(new Set(draft.selectedIds));
       setStep(draft.step);
       setReviewIndex(draft.reviewIndex);
+      setImportSource(draft.importSource || "url");
       setHasDraft(false);
       toast.success("Rozpracovaný import obnoven");
     }
@@ -290,14 +316,19 @@ export function RouteImportWizard() {
   // Progress percentage
   const getStepProgress = () => {
     switch (step) {
-      case "url":
+      case "source":
         return 0;
+      case "url":
+      case "gpx-upload":
+        return 10;
+      case "gpx-mode":
+        return 20;
       case "select":
-        return 25;
+        return 30;
       case "mode":
-        return 40;
+        return 45;
       case "review":
-        return 40 + (reviewIndex / selectedRoutes.length) * 40;
+        return 45 + (reviewIndex / selectedRoutes.length) * 40;
       case "summary":
         return 100;
       default:
@@ -356,6 +387,129 @@ export function RouteImportWizard() {
       toast.error(error.message || "Nepodařilo se analyzovat stránku");
     } finally {
       setIsAnalyzing(false);
+    }
+  };
+
+  const handleGpxFilesSelect = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    
+    const newGpxFiles: GpxFileData[] = [];
+    
+    for (const file of Array.from(files)) {
+      if (!file.name.toLowerCase().endsWith(".gpx")) {
+        toast.error(`Soubor "${file.name}" není GPX soubor`);
+        continue;
+      }
+      
+      try {
+        const metadata = await parseGpxMetadata(file);
+        if (!metadata) {
+          toast.error(`Nepodařilo se načíst "${file.name}"`);
+          continue;
+        }
+        
+        const base64 = await readFileAsBase64(file);
+        newGpxFiles.push({ file, metadata, base64 });
+      } catch (error) {
+        console.error(`Error parsing ${file.name}:`, error);
+        toast.error(`Chyba při zpracování "${file.name}"`);
+      }
+    }
+    
+    if (newGpxFiles.length > 0) {
+      setGpxFiles(prev => [...prev, ...newGpxFiles]);
+      toast.success(`Nahráno ${newGpxFiles.length} GPX souborů`);
+    }
+  };
+
+  const handleRemoveGpxFile = (index: number) => {
+    setGpxFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleGpxModeSelect = async (mode: GpxImportMode) => {
+    // Convert GPX files to routes
+    const newRoutes: EditableRoute[] = gpxFiles.map((gpxData, index) => {
+      const difficulty = calculateDifficulty(gpxData.metadata.distanceKm, gpxData.metadata.elevationM);
+      const coverUrl = gpxData.metadata.bounds 
+        ? generateStaticMapUrl(gpxData.metadata.bounds, gpxData.metadata.startPoint || undefined, gpxData.metadata.endPoint || undefined)
+        : undefined;
+      
+      return {
+        id: `gpx-${Date.now()}-${index}`,
+        title: gpxData.metadata.name || gpxData.file.name.replace(/\.gpx$/i, ""),
+        description: gpxData.metadata.description || "",
+        distance_km: gpxData.metadata.distanceKm,
+        elevation_m: gpxData.metadata.elevationM,
+        gpx_url: undefined,
+        gpx_accessible: false,
+        cover_url: coverUrl,
+        route_link: undefined,
+        manualGpxFile: gpxData.file,
+        manualGpxBase64: gpxData.base64,
+        difficulty: mode === "manual" ? undefined : difficulty,
+        terrain_type: undefined,
+      };
+    });
+    
+    if (mode === "auto") {
+      // Generate AI metadata
+      setIsGeneratingAI(true);
+      setAiProgress({ current: 0, total: newRoutes.length });
+      
+      try {
+        const routeDataForAI = gpxFiles.map(gpxData => ({
+          name: gpxData.metadata.name,
+          distanceKm: gpxData.metadata.distanceKm,
+          elevationM: gpxData.metadata.elevationM,
+          startLat: gpxData.metadata.startPoint?.lat,
+          startLon: gpxData.metadata.startPoint?.lon,
+          endLat: gpxData.metadata.endPoint?.lat,
+          endLon: gpxData.metadata.endPoint?.lon,
+          maxElevation: gpxData.metadata.maxElevation || undefined,
+          minElevation: gpxData.metadata.minElevation || undefined,
+          avgGradient: gpxData.metadata.avgGradient || undefined,
+        }));
+        
+        const { data, error } = await supabase.functions.invoke(
+          "generate-route-metadata",
+          { body: { routes: routeDataForAI } }
+        );
+        
+        if (error) throw error;
+        
+        if (data.success && data.results) {
+          // Update routes with AI-generated metadata
+          data.results.forEach((result: any, index: number) => {
+            if (newRoutes[index]) {
+              newRoutes[index].title = result.name || newRoutes[index].title;
+              newRoutes[index].description = result.description || "";
+              newRoutes[index].terrain_type = result.terrainType;
+              newRoutes[index].difficulty = calculateDifficulty(
+                newRoutes[index].distance_km || 0,
+                newRoutes[index].elevation_m || 0
+              );
+            }
+            setAiProgress({ current: index + 1, total: newRoutes.length });
+          });
+          
+          toast.success("AI vygenerovala metadata pro trasy");
+        }
+      } catch (error: any) {
+        console.error("AI generation error:", error);
+        toast.error("AI generování selhalo, použity základní údaje");
+      } finally {
+        setIsGeneratingAI(false);
+      }
+    }
+    
+    setRoutes(newRoutes);
+    setSelectedIds(new Set(newRoutes.map(r => r.id)));
+    
+    if (mode === "auto") {
+      setStep("summary");
+    } else {
+      setReviewIndex(0);
+      setStep("review");
     }
   };
 
@@ -472,9 +626,11 @@ export function RouteImportWizard() {
     setUrl("");
     setRoutes([]);
     setSelectedIds(new Set());
-    setStep("url");
+    setStep("source");
     setReviewIndex(0);
     setImportResults([]);
+    setGpxFiles([]);
+    setImportSource("url");
     clearDraft();
   };
 
@@ -516,7 +672,7 @@ export function RouteImportWizard() {
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Progress bar */}
-        {step !== "url" && (
+        {step !== "source" && (
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Postup</span>
@@ -526,9 +682,9 @@ export function RouteImportWizard() {
           </div>
         )}
 
-        {/* Step: URL Input */}
-        {step === "url" && (
-          <>
+        {/* Step: Source Selection */}
+        {step === "source" && (
+          <div className="space-y-6">
             {/* Draft restore banner */}
             {hasDraft && (
               <div className="flex items-center justify-between p-3 bg-primary/10 border border-primary/20 rounded-lg">
@@ -546,6 +702,57 @@ export function RouteImportWizard() {
                 </div>
               </div>
             )}
+
+            <div className="text-center">
+              <h3 className="text-lg font-semibold mb-2">Odkud chcete importovat?</h3>
+              <p className="text-sm text-muted-foreground">
+                Vyberte zdroj tras pro import
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-4">
+              <button
+                onClick={() => {
+                  setImportSource("url");
+                  setStep("url");
+                }}
+                className="p-6 border rounded-lg hover:border-primary hover:bg-primary/5 transition-colors text-left"
+              >
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 bg-primary/10 rounded-lg">
+                    <Globe className="w-6 h-6 text-primary" />
+                  </div>
+                  <h4 className="font-semibold">Z webové stránky</h4>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Import tras z URL (bicycle.holiday, Mapy.cz, RideWithGPS a další)
+                </p>
+              </button>
+
+              <button
+                onClick={() => {
+                  setImportSource("gpx");
+                  setStep("gpx-upload");
+                }}
+                className="p-6 border rounded-lg hover:border-primary hover:bg-primary/5 transition-colors text-left"
+              >
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 bg-primary/10 rounded-lg">
+                    <Upload className="w-6 h-6 text-primary" />
+                  </div>
+                  <h4 className="font-semibold">Ze souboru GPX</h4>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Nahrát vlastní GPX soubory s možností AI doplnění metadat
+                </p>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Step: URL Input */}
+        {step === "url" && (
+          <>
             <Collapsible open={servicesOpen} onOpenChange={setServicesOpen}>
               <CollapsibleTrigger asChild>
                 <Button
@@ -630,7 +837,244 @@ export function RouteImportWizard() {
                 )}
               </Button>
             </div>
+
+            <div className="flex justify-start pt-4 border-t">
+              <Button variant="outline" onClick={() => setStep("source")}>
+                Zpět
+              </Button>
+            </div>
           </>
+        )}
+
+        {/* Step: GPX Upload */}
+        {step === "gpx-upload" && (
+          <div className="space-y-6">
+            <div className="text-center">
+              <h3 className="text-lg font-semibold mb-2">Nahrát GPX soubory</h3>
+              <p className="text-sm text-muted-foreground">
+                Vyberte jeden nebo více GPX souborů
+              </p>
+            </div>
+
+            {/* Upload area */}
+            <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/30 transition-colors">
+              <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                <Upload className="w-10 h-10 mb-3 text-muted-foreground" />
+                <p className="mb-2 text-sm text-muted-foreground">
+                  <span className="font-semibold">Klikněte pro výběr</span> nebo přetáhněte soubory
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Pouze GPX soubory
+                </p>
+              </div>
+              <input
+                type="file"
+                className="hidden"
+                accept=".gpx"
+                multiple
+                onChange={(e) => handleGpxFilesSelect(e.target.files)}
+              />
+            </label>
+
+            {/* Uploaded files list */}
+            {gpxFiles.length > 0 && (
+              <div className="border rounded-lg overflow-hidden">
+                <div className="max-h-[300px] overflow-y-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted/50 sticky top-0">
+                      <tr>
+                        <th className="p-2 text-left">Soubor</th>
+                        <th className="p-2 text-right w-20">km</th>
+                        <th className="p-2 text-right w-20">m ↑</th>
+                        <th className="p-2 w-24">Obtížnost</th>
+                        <th className="p-2 w-16"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {gpxFiles.map((gpxData, index) => {
+                        const difficulty = calculateDifficulty(
+                          gpxData.metadata.distanceKm,
+                          gpxData.metadata.elevationM
+                        );
+                        return (
+                          <tr key={index} className="border-t">
+                            <td className="p-2">
+                              <div className="font-medium truncate max-w-[250px]">
+                                {gpxData.metadata.name || gpxData.file.name}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {gpxData.file.name}
+                              </div>
+                            </td>
+                            <td className="p-2 text-right">
+                              {gpxData.metadata.distanceKm}
+                            </td>
+                            <td className="p-2 text-right">
+                              {gpxData.metadata.elevationM}
+                            </td>
+                            <td className="p-2">
+                              <Badge
+                                variant={
+                                  difficulty === "easy"
+                                    ? "default"
+                                    : difficulty === "medium"
+                                    ? "secondary"
+                                    : "destructive"
+                                }
+                                className="text-xs"
+                              >
+                                {difficulty === "easy"
+                                  ? "Lehká"
+                                  : difficulty === "medium"
+                                  ? "Střední"
+                                  : "Těžká"}
+                              </Badge>
+                            </td>
+                            <td className="p-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleRemoveGpxFile(index)}
+                              >
+                                <XCircle className="w-4 h-4 text-destructive" />
+                              </Button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between pt-4 border-t">
+              <Button variant="outline" onClick={() => setStep("source")}>
+                Zpět
+              </Button>
+              <div className="flex items-center gap-4">
+                <span className="text-sm text-muted-foreground">
+                  Nahráno: <strong>{gpxFiles.length}</strong> souborů
+                </span>
+                <Button
+                  onClick={() => setStep("gpx-mode")}
+                  disabled={gpxFiles.length === 0}
+                >
+                  Pokračovat
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Step: GPX Import Mode Selection */}
+        {step === "gpx-mode" && !isGeneratingAI && (
+          <div className="space-y-6">
+            <div className="text-center">
+              <h3 className="text-lg font-semibold mb-2">
+                Jak chcete doplnit údaje?
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                Nahráno {gpxFiles.length} GPX souborů
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-4">
+              <button
+                onClick={() => handleGpxModeSelect("auto")}
+                className="p-6 border rounded-lg hover:border-primary hover:bg-primary/5 transition-colors text-left"
+              >
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 bg-primary/10 rounded-lg">
+                    <Sparkles className="w-6 h-6 text-primary" />
+                  </div>
+                  <h4 className="font-semibold">Automaticky (AI)</h4>
+                </div>
+                <p className="text-sm text-muted-foreground mb-3">
+                  AI vygeneruje názvy, popisy a navrhne obtížnost + terén na základě GPX dat
+                </p>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <CheckCircle className="w-3 h-3 text-green-500" />
+                  <span>Rychlé a jednoduché</span>
+                </div>
+              </button>
+
+              <button
+                onClick={() => handleGpxModeSelect("manual")}
+                className="p-6 border rounded-lg hover:border-primary hover:bg-primary/5 transition-colors text-left"
+              >
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 bg-primary/10 rounded-lg">
+                    <Pencil className="w-6 h-6 text-primary" />
+                  </div>
+                  <h4 className="font-semibold">Manuálně</h4>
+                </div>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Projít každou trasu jednotlivě a vyplnit vše ručně
+                </p>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <ClipboardCheck className="w-3 h-3 text-primary" />
+                  <span>Plná kontrola</span>
+                </div>
+              </button>
+            </div>
+
+            <div className="flex justify-between pt-4 border-t">
+              <Button variant="outline" onClick={() => setStep("gpx-upload")}>
+                Zpět
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* AI Generation Progress */}
+        {step === "gpx-mode" && isGeneratingAI && (
+          <div className="space-y-6">
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <Sparkles className="w-6 h-6 text-primary animate-pulse" />
+                <h3 className="text-lg font-semibold">AI generování...</h3>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Zpracování {aiProgress.current} z {aiProgress.total} tras
+              </p>
+            </div>
+
+            <Progress
+              value={(aiProgress.current / aiProgress.total) * 100}
+              className="h-3"
+            />
+
+            <div className="space-y-2">
+              {gpxFiles.map((gpxData, index) => (
+                <div
+                  key={index}
+                  className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg"
+                >
+                  {index < aiProgress.current ? (
+                    <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+                  ) : index === aiProgress.current ? (
+                    <Loader2 className="w-5 h-5 text-primary animate-spin flex-shrink-0" />
+                  ) : (
+                    <div className="w-5 h-5 rounded-full border-2 border-muted-foreground/30 flex-shrink-0" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium truncate">
+                      {gpxData.metadata.name || gpxData.file.name}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {gpxData.metadata.distanceKm} km, {gpxData.metadata.elevationM} m ↑
+                    </div>
+                  </div>
+                  {index < aiProgress.current && (
+                    <Badge variant="secondary" className="text-xs">
+                      Hotovo
+                    </Badge>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
         )}
 
         {/* Step: Route Selection */}
@@ -913,7 +1357,13 @@ export function RouteImportWizard() {
             </div>
 
             <div className="flex items-center justify-between pt-4 border-t">
-              <Button variant="outline" onClick={() => setStep("mode")}>
+              <Button variant="outline" onClick={() => {
+                if (importSource === "gpx") {
+                  setStep("gpx-mode");
+                } else {
+                  setStep("mode");
+                }
+              }}>
                 Zpět k úpravám
               </Button>
               <Button onClick={handleImport} className="gap-2">
@@ -924,22 +1374,20 @@ export function RouteImportWizard() {
           </div>
         )}
 
-        {/* Importing State */}
+        {/* Importing state */}
         {isImporting && (
           <div className="flex flex-col items-center justify-center py-12 gap-4">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            <p className="text-muted-foreground">
-              Importuji {selectedRoutes.length} tras...
-            </p>
+            <Loader2 className="w-10 h-10 animate-spin text-primary" />
+            <p className="text-muted-foreground">Importuji trasy...</p>
           </div>
         )}
 
-        {/* Complete State */}
+        {/* Import Results */}
         {importResults.length > 0 && (
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 text-green-600">
-              <CheckCircle className="w-5 h-5" />
-              <span className="font-medium">Import dokončen</span>
+          <div className="space-y-6">
+            <div className="text-center">
+              <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Import dokončen</h3>
             </div>
 
             <div className="grid grid-cols-3 gap-4">
@@ -963,9 +1411,45 @@ export function RouteImportWizard() {
               </div>
             </div>
 
-            <Button onClick={handleReset} className="w-full">
-              Nový import
-            </Button>
+            <div className="border rounded-lg overflow-hidden">
+              <div className="max-h-[200px] overflow-y-auto">
+                {importResults.map((result, index) => (
+                  <div
+                    key={index}
+                    className={`flex items-center gap-3 p-3 border-b last:border-b-0 ${
+                      result.status === "imported"
+                        ? "bg-green-500/5"
+                        : result.status === "skipped"
+                        ? "bg-yellow-500/5"
+                        : "bg-destructive/5"
+                    }`}
+                  >
+                    {result.status === "imported" ? (
+                      <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                    ) : result.status === "skipped" ? (
+                      <AlertCircle className="w-4 h-4 text-yellow-500 flex-shrink-0" />
+                    ) : (
+                      <XCircle className="w-4 h-4 text-destructive flex-shrink-0" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium truncate">{result.title}</div>
+                      {result.error && (
+                        <div className="text-xs text-muted-foreground">
+                          {result.error}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex justify-center pt-4 border-t">
+              <Button onClick={handleReset} className="gap-2">
+                <RotateCcw className="w-4 h-4" />
+                Nový import
+              </Button>
+            </div>
           </div>
         )}
       </CardContent>
