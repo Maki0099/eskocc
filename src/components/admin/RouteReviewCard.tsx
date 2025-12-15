@@ -27,6 +27,11 @@ import {
   MapPin,
 } from "lucide-react";
 
+export interface GeneratedImage {
+  base64: string;
+  caption: string;
+}
+
 export interface EditableRoute {
   id: string;
   title: string;
@@ -41,6 +46,7 @@ export interface EditableRoute {
   manualGpxBase64?: string;
   difficulty?: string;
   terrain_type?: string;
+  generated_images?: GeneratedImage[];
 }
 
 interface RouteReviewCardProps {

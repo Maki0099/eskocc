@@ -6,6 +6,11 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+interface GeneratedImage {
+  base64: string;
+  caption: string;
+}
+
 interface SelectedRoute {
   title: string;
   description?: string;
@@ -18,12 +23,15 @@ interface SelectedRoute {
   gpx_filename?: string;
   cover_url?: string;
   route_link?: string;
+  generated_images?: GeneratedImage[];
 }
 
 interface ImportResult {
   title: string;
   status: 'imported' | 'skipped' | 'error';
   error?: string;
+  routeId?: string;
+  imagesUploaded?: number;
 }
 
 function calculateDifficulty(elevation_m: number | undefined): string {
@@ -67,6 +75,86 @@ function base64ToArrayBuffer(base64: string): ArrayBuffer {
   return bytes.buffer;
 }
 
+// Upload AI-generated images to storage and create gallery_items records
+async function uploadGeneratedImages(
+  supabase: any,
+  routeId: string,
+  images: GeneratedImage[]
+): Promise<number> {
+  let uploadedCount = 0;
+  
+  for (let i = 0; i < images.length; i++) {
+    const image = images[i];
+    
+    try {
+      // Convert base64 to ArrayBuffer
+      const imageBuffer = base64ToArrayBuffer(image.base64);
+      
+      // Determine file extension from base64 header
+      let extension = 'png';
+      let contentType = 'image/png';
+      if (image.base64.startsWith('data:image/jpeg') || image.base64.startsWith('data:image/jpg')) {
+        extension = 'jpg';
+        contentType = 'image/jpeg';
+      } else if (image.base64.startsWith('data:image/webp')) {
+        extension = 'webp';
+        contentType = 'image/webp';
+      }
+      
+      const fileName = `ai-generated-${Date.now()}-${i}.${extension}`;
+      const filePath = `route-${routeId}/${fileName}`;
+      
+      console.log(`Uploading AI image ${i + 1}/${images.length} for route ${routeId}`);
+      
+      // Upload to gallery bucket
+      const { error: uploadError } = await supabase.storage
+        .from('gallery')
+        .upload(filePath, imageBuffer, {
+          contentType,
+          upsert: false
+        });
+      
+      if (uploadError) {
+        console.error(`Failed to upload AI image ${i + 1}:`, uploadError);
+        continue;
+      }
+      
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('gallery')
+        .getPublicUrl(filePath);
+      
+      // Create gallery_items record
+      // Note: We use a system user ID for AI-generated images
+      // In production, you'd want to pass the actual user ID who initiated the import
+      const { error: insertError } = await supabase
+        .from('gallery_items')
+        .insert({
+          route_id: routeId,
+          user_id: '00000000-0000-0000-0000-000000000000', // System/AI user placeholder
+          file_url: urlData.publicUrl,
+          file_name: fileName,
+          caption: image.caption
+        });
+      
+      if (insertError) {
+        console.error(`Failed to create gallery_item for AI image ${i + 1}:`, insertError);
+        // Try to clean up uploaded file
+        await supabase.storage.from('gallery').remove([filePath]);
+        continue;
+      }
+      
+      uploadedCount++;
+      console.log(`Successfully uploaded AI image ${i + 1}`);
+      
+    } catch (error) {
+      console.error(`Error processing AI image ${i + 1}:`, error);
+    }
+  }
+  
+  return uploadedCount;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -77,7 +165,7 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { routes } = await req.json() as { routes: SelectedRoute[] };
+    const { routes, userId } = await req.json() as { routes: SelectedRoute[]; userId?: string };
 
     if (!routes || !Array.isArray(routes) || routes.length === 0) {
       return new Response(
@@ -92,6 +180,7 @@ serve(async (req) => {
     let imported = 0;
     let skipped = 0;
     let errors = 0;
+    let totalImagesUploaded = 0;
 
     for (const route of routes) {
       try {
@@ -193,7 +282,7 @@ serve(async (req) => {
         const difficulty = route.difficulty || calculateDifficulty(route.elevation_m);
 
         // Insert route into database
-        const { error: insertError } = await supabase
+        const { data: insertedRoute, error: insertError } = await supabase
           .from('favorite_routes')
           .insert({
             title: route.title,
@@ -205,15 +294,33 @@ serve(async (req) => {
             gpx_file_url: gpxFileUrl,
             cover_image_url: coverImageUrl,
             route_link: route.route_link || null
-          });
+          })
+          .select('id')
+          .single();
 
         if (insertError) {
           console.error(`Insert error for ${route.title}:`, insertError);
           results.push({ title: route.title, status: 'error', error: insertError.message });
           errors++;
         } else {
-          console.log(`Successfully imported: ${route.title}`);
-          results.push({ title: route.title, status: 'imported' });
+          console.log(`Successfully imported: ${route.title} with id: ${insertedRoute.id}`);
+          
+          let imagesUploaded = 0;
+          
+          // Upload AI-generated images if present
+          if (route.generated_images && route.generated_images.length > 0) {
+            console.log(`Uploading ${route.generated_images.length} AI-generated images for route ${insertedRoute.id}`);
+            imagesUploaded = await uploadGeneratedImages(supabase, insertedRoute.id, route.generated_images);
+            totalImagesUploaded += imagesUploaded;
+            console.log(`Uploaded ${imagesUploaded} AI images for route ${route.title}`);
+          }
+          
+          results.push({ 
+            title: route.title, 
+            status: 'imported', 
+            routeId: insertedRoute.id,
+            imagesUploaded 
+          });
           imported++;
         }
 
@@ -225,7 +332,7 @@ serve(async (req) => {
       }
     }
 
-    console.log(`Import complete: ${imported} imported, ${skipped} skipped, ${errors} errors`);
+    console.log(`Import complete: ${imported} imported, ${skipped} skipped, ${errors} errors, ${totalImagesUploaded} images uploaded`);
 
     return new Response(
       JSON.stringify({ 
@@ -233,6 +340,7 @@ serve(async (req) => {
         imported, 
         skipped, 
         errors,
+        totalImagesUploaded,
         results 
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
