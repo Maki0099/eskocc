@@ -49,7 +49,7 @@ const IMAGE_PROVIDER_INFO: Record<ImageProvider, { name: string; description: st
   },
   openai: {
     name: "OpenAI DALL-E",
-    description: "GPT-Image-1 - vyžaduje API klíč",
+    description: "DALL-E 3 - vyžaduje API klíč",
     requiresKey: true,
   },
   huggingface: {
