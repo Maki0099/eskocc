@@ -192,7 +192,7 @@ const getGpxStatusBadge = (status: GpxStatus) => {
   }
 };
 
-type WizardStep = "source" | "url" | "gpx-upload" | "gpx-mode" | "select" | "mode" | "review" | "summary";
+type WizardStep = "source" | "url" | "gpx-upload" | "gpx-mode" | "gpx-preview" | "select" | "mode" | "review" | "summary";
 
 interface ImportResult {
   title: string;
@@ -323,6 +323,8 @@ export function RouteImportWizard() {
         return 10;
       case "gpx-mode":
         return 20;
+      case "gpx-preview":
+        return 40;
       case "select":
         return 30;
       case "mode":
@@ -506,7 +508,7 @@ export function RouteImportWizard() {
     setSelectedIds(new Set(newRoutes.map(r => r.id)));
     
     if (mode === "auto") {
-      setStep("summary");
+      setStep("gpx-preview");
     } else {
       setReviewIndex(0);
       setStep("review");
@@ -1077,6 +1079,138 @@ export function RouteImportWizard() {
           </div>
         )}
 
+        {/* Step: GPX Preview - AI Generated Data */}
+        {step === "gpx-preview" && (
+          <div className="space-y-6">
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <Sparkles className="w-5 h-5 text-primary" />
+                <h3 className="text-lg font-semibold">Náhled vygenerovaných tras</h3>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                AI vygenerovala metadata pro {routes.length} tras. Zkontrolujte a případně upravte.
+              </p>
+            </div>
+
+            <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
+              {routes.map((route, index) => (
+                <div 
+                  key={route.id} 
+                  className="border rounded-lg overflow-hidden bg-card"
+                >
+                  <div className="grid md:grid-cols-[200px_1fr] gap-0">
+                    {/* Map Preview */}
+                    <div className="relative h-[150px] md:h-full bg-muted">
+                      {route.cover_url ? (
+                        <img 
+                          src={route.cover_url} 
+                          alt={`Mapa trasy ${route.title}`}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Map className="w-10 h-10 text-muted-foreground/50" />
+                        </div>
+                      )}
+                      <div className="absolute top-2 left-2">
+                        <Badge variant="secondary" className="text-xs">
+                          {index + 1}/{routes.length}
+                        </Badge>
+                      </div>
+                    </div>
+
+                    {/* Route Info */}
+                    <div className="p-4 space-y-3">
+                      <div>
+                        <h4 className="font-semibold text-base line-clamp-1">{route.title}</h4>
+                        {route.description && (
+                          <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                            {route.description}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Stats */}
+                      <div className="flex flex-wrap gap-2">
+                        {route.distance_km && (
+                          <Badge variant="outline" className="gap-1">
+                            <Route className="w-3 h-3" />
+                            {route.distance_km} km
+                          </Badge>
+                        )}
+                        {route.elevation_m && (
+                          <Badge variant="outline" className="gap-1">
+                            <Mountain className="w-3 h-3" />
+                            {route.elevation_m} m ↑
+                          </Badge>
+                        )}
+                        {route.difficulty && (
+                          <Badge
+                            variant={
+                              route.difficulty === "easy"
+                                ? "default"
+                                : route.difficulty === "medium"
+                                ? "secondary"
+                                : "destructive"
+                            }
+                            className="text-xs"
+                          >
+                            {route.difficulty === "easy"
+                              ? "Lehká"
+                              : route.difficulty === "medium"
+                              ? "Střední"
+                              : "Těžká"}
+                          </Badge>
+                        )}
+                        {route.terrain_type && (
+                          <Badge variant="outline" className="text-xs capitalize">
+                            {route.terrain_type === "road"
+                              ? "Silnice"
+                              : route.terrain_type === "gravel"
+                              ? "Gravel"
+                              : route.terrain_type === "mtb"
+                              ? "MTB"
+                              : "Mix"}
+                          </Badge>
+                        )}
+                      </div>
+
+                      {/* GPX Status */}
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <CheckCircle className="w-3 h-3 text-green-500" />
+                        <span>GPX soubor připraven</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex items-center justify-between pt-4 border-t">
+              <Button variant="outline" onClick={() => setStep("gpx-mode")}>
+                Zpět
+              </Button>
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setReviewIndex(0);
+                    setStep("review");
+                  }}
+                  className="gap-2"
+                >
+                  <Pencil className="w-4 h-4" />
+                  Upravit jednotlivě
+                </Button>
+                <Button onClick={() => setStep("summary")} className="gap-2">
+                  <Download className="w-4 h-4" />
+                  Pokračovat k importu
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Step: Route Selection */}
         {step === "select" && (
           <>
@@ -1359,7 +1493,7 @@ export function RouteImportWizard() {
             <div className="flex items-center justify-between pt-4 border-t">
               <Button variant="outline" onClick={() => {
                 if (importSource === "gpx") {
-                  setStep("gpx-mode");
+                  setStep("gpx-preview");
                 } else {
                   setStep("mode");
                 }
