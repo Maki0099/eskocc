@@ -195,6 +195,13 @@ const getGpxStatusBadge = (status: GpxStatus) => {
   }
 };
 
+const AI_PROVIDER_NAMES: Record<string, string> = {
+  lovable: "Lovable AI",
+  openai: "OpenAI",
+  huggingface: "Hugging Face",
+  none: "Vypnuto",
+};
+
 type WizardStep = "source" | "url" | "gpx-upload" | "gpx-mode" | "gpx-preview" | "select" | "mode" | "review" | "summary";
 
 interface ImportResult {
@@ -270,13 +277,32 @@ export function RouteImportWizard() {
   const [photoCount, setPhotoCount] = useState(4);
   const [isGeneratingPhotos, setIsGeneratingPhotos] = useState(false);
   const [photoProgress, setPhotoProgress] = useState({ current: 0, total: 0 });
+  const [aiProviders, setAiProviders] = useState<{ text: string; image: string } | null>(null);
 
-  // Load draft on mount
+  // Load draft and AI providers on mount
   useEffect(() => {
     const draft = loadDraft();
     if (draft && draft.step !== "source" && draft.step !== "url" && draft.routes.length > 0) {
       setHasDraft(true);
     }
+    
+    // Fetch current AI provider settings
+    const fetchAiSettings = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("ai_settings")
+          .select("setting_key, setting_value");
+        
+        if (!error && data) {
+          const text = data.find(d => d.setting_key === "text_provider")?.setting_value || "lovable";
+          const image = data.find(d => d.setting_key === "image_provider")?.setting_value || "lovable";
+          setAiProviders({ text, image });
+        }
+      } catch (e) {
+        console.error("Failed to fetch AI settings:", e);
+      }
+    };
+    fetchAiSettings();
   }, []);
 
   // Save draft when state changes (debounced)
@@ -1013,6 +1039,20 @@ export function RouteImportWizard() {
                 Nahráno {gpxFiles.length} GPX souborů
               </p>
             </div>
+
+            {/* AI Provider info */}
+            {aiProviders && (
+              <div className="flex items-center justify-center gap-4 flex-wrap text-xs">
+                <Badge variant="outline" className="flex items-center gap-1">
+                  <Sparkles className="w-3 h-3" />
+                  Text: {AI_PROVIDER_NAMES[aiProviders.text] || aiProviders.text}
+                </Badge>
+                <Badge variant="outline" className="flex items-center gap-1">
+                  <ImagePlus className="w-3 h-3" />
+                  Obrázky: {AI_PROVIDER_NAMES[aiProviders.image] || aiProviders.image}
+                </Badge>
+              </div>
+            )}
 
             {/* Photo mode selection */}
             <div className="p-4 border rounded-lg bg-muted/20 space-y-3">
