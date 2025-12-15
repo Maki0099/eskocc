@@ -1246,6 +1246,38 @@ export function RouteImportWizard() {
                         <CheckCircle className="w-3 h-3 text-green-500" />
                         <span>GPX soubor připraven</span>
                       </div>
+
+                      {/* AI Generated Photos Preview */}
+                      {route.generated_images && route.generated_images.length > 0 && (
+                        <div className="pt-3 border-t">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Camera className="w-3 h-3 text-primary" />
+                            <span className="text-xs font-medium">
+                              AI fotografie ({route.generated_images.length})
+                            </span>
+                          </div>
+                          <div className="flex gap-2 overflow-x-auto pb-1">
+                            {route.generated_images.map((img, imgIndex) => (
+                              <div
+                                key={imgIndex}
+                                className="relative flex-shrink-0 w-16 h-16 rounded-md overflow-hidden border bg-muted group"
+                                title={img.caption}
+                              >
+                                <img
+                                  src={img.base64}
+                                  alt={img.caption || `Foto ${imgIndex + 1}`}
+                                  className="w-full h-full object-cover"
+                                />
+                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                  <span className="text-[10px] text-white text-center px-1 line-clamp-2">
+                                    {img.caption || `Foto ${imgIndex + 1}`}
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
