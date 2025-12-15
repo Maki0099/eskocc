@@ -295,17 +295,17 @@ export function generateStaticMapUrl(
   else if (maxSpan > 0.05) zoom = 11;
   else zoom = 12;
   
-  // Build markers string
+  // Build markers string - use ol-marker format for openstreetmap.de
   let markers = "";
   if (startPoint) {
-    markers += `&markers=${startPoint.lat},${startPoint.lon},green`;
+    markers += `&markers=${startPoint.lat},${startPoint.lon},ol-marker-green`;
   }
-  if (endPoint) {
-    markers += `&markers=${endPoint.lat},${endPoint.lon},red`;
+  if (endPoint && (endPoint.lat !== startPoint?.lat || endPoint.lon !== startPoint?.lon)) {
+    markers += `&markers=${endPoint.lat},${endPoint.lon},ol-marker`;
   }
   
   // Use OpenStreetMap static map service
-  return `https://staticmap.openstreetmap.de/staticmap.php?center=${centerLat},${centerLon}&zoom=${zoom}&size=800x400${markers}&maptype=mapnik`;
+  return `https://staticmap.openstreetmap.de/staticmap.php?center=${centerLat},${centerLon}&zoom=${zoom}&size=600x300${markers}&maptype=mapnik`;
 }
 
 /**
