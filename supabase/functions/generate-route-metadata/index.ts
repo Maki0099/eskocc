@@ -434,12 +434,11 @@ async function generateImagesWithOpenAI(
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "dall-e-3",
+          model: "gpt-image-1",
           prompt: perspectives[i].prompt,
           n: 1,
           size: "1024x1024",
-          response_format: "b64_json",
-          quality: "standard",
+          quality: "medium",
         }),
       });
       
@@ -450,6 +449,7 @@ async function generateImagesWithOpenAI(
       }
       
       const data = await response.json();
+      // gpt-image-1 returns base64 directly in data[0].b64_json
       const b64 = data.data?.[0]?.b64_json;
       
       if (b64) {
