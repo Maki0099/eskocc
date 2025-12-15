@@ -71,7 +71,10 @@ export const AiSettingsAdmin = () => {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [secrets, setSecrets] = useState<string[]>([]);
+  const [configuredProviders, setConfiguredProviders] = useState<string[]>([]);
+
+  // Helper to check if a provider has its required secret configured
+  const isProviderConfigured = (provider: string) => configuredProviders.includes(provider);
 
   useEffect(() => {
     fetchSettings();
@@ -108,15 +111,12 @@ export const AiSettingsAdmin = () => {
   };
 
   const fetchSecrets = async () => {
-    // We can't directly read secrets, but we can check which ones are configured
-    // by checking the edge function response or admin metadata
-    // For now, we'll check common patterns
     try {
       const { data } = await supabase.functions.invoke("generate-route-metadata", {
         body: { routes: [], checkConfig: true },
       });
       if (data?.configuredProviders) {
-        setSecrets(data.configuredProviders);
+        setConfiguredProviders(data.configuredProviders);
       }
     } catch {
       // Silent fail - just means we can't check secrets
@@ -205,15 +205,22 @@ export const AiSettingsAdmin = () => {
             </SelectContent>
           </Select>
           <p className="text-sm text-muted-foreground">{textInfo.description}</p>
-          {textInfo.requiresKey && (
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                {settings.text_provider === "openai" && (
-                  <>Vyžaduje secret <code className="bg-muted px-1 rounded">OPENAI_API_KEY</code></>
-                )}
-              </AlertDescription>
-            </Alert>
+          {textInfo.requiresKey && settings.text_provider === "openai" && (
+            isProviderConfigured("openai") ? (
+              <Alert className="border-green-500/50 bg-green-500/10">
+                <CheckCircle className="h-4 w-4 text-green-500" />
+                <AlertDescription className="text-green-700 dark:text-green-400">
+                  API klíč <code className="bg-muted px-1 rounded">OPENAI_API_KEY</code> je nakonfigurován
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <Alert className="border-orange-500/50 bg-orange-500/10">
+                <AlertCircle className="h-4 w-4 text-orange-500" />
+                <AlertDescription className="text-orange-700 dark:text-orange-400">
+                  Vyžaduje secret <code className="bg-muted px-1 rounded">OPENAI_API_KEY</code>
+                </AlertDescription>
+              </Alert>
+            )
           )}
         </div>
 
@@ -248,18 +255,39 @@ export const AiSettingsAdmin = () => {
             </SelectContent>
           </Select>
           <p className="text-sm text-muted-foreground">{imageInfo.description}</p>
-          {imageInfo.requiresKey && (
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                {settings.image_provider === "openai" && (
-                  <>Vyžaduje secret <code className="bg-muted px-1 rounded">OPENAI_API_KEY</code></>
-                )}
-                {settings.image_provider === "huggingface" && (
-                  <>Vyžaduje secret <code className="bg-muted px-1 rounded">HUGGING_FACE_ACCESS_TOKEN</code></>
-                )}
-              </AlertDescription>
-            </Alert>
+          {imageInfo.requiresKey && settings.image_provider === "openai" && (
+            isProviderConfigured("openai") ? (
+              <Alert className="border-green-500/50 bg-green-500/10">
+                <CheckCircle className="h-4 w-4 text-green-500" />
+                <AlertDescription className="text-green-700 dark:text-green-400">
+                  API klíč <code className="bg-muted px-1 rounded">OPENAI_API_KEY</code> je nakonfigurován
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <Alert className="border-orange-500/50 bg-orange-500/10">
+                <AlertCircle className="h-4 w-4 text-orange-500" />
+                <AlertDescription className="text-orange-700 dark:text-orange-400">
+                  Vyžaduje secret <code className="bg-muted px-1 rounded">OPENAI_API_KEY</code>
+                </AlertDescription>
+              </Alert>
+            )
+          )}
+          {imageInfo.requiresKey && settings.image_provider === "huggingface" && (
+            isProviderConfigured("huggingface") ? (
+              <Alert className="border-green-500/50 bg-green-500/10">
+                <CheckCircle className="h-4 w-4 text-green-500" />
+                <AlertDescription className="text-green-700 dark:text-green-400">
+                  API klíč <code className="bg-muted px-1 rounded">HUGGING_FACE_ACCESS_TOKEN</code> je nakonfigurován
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <Alert className="border-orange-500/50 bg-orange-500/10">
+                <AlertCircle className="h-4 w-4 text-orange-500" />
+                <AlertDescription className="text-orange-700 dark:text-orange-400">
+                  Vyžaduje secret <code className="bg-muted px-1 rounded">HUGGING_FACE_ACCESS_TOKEN</code>
+                </AlertDescription>
+              </Alert>
+            )
           )}
         </div>
 
