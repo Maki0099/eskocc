@@ -8,6 +8,7 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import CreateEventDialog from "@/components/events/CreateEventDialog";
 import CreateRouteDialog from "@/components/routes/CreateRouteDialog";
+import EditRouteDialog from "@/components/routes/EditRouteDialog";
 import RouteListItem from "@/components/routes/RouteListItem";
 import MemberOnlyContent from "@/components/MemberOnlyContent";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -94,6 +95,7 @@ const Events = () => {
   const [hasMorePast, setHasMorePast] = useState(true);
   const [activeTab, setActiveTab] = useState("upcoming");
   const [routeToDelete, setRouteToDelete] = useState<FavoriteRoute | null>(null);
+  const [routeToEdit, setRouteToEdit] = useState<FavoriteRoute | null>(null);
   const [deletingRoute, setDeletingRoute] = useState(false);
 
   const { ref: headerRef, isVisible: headerVisible } = useScrollAnimation();
@@ -522,7 +524,7 @@ const Events = () => {
                         key={route.id}
                         route={route}
                         canEdit={user?.id === route.created_by || isAdmin}
-                        onEdit={() => {}}
+                        onEdit={setRouteToEdit}
                         onDelete={setRouteToDelete}
                       />
                     ))}
@@ -534,6 +536,19 @@ const Events = () => {
         </div>
       </main>
       <Footer />
+
+      {/* Edit Route Dialog */}
+      {routeToEdit && (
+        <EditRouteDialog
+          route={routeToEdit}
+          open={true}
+          onOpenChange={(open) => !open && setRouteToEdit(null)}
+          onRouteUpdated={() => {
+            fetchFavoriteRoutes();
+            setRouteToEdit(null);
+          }}
+        />
+      )}
 
       {/* Delete Route Confirmation */}
       <AlertDialog open={!!routeToDelete} onOpenChange={() => setRouteToDelete(null)}>
