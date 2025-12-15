@@ -28,7 +28,7 @@ import {
 import { ArrowLeft, Route, Mountain, Gauge, Download, ExternalLink, Trash2, MapIcon, CalendarPlus, Bike, Map, ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { ROUTES } from "@/lib/routes";
-
+import { getRouteSourceInfo } from "@/lib/route-source-utils";
 interface Photo {
   id: string;
   file_url: string;
@@ -250,8 +250,32 @@ const RouteDetail = () => {
           </div>
 
           {/* Route Parameters Badges */}
-          {hasRouteParams && (
+          {(hasRouteParams || route.route_link) && (
             <div className="flex flex-wrap gap-2 mb-6">
+              {route.route_link && (() => {
+                const sourceInfo = getRouteSourceInfo(route.route_link);
+                if (sourceInfo) {
+                  const IconComponent = sourceInfo.icon;
+                  return (
+                    <a
+                      href={route.route_link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex"
+                    >
+                      <Badge 
+                        variant="outline" 
+                        className={`gap-1.5 py-1.5 px-3 cursor-pointer transition-colors ${sourceInfo.color}`}
+                      >
+                        <IconComponent className="w-3.5 h-3.5" />
+                        {sourceInfo.name}
+                        <ExternalLink className="w-3 h-3 ml-0.5" />
+                      </Badge>
+                    </a>
+                  );
+                }
+                return null;
+              })()}
               {route.distance_km && (
                 <Badge variant="outline" className="gap-1.5 py-1.5 px-3">
                   <Route className="w-3.5 h-3.5" />
@@ -313,14 +337,20 @@ const RouteDetail = () => {
                     </a>
                   </Button>
                 )}
-                {route.route_link && (
-                  <Button variant="outline" asChild>
-                    <a href={route.route_link} target="_blank" rel="noopener noreferrer">
-                      <ExternalLink className="w-4 h-4 mr-2" />
-                      Zobrazit trasu
-                    </a>
-                  </Button>
-                )}
+                {route.route_link && (() => {
+                  const sourceInfo = getRouteSourceInfo(route.route_link);
+                  const buttonText = sourceInfo && sourceInfo.name !== "Mapa" 
+                    ? `Otevřít v ${sourceInfo.name}` 
+                    : "Zobrazit trasu";
+                  return (
+                    <Button variant="outline" asChild>
+                      <a href={route.route_link} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink className="w-4 h-4 mr-2" />
+                        {buttonText}
+                      </a>
+                    </Button>
+                  );
+                })()}
                 {canCreateEvents && (
                   <CreateEventDialog
                     onEventCreated={() => navigate(ROUTES.EVENTS)}
