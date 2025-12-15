@@ -615,6 +615,7 @@ export function RouteImportWizard() {
       }
 
       setImportResults(data.results || []);
+      clearDraft();
       toast.success(`Import dokončen: ${data.imported} tras importováno`);
     } catch (error: any) {
       console.error("Error importing routes:", error);
