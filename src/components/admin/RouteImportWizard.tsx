@@ -183,7 +183,7 @@ type WizardStep = "url" | "select" | "mode" | "review" | "summary";
 
 interface ImportResult {
   title: string;
-  success: boolean;
+  status: "imported" | "skipped" | "error";
   error?: string;
 }
 
@@ -945,27 +945,19 @@ export function RouteImportWizard() {
             <div className="grid grid-cols-3 gap-4">
               <div className="p-4 bg-green-500/10 rounded-lg text-center">
                 <div className="text-2xl font-bold text-green-600">
-                  {importResults.filter((r) => r.success).length}
+                  {importResults.filter((r) => r.status === "imported").length}
                 </div>
                 <div className="text-sm text-muted-foreground">Importováno</div>
               </div>
               <div className="p-4 bg-yellow-500/10 rounded-lg text-center">
                 <div className="text-2xl font-bold text-yellow-600">
-                  {
-                    importResults.filter(
-                      (r) => !r.success && r.error?.includes("existuje")
-                    ).length
-                  }
+                  {importResults.filter((r) => r.status === "skipped").length}
                 </div>
                 <div className="text-sm text-muted-foreground">Přeskočeno</div>
               </div>
               <div className="p-4 bg-destructive/10 rounded-lg text-center">
                 <div className="text-2xl font-bold text-destructive">
-                  {
-                    importResults.filter(
-                      (r) => !r.success && !r.error?.includes("existuje")
-                    ).length
-                  }
+                  {importResults.filter((r) => r.status === "error").length}
                 </div>
                 <div className="text-sm text-muted-foreground">Chyby</div>
               </div>
