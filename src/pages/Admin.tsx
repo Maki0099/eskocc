@@ -10,6 +10,7 @@ import CronJobsAdmin from "@/components/admin/CronJobsAdmin";
 import { PushNotificationsAdmin } from "@/components/admin/PushNotificationsAdmin";
 import { RoutesImportAdmin } from "@/components/admin/RoutesImportAdmin";
 import { GpxBulkUploadAdmin } from "@/components/admin/GpxBulkUploadAdmin";
+import { AiSettingsAdmin } from "@/components/admin/AiSettingsAdmin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -30,7 +31,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Users, Shield, Loader2, Coffee, Target, Clock, KeyRound, Bell, Route } from "lucide-react";
+import { Users, Shield, Loader2, Coffee, Target, Clock, KeyRound, Bell, Route, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
@@ -217,6 +218,10 @@ const Admin = () => {
                 <Route className="w-4 h-4" />
                 Trasy
               </TabsTrigger>
+              <TabsTrigger value="ai" className="gap-2">
+                <Sparkles className="w-4 h-4" />
+                AI
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="users" className="space-y-6">
@@ -398,6 +403,10 @@ const Admin = () => {
             <TabsContent value="routes" className="space-y-6">
               <GpxBulkUploadAdmin />
               <RoutesImportAdmin />
+            </TabsContent>
+
+            <TabsContent value="ai">
+              <AiSettingsAdmin />
             </TabsContent>
           </Tabs>
         </div>
