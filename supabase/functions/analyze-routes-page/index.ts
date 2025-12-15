@@ -517,17 +517,203 @@ async function parseKomoot(html: string, baseUrl: string): Promise<ParsedRoute[]
   return routes;
 }
 
+// Helper: Expand Mapy.cz short URL to full URL with route ID
+async function expandMapyShortUrl(shortUrl: string): Promise<{ fullUrl: string; routeId: string | null }> {
+  try {
+    console.log(`Expanding short URL: ${shortUrl}`);
+    
+    // Follow redirects manually to get the final URL
+    const response = await fetch(shortUrl, {
+      method: 'GET',
+      redirect: 'follow',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+      }
+    });
+    
+    // Get the final URL after redirects
+    const fullUrl = response.url;
+    console.log(`Expanded to: ${fullUrl}`);
+    
+    // Extract route ID from full URL
+    // Pattern: planovac-trasy&id=XXXXX or vlastni-body&id=XXXXX
+    const idMatch = fullUrl.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+    const routeId = idMatch ? idMatch[1] : null;
+    
+    return { fullUrl, routeId };
+  } catch (error) {
+    console.error(`Failed to expand short URL ${shortUrl}:`, error);
+    return { fullUrl: shortUrl, routeId: null };
+  }
+}
+
+// Helper: Extract metadata from Mapy.cz page HTML
+function extractMapyMetadata(html: string): { title?: string; distance_km?: number; elevation_m?: number } {
+  let title: string | undefined;
+  let distance_km: number | undefined;
+  let elevation_m: number | undefined;
+  
+  // Extract title from various sources
+  const titlePatterns = [
+    /<title[^>]*>([^<]+)<\/title>/i,
+    /<meta[^>]*property="og:title"[^>]*content="([^"]+)"/i,
+    /<meta[^>]*name="title"[^>]*content="([^"]+)"/i,
+    /data-route-name="([^"]+)"/i,
+    /"routeName"\s*:\s*"([^"]+)"/i
+  ];
+  
+  for (const pattern of titlePatterns) {
+    const match = html.match(pattern);
+    if (match && match[1]) {
+      title = match[1].trim()
+        .replace(/\s*[|–-]\s*Mapy\.cz.*$/i, '')
+        .replace(/\s*[|–-]\s*Plánovač tras.*$/i, '')
+        .replace(/Mapy\.cz\s*[|–-]?\s*/i, '')
+        .trim();
+      if (title && title.length > 2 && !title.toLowerCase().includes('mapy')) {
+        break;
+      }
+    }
+  }
+  
+  // Extract distance - look for route summary data
+  const distancePatterns = [
+    /(?:délka|distance|length)[:\s]*(\d+[.,]?\d*)\s*km/i,
+    /"distance"\s*:\s*(\d+[.,]?\d*)/i,
+    /"length"\s*:\s*(\d+)/i, // meters
+    /(\d+[.,]?\d*)\s*km(?:\s|<|$)/i
+  ];
+  
+  for (const pattern of distancePatterns) {
+    const match = html.match(pattern);
+    if (match && match[1]) {
+      let dist = parseFloat(match[1].replace(',', '.').replace(/\s/g, ''));
+      // If matched "length" in meters, convert to km
+      if (pattern.source.includes('length') && dist > 1000) {
+        dist = dist / 1000;
+      }
+      if (dist > 0 && dist < 10000) {
+        distance_km = Math.round(dist * 10) / 10;
+        break;
+      }
+    }
+  }
+  
+  // Extract elevation - look for ascent data
+  const elevationPatterns = [
+    /(?:převýšení|stoupání|ascent|elevation)[:\s]*(\d[\d\s]*)\s*m/i,
+    /"ascent"\s*:\s*(\d+)/i,
+    /"elevation"\s*:\s*(\d+)/i,
+    /(\d[\d\s]+)\s*m\s*(?:převýšení|↑|stoupání)/i
+  ];
+  
+  for (const pattern of elevationPatterns) {
+    const match = html.match(pattern);
+    if (match && match[1]) {
+      const elev = parseInt(match[1].replace(/\s/g, ''), 10);
+      if (elev > 0 && elev < 50000) {
+        elevation_m = elev;
+        break;
+      }
+    }
+  }
+  
+  return { title, distance_km, elevation_m };
+}
+
 async function parseMapyCz(html: string, baseUrl: string): Promise<ParsedRoute[]> {
   const routes: ParsedRoute[] = [];
   
   console.log('Parsing Mapy.cz page...');
+  console.log(`Base URL: ${baseUrl}`);
   
-  // Mapy.cz route patterns:
-  // 1. Short URLs: https://mapy.cz/s/xxxxx
-  // 2. Full URLs with route ID: planovac-trasy&id=xxxxx or vlastni-body&id=xxxxx
-  // 3. Route planning URLs with coordinates: &rc=...
-  // 4. GPX export: https://mapy.cz/route/gpx?id=xxxxx
+  // Check if this is a direct short URL (mapy.cz/s/xxxxx or mapy.com/s/xxxxx)
+  const shortUrlMatch = baseUrl.match(/mapy\.(?:cz|com)\/s\/([a-zA-Z0-9]+)/i);
   
+  if (shortUrlMatch) {
+    console.log(`Detected short URL with ID: ${shortUrlMatch[1]}`);
+    
+    // Expand the short URL to get the full URL with route ID
+    const { fullUrl, routeId } = await expandMapyShortUrl(baseUrl);
+    
+    // Extract metadata from the fetched HTML
+    const metadata = extractMapyMetadata(html);
+    
+    let gpxUrl: string | undefined;
+    let title = metadata.title || `Mapy.cz Trasa`;
+    
+    if (routeId) {
+      gpxUrl = `https://mapy.cz/route/gpx?id=${routeId}`;
+      console.log(`Generated GPX URL: ${gpxUrl}`);
+    }
+    
+    // If we still don't have title, try to get it from the expanded URL page
+    if (!metadata.title && fullUrl !== baseUrl) {
+      try {
+        const expandedResponse = await fetch(fullUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+          }
+        });
+        if (expandedResponse.ok) {
+          const expandedHtml = await expandedResponse.text();
+          const expandedMetadata = extractMapyMetadata(expandedHtml);
+          if (expandedMetadata.title) title = expandedMetadata.title;
+          if (!metadata.distance_km && expandedMetadata.distance_km) metadata.distance_km = expandedMetadata.distance_km;
+          if (!metadata.elevation_m && expandedMetadata.elevation_m) metadata.elevation_m = expandedMetadata.elevation_m;
+        }
+      } catch (e) {
+        console.error('Failed to fetch expanded URL for metadata:', e);
+      }
+    }
+    
+    const route: ParsedRoute = {
+      id: `mapycz-${routeId || shortUrlMatch[1]}`,
+      title,
+      distance_km: metadata.distance_km,
+      elevation_m: metadata.elevation_m,
+      gpx_url: gpxUrl,
+      gpx_accessible: false,
+      route_link: fullUrl
+    };
+    
+    // Test GPX accessibility
+    if (route.gpx_url) {
+      route.gpx_accessible = await testGpxAccessibility(route.gpx_url);
+      console.log(`GPX accessible: ${route.gpx_accessible}`);
+    }
+    
+    routes.push(route);
+    return routes;
+  }
+  
+  // Check for full URL with route ID
+  const fullUrlIdMatch = baseUrl.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (fullUrlIdMatch) {
+    const routeId = fullUrlIdMatch[1];
+    const metadata = extractMapyMetadata(html);
+    
+    const route: ParsedRoute = {
+      id: `mapycz-${routeId}`,
+      title: metadata.title || `Mapy.cz Trasa ${routeId.substring(0, 8)}`,
+      distance_km: metadata.distance_km,
+      elevation_m: metadata.elevation_m,
+      gpx_url: `https://mapy.cz/route/gpx?id=${routeId}`,
+      gpx_accessible: false,
+      route_link: baseUrl
+    };
+    
+    if (route.gpx_url) {
+      route.gpx_accessible = await testGpxAccessibility(route.gpx_url);
+    }
+    
+    routes.push(route);
+    return routes;
+  }
+  
+  // Fallback: Parse HTML for multiple routes on a page
   const routeIds = new Set<string>();
   
   // Pattern 1: ID in URL parameter
@@ -537,159 +723,45 @@ async function parseMapyCz(html: string, baseUrl: string): Promise<ParsedRoute[]
     routeIds.add(match[1]);
   }
   
-  // Pattern 2: Shortened URL IDs (mapy.cz/s/xxxxx)
-  const shortUrlPattern = /mapy\.cz\/s\/([a-zA-Z0-9]+)/g;
+  // Pattern 2: Shortened URL IDs (mapy.cz/s/xxxxx or mapy.com/s/xxxxx)
+  const shortUrlPattern = /mapy\.(?:cz|com)\/s\/([a-zA-Z0-9]+)/gi;
+  const shortUrls: string[] = [];
   while ((match = shortUrlPattern.exec(html)) !== null) {
-    routeIds.add(`short-${match[1]}`);
+    shortUrls.push(match[1]);
   }
   
-  // Pattern 3: Route planner data in page
-  const routeDataPattern = /data-route-id="([^"]+)"/g;
-  while ((match = routeDataPattern.exec(html)) !== null) {
-    routeIds.add(match[1]);
+  console.log(`Found ${routeIds.size} route IDs and ${shortUrls.length} short URLs in page`);
+  
+  // Process short URLs found in page
+  for (const shortId of shortUrls) {
+    const shortUrl = `https://mapy.cz/s/${shortId}`;
+    const { fullUrl, routeId } = await expandMapyShortUrl(shortUrl);
+    
+    if (routeId && !routeIds.has(routeId)) {
+      routes.push({
+        id: `mapycz-${routeId}`,
+        title: `Mapy.cz Trasa`,
+        gpx_url: `https://mapy.cz/route/gpx?id=${routeId}`,
+        gpx_accessible: false,
+        route_link: fullUrl
+      });
+    }
   }
-  
-  // Pattern 4: Look for route cards/listings with links
-  const routeLinkPattern = /<a[^>]*href="([^"]*mapy\.cz[^"]*(?:planovac|trasa|vlastni-body)[^"]*)"[^>]*>([^<]*)<\/a>/gi;
-  const routeLinks = [...html.matchAll(routeLinkPattern)];
-  
-  console.log(`Found ${routeIds.size} route IDs and ${routeLinks.length} route links`);
   
   // Process route IDs
   for (const routeId of routeIds) {
-    let title = `Mapy.cz Trasa`;
-    let distance_km: number | undefined;
-    let elevation_m: number | undefined;
-    let coverUrl: string | undefined;
-    let gpxUrl: string | undefined;
-    let routeLink: string | undefined;
-    
-    // Check if it's a short URL
-    if (routeId.startsWith('short-')) {
-      const shortId = routeId.replace('short-', '');
-      routeLink = `https://mapy.cz/s/${shortId}`;
-      title = `Mapy.cz Trasa ${shortId}`;
-    } else {
-      // Regular route ID - construct GPX export URL
-      gpxUrl = `https://mapy.cz/route/gpx?id=${routeId}`;
-      routeLink = `https://mapy.cz/turisticka?planovac-trasy&id=${routeId}`;
-      title = `Mapy.cz Trasa ${routeId.substring(0, 8)}...`;
-    }
-    
-    // Try to extract details from surrounding HTML
-    const routeSection = html.match(new RegExp(`[\\s\\S]{0,800}(?:id=|/s/)${routeId.replace('short-', '')}[\\s\\S]{0,800}`, 'i'));
-    if (routeSection) {
-      const section = routeSection[0];
-      
-      // Title - look for route name
-      const titleMatch = section.match(/(?:data-name|title|aria-label)="([^"]+)"/i) ||
-                        section.match(/<h[1-6][^>]*>([^<]{3,60})<\/h[1-6]>/i) ||
-                        section.match(/>([A-Za-zÁ-Žá-ž0-9][^<]{5,60})</);
-      if (titleMatch && !titleMatch[1].includes('mapy.cz')) {
-        title = titleMatch[1].trim();
-      }
-      
-      // Distance - Mapy.cz uses "km" format
-      const distMatch = section.match(/([\d,.]+)\s*km/i);
-      if (distMatch) {
-        distance_km = parseFloat(distMatch[1].replace(',', '.'));
-      }
-      
-      // Elevation - look for various patterns
-      const elevMatch = section.match(/(?:převýšení|elevation|↑|stoupání)[:\s]*([\d\s]+)\s*m/i) ||
-                       section.match(/([\d\s]+)\s*m\s*(?:převýšení|↑)/i);
-      if (elevMatch) {
-        elevation_m = parseInt(elevMatch[1].replace(/\s/g, ''), 10);
-      }
-      
-      // Cover image - Mapy.cz static map or thumbnail
-      const imgMatch = section.match(/src="([^"]*(?:mapserver|static|thumbnail)[^"]*\.(?:png|jpg|jpeg)[^"]*)"/i);
-      if (imgMatch) {
-        coverUrl = imgMatch[1].startsWith('//') ? `https:${imgMatch[1]}` : imgMatch[1];
-      }
-    }
+    if (routes.find(r => r.id === `mapycz-${routeId}`)) continue;
     
     routes.push({
       id: `mapycz-${routeId}`,
-      title,
-      distance_km,
-      elevation_m,
-      gpx_url: gpxUrl,
-      gpx_accessible: false, // Will test below
-      cover_url: coverUrl,
-      route_link: routeLink
-    });
-  }
-  
-  // Process route links found in the page
-  for (let i = 0; i < routeLinks.length; i++) {
-    const linkUrl = routeLinks[i][1];
-    const linkText = routeLinks[i][2].trim();
-    
-    // Check if we already have this route
-    const existingRoute = routes.find(r => r.route_link === linkUrl);
-    if (existingRoute) {
-      // Update title if we have better text
-      if (linkText && linkText.length > 3 && !linkText.includes('mapy.cz')) {
-        existingRoute.title = linkText;
-      }
-      continue;
-    }
-    
-    // Extract ID from URL if possible
-    const urlIdMatch = linkUrl.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-    const shortIdMatch = linkUrl.match(/\/s\/([a-zA-Z0-9]+)/);
-    
-    let gpxUrl: string | undefined;
-    if (urlIdMatch) {
-      gpxUrl = `https://mapy.cz/route/gpx?id=${urlIdMatch[1]}`;
-    }
-    
-    routes.push({
-      id: `mapycz-link-${i}`,
-      title: linkText || `Mapy.cz Trasa ${i + 1}`,
-      gpx_url: gpxUrl,
+      title: `Mapy.cz Trasa ${routeId.substring(0, 8)}`,
+      gpx_url: `https://mapy.cz/route/gpx?id=${routeId}`,
       gpx_accessible: false,
-      route_link: linkUrl.startsWith('http') ? linkUrl : `https://mapy.cz${linkUrl}`
+      route_link: `https://mapy.cz/turisticka?planovac-trasy&id=${routeId}`
     });
   }
   
-  // If no routes found, check for embedded map with route
-  if (routes.length === 0) {
-    // Look for iframe embeds
-    const iframeMatch = html.match(/<iframe[^>]*src="([^"]*mapy\.cz[^"]*)"/i);
-    if (iframeMatch) {
-      const embedUrl = iframeMatch[1];
-      const embedIdMatch = embedUrl.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-      
-      routes.push({
-        id: `mapycz-embed-0`,
-        title: 'Mapy.cz Embedded Route',
-        gpx_url: embedIdMatch ? `https://mapy.cz/route/gpx?id=${embedIdMatch[1]}` : undefined,
-        gpx_accessible: false,
-        route_link: embedUrl
-      });
-    }
-    
-    // Look for mapy.cz link in the current URL (if analyzing a mapy.cz page directly)
-    if (baseUrl.includes('mapy.cz')) {
-      const urlIdMatch = baseUrl.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-      const shortMatch = baseUrl.match(/\/s\/([a-zA-Z0-9]+)/);
-      
-      if (urlIdMatch || shortMatch) {
-        const routeId = urlIdMatch ? urlIdMatch[1] : shortMatch![1];
-        routes.push({
-          id: `mapycz-current-${routeId}`,
-          title: 'Aktuální trasa',
-          gpx_url: urlIdMatch ? `https://mapy.cz/route/gpx?id=${routeId}` : undefined,
-          gpx_accessible: false,
-          route_link: baseUrl
-        });
-      }
-    }
-  }
-  
-  // Test GPX accessibility
+  // Test GPX accessibility for all routes
   for (const route of routes) {
     if (route.gpx_url) {
       route.gpx_accessible = await testGpxAccessibility(route.gpx_url);
@@ -1480,7 +1552,7 @@ serve(async (req) => {
       routes = await parseStrava(html, url);
     } else if (url.includes('komoot.com')) {
       routes = await parseKomoot(html, url);
-    } else if (url.includes('mapy.cz')) {
+    } else if (url.includes('mapy.cz') || url.includes('mapy.com')) {
       routes = await parseMapyCz(html, url);
     } else if (url.includes('wikiloc.com')) {
       routes = await parseWikiloc(html, url);
