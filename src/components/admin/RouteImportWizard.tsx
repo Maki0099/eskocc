@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,7 +28,7 @@ import {
   ExternalLink,
   Zap,
   ClipboardCheck,
-  Image,
+  RotateCcw,
 } from "lucide-react";
 import {
   Collapsible,
@@ -187,6 +187,47 @@ interface ImportResult {
   error?: string;
 }
 
+const STORAGE_KEY = "route-import-wizard-draft";
+
+interface WizardDraft {
+  url: string;
+  routes: EditableRoute[];
+  selectedIds: string[];
+  step: WizardStep;
+  reviewIndex: number;
+  savedAt: number;
+}
+
+function saveDraft(draft: Omit<WizardDraft, "savedAt">) {
+  try {
+    const data: WizardDraft = { ...draft, savedAt: Date.now() };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch (e) {
+    console.error("Failed to save draft:", e);
+  }
+}
+
+function loadDraft(): WizardDraft | null {
+  try {
+    const data = localStorage.getItem(STORAGE_KEY);
+    if (!data) return null;
+    const draft = JSON.parse(data) as WizardDraft;
+    // Expire drafts older than 24 hours
+    if (Date.now() - draft.savedAt > 24 * 60 * 60 * 1000) {
+      localStorage.removeItem(STORAGE_KEY);
+      return null;
+    }
+    return draft;
+  } catch (e) {
+    console.error("Failed to load draft:", e);
+    return null;
+  }
+}
+
+function clearDraft() {
+  localStorage.removeItem(STORAGE_KEY);
+}
+
 export function RouteImportWizard() {
   const [url, setUrl] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -197,6 +238,51 @@ export function RouteImportWizard() {
   const [reviewIndex, setReviewIndex] = useState(0);
   const [servicesOpen, setServicesOpen] = useState(false);
   const [importResults, setImportResults] = useState<ImportResult[]>([]);
+  const [hasDraft, setHasDraft] = useState(false);
+
+  // Load draft on mount
+  useEffect(() => {
+    const draft = loadDraft();
+    if (draft && draft.step !== "url" && draft.routes.length > 0) {
+      setHasDraft(true);
+    }
+  }, []);
+
+  // Save draft when state changes (debounced)
+  useEffect(() => {
+    if (step === "url" && routes.length === 0) return;
+    if (importResults.length > 0) return; // Don't save after import complete
+    
+    const timeout = setTimeout(() => {
+      saveDraft({
+        url,
+        routes,
+        selectedIds: Array.from(selectedIds),
+        step,
+        reviewIndex,
+      });
+    }, 500);
+    
+    return () => clearTimeout(timeout);
+  }, [url, routes, selectedIds, step, reviewIndex, importResults.length]);
+
+  const handleRestoreDraft = () => {
+    const draft = loadDraft();
+    if (draft) {
+      setUrl(draft.url);
+      setRoutes(draft.routes);
+      setSelectedIds(new Set(draft.selectedIds));
+      setStep(draft.step);
+      setReviewIndex(draft.reviewIndex);
+      setHasDraft(false);
+      toast.success("Rozpracovaný import obnoven");
+    }
+  };
+
+  const handleDiscardDraft = () => {
+    clearDraft();
+    setHasDraft(false);
+  };
 
   // Get selected routes
   const selectedRoutes = routes.filter((r) => selectedIds.has(r.id));
@@ -389,6 +475,7 @@ export function RouteImportWizard() {
     setStep("url");
     setReviewIndex(0);
     setImportResults([]);
+    clearDraft();
   };
 
   const getGpxStatusIcon = (route: EditableRoute) => {
@@ -442,6 +529,23 @@ export function RouteImportWizard() {
         {/* Step: URL Input */}
         {step === "url" && (
           <>
+            {/* Draft restore banner */}
+            {hasDraft && (
+              <div className="flex items-center justify-between p-3 bg-primary/10 border border-primary/20 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <RotateCcw className="w-4 h-4 text-primary" />
+                  <span className="text-sm">Máte rozpracovaný import</span>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="ghost" size="sm" onClick={handleDiscardDraft}>
+                    Zahodit
+                  </Button>
+                  <Button size="sm" onClick={handleRestoreDraft}>
+                    Obnovit
+                  </Button>
+                </div>
+              </div>
+            )}
             <Collapsible open={servicesOpen} onOpenChange={setServicesOpen}>
               <CollapsibleTrigger asChild>
                 <Button
