@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { getRouteDetailPath } from "@/lib/routes";
+import { getRouteSourceInfo } from "@/lib/route-source-utils";
 
 interface FavoriteRoute {
   id: string;
@@ -51,6 +52,8 @@ const TERRAIN_ICONS: Record<string, string> = {
 };
 
 const RouteListItem = ({ route, canEdit, onEdit, onDelete }: RouteListItemProps) => {
+  const sourceInfo = getRouteSourceInfo(route.route_link);
+  
   return (
     <div className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors group">
       <Link 
@@ -62,10 +65,15 @@ const RouteListItem = ({ route, canEdit, onEdit, onDelete }: RouteListItemProps)
           {route.terrain_type ? TERRAIN_ICONS[route.terrain_type] || "🚴" : "🚴"}
         </span>
 
-        {/* Title */}
-        <span className="font-medium truncate group-hover:text-primary transition-colors">
-          {route.title}
-        </span>
+        {/* Title and Source Icon */}
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="font-medium truncate group-hover:text-primary transition-colors">
+            {route.title}
+          </span>
+          {sourceInfo && (
+            <sourceInfo.icon className="w-4 h-4 shrink-0 text-muted-foreground" />
+          )}
+        </div>
 
         {/* Stats */}
         <div className="hidden sm:flex items-center gap-3 text-sm text-muted-foreground">
