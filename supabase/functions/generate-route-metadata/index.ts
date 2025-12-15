@@ -439,7 +439,7 @@ async function generateImagesWithOpenAI(
           n: 1,
           size: "1024x1024",
           quality: "medium",
-          response_format: "b64_json",
+          output_format: "png",
         }),
       });
       
