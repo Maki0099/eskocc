@@ -26,6 +26,11 @@ interface GeneratedMetadata {
   endLocation?: string;
 }
 
+interface GeneratedImage {
+  base64: string;
+  caption: string;
+}
+
 // Reverse geocode coordinates to location name using Nominatim
 async function reverseGeocode(lat: number, lon: number): Promise<string | null> {
   try {
@@ -229,6 +234,114 @@ function suggestTerrain(routeData: RouteData): string {
   return "mixed";
 }
 
+// Generate route images using Lovable AI image model
+async function generateRouteImages(
+  routeData: RouteData,
+  metadata: { name: string; description: string; terrainType: string },
+  startLocation: string | null,
+  count: number = 4
+): Promise<GeneratedImage[]> {
+  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  
+  if (!LOVABLE_API_KEY) {
+    console.warn("LOVABLE_API_KEY not configured, skipping image generation");
+    return [];
+  }
+  
+  const images: GeneratedImage[] = [];
+  
+  // Build location context
+  const locationContext = startLocation || "Česká republika, Beskydy";
+  
+  // Terrain-specific keywords
+  const terrainKeywords: Record<string, string> = {
+    road: "asfaltová silnice, silniční kolo, rychlá jízda",
+    gravel: "štěrková cesta, gravel bike, smíšený povrch",
+    mtb: "horské kolo, lesní stezka, kořeny, kameny",
+    mixed: "různorodý terén, cyklistika",
+  };
+  
+  const terrain = terrainKeywords[metadata.terrainType] || terrainKeywords.mixed;
+  
+  // Different perspectives for variety
+  const perspectives = [
+    {
+      prompt: `Fotorealistická fotografie: Cyklista na ${metadata.terrainType === 'mtb' ? 'horském kole' : metadata.terrainType === 'road' ? 'silničním kole' : 'gravel kole'} projíždí krásnou krajinou, ${locationContext}. ${terrain}. Profesionální sportovní fotografie, přirozené světlo, vysoká kvalita, 16:9 formát.`,
+      caption: `${metadata.name} - Na trase`
+    },
+    {
+      prompt: `Fotorealistická fotografie: Panoramatický výhled z cyklistické trasy v České republice, ${locationContext}. Hornaté/kopcovité krajiny, lesy, louky. Krásné počasí, profesionální krajinářská fotografie, 16:9 formát.`,
+      caption: `${metadata.name} - Výhled`
+    },
+    {
+      prompt: `Fotorealistická fotografie: Detail cyklistické stezky nebo cesty v přírodě, ${terrain}, ${locationContext}. Zaměření na povrch a okolní vegetaci. Profesionální fotografie, 16:9 formát.`,
+      caption: `${metadata.name} - Cesta`
+    },
+    {
+      prompt: `Fotorealistická fotografie: ${routeData.elevationM > 800 ? 'Horská krajina s kopci a lesy' : 'Malebná česká krajina s loukami a lesy'}, ideální pro cykloturistiku. ${locationContext}. Profesionální krajinářská fotografie, krásné počasí, 16:9 formát.`,
+      caption: `${metadata.name} - Krajina`
+    },
+    {
+      prompt: `Fotorealistická fotografie: Odpočinkové místo u cyklotrasy s lavičkou nebo rozcestníkem, výhled na krajinu, ${locationContext}. Klidná atmosféra, profesionální fotografie, 16:9 formát.`,
+      caption: `${metadata.name} - Odpočinek`
+    },
+  ];
+  
+  // Generate requested number of images (max 5)
+  const imagesToGenerate = Math.min(count, perspectives.length);
+  
+  for (let i = 0; i < imagesToGenerate; i++) {
+    try {
+      console.log(`Generating image ${i + 1}/${imagesToGenerate} for route: ${metadata.name}`);
+      
+      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-3-pro-image-preview",
+          messages: [{
+            role: "user",
+            content: perspectives[i].prompt
+          }],
+          modalities: ["image", "text"]
+        }),
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Image generation failed for image ${i + 1}:`, response.status, errorText);
+        continue;
+      }
+      
+      const data = await response.json();
+      const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+      
+      if (imageUrl) {
+        images.push({
+          base64: imageUrl,
+          caption: perspectives[i].caption
+        });
+        console.log(`Successfully generated image ${i + 1}`);
+      } else {
+        console.warn(`No image URL in response for image ${i + 1}`);
+      }
+      
+      // Small delay between requests to avoid rate limiting
+      if (i < imagesToGenerate - 1) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    } catch (error) {
+      console.error(`Error generating image ${i + 1}:`, error);
+      // Continue with other images even if one fails
+    }
+  }
+  
+  return images;
+}
+
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
@@ -236,7 +349,11 @@ serve(async (req) => {
   }
   
   try {
-    const { routes } = await req.json() as { routes: RouteData[] };
+    const { routes, generateImages = false, imageCount = 4 } = await req.json() as { 
+      routes: RouteData[]; 
+      generateImages?: boolean;
+      imageCount?: number;
+    };
     
     if (!routes || !Array.isArray(routes)) {
       return new Response(
@@ -245,9 +362,9 @@ serve(async (req) => {
       );
     }
     
-    console.log(`Processing ${routes.length} routes for metadata generation`);
+    console.log(`Processing ${routes.length} routes for metadata generation (generateImages: ${generateImages}, count: ${imageCount})`);
     
-    const results: GeneratedMetadata[] = [];
+    const results: (GeneratedMetadata & { images?: GeneratedImage[] })[] = [];
     
     for (const route of routes) {
       console.log(`Processing route: ${route.name || "unnamed"}`);
@@ -279,12 +396,20 @@ serve(async (req) => {
       // Generate metadata with AI
       const generated = await generateWithAI(route, startLocation, endLocation);
       
+      // Optionally generate images
+      let images: GeneratedImage[] | undefined;
+      if (generateImages) {
+        images = await generateRouteImages(route, generated, startLocation, imageCount);
+        console.log(`Generated ${images.length} images for route: ${route.name || generated.name}`);
+      }
+      
       results.push({
         name: generated.name,
         description: generated.description,
         terrainType: generated.terrainType as "road" | "gravel" | "mtb" | "mixed",
         startLocation: startLocation || undefined,
         endLocation: endLocation || undefined,
+        images,
       });
     }
     

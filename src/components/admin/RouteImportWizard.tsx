@@ -33,13 +33,15 @@ import {
   Upload,
   Sparkles,
   Pencil,
+  ImagePlus,
+  Camera,
 } from "lucide-react";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { RouteReviewCard, EditableRoute } from "./RouteReviewCard";
+import { RouteReviewCard, EditableRoute, GeneratedImage } from "./RouteReviewCard";
 import {
   RouteCompletionIndicator,
   calculateCompletionScore,
@@ -263,6 +265,10 @@ export function RouteImportWizard() {
   const [importSource, setImportSource] = useState<ImportSource>("url");
   const [gpxFiles, setGpxFiles] = useState<GpxFileData[]>([]);
   const [aiProgress, setAiProgress] = useState({ current: 0, total: 0 });
+  const [generatePhotos, setGeneratePhotos] = useState(false);
+  const [photoCount, setPhotoCount] = useState(4);
+  const [isGeneratingPhotos, setIsGeneratingPhotos] = useState(false);
+  const [photoProgress, setPhotoProgress] = useState({ current: 0, total: 0 });
 
   // Load draft on mount
   useEffect(() => {
@@ -450,6 +456,7 @@ export function RouteImportWizard() {
         manualGpxBase64: gpxData.base64,
         difficulty: mode === "manual" ? undefined : difficulty,
         terrain_type: undefined,
+        generated_images: undefined,
       };
     });
     
@@ -474,7 +481,13 @@ export function RouteImportWizard() {
         
         const { data, error } = await supabase.functions.invoke(
           "generate-route-metadata",
-          { body: { routes: routeDataForAI } }
+          { 
+            body: { 
+              routes: routeDataForAI,
+              generateImages: generatePhotos,
+              imageCount: photoCount
+            } 
+          }
         );
         
         if (error) throw error;
@@ -490,11 +503,20 @@ export function RouteImportWizard() {
                 newRoutes[index].distance_km || 0,
                 newRoutes[index].elevation_m || 0
               );
+              // Store generated images if any
+              if (result.images && result.images.length > 0) {
+                newRoutes[index].generated_images = result.images;
+              }
             }
             setAiProgress({ current: index + 1, total: newRoutes.length });
           });
           
-          toast.success("AI vygenerovala metadata pro trasy");
+          const imageCount = newRoutes.reduce((acc, r) => acc + (r.generated_images?.length || 0), 0);
+          if (imageCount > 0) {
+            toast.success(`AI vygenerovala metadata a ${imageCount} fotografií`);
+          } else {
+            toast.success("AI vygenerovala metadata pro trasy");
+          }
         }
       } catch (error: any) {
         console.error("AI generation error:", error);
@@ -599,6 +621,7 @@ export function RouteImportWizard() {
         route_link: r.route_link,
         difficulty: r.difficulty,
         terrain_type: r.terrain_type,
+        generated_images: r.generated_images,
       }));
 
       const { data, error } = await supabase.functions.invoke(
@@ -616,7 +639,11 @@ export function RouteImportWizard() {
 
       setImportResults(data.results || []);
       clearDraft();
-      toast.success(`Import dokončen: ${data.imported} tras importováno`);
+      
+      const imageInfo = data.totalImagesUploaded > 0 
+        ? `, ${data.totalImagesUploaded} fotek nahráno` 
+        : "";
+      toast.success(`Import dokončen: ${data.imported} tras importováno${imageInfo}`);
     } catch (error: any) {
       console.error("Error importing routes:", error);
       toast.error(error.message || "Nepodařilo se importovat trasy");
@@ -982,6 +1009,43 @@ export function RouteImportWizard() {
               </p>
             </div>
 
+            {/* Photo generation option */}
+            <div className="p-4 border rounded-lg bg-muted/20">
+              <div className="flex items-start gap-3">
+                <Checkbox 
+                  id="generate-photos"
+                  checked={generatePhotos}
+                  onCheckedChange={(checked) => setGeneratePhotos(checked === true)}
+                />
+                <div className="flex-1">
+                  <label htmlFor="generate-photos" className="font-medium flex items-center gap-2 cursor-pointer">
+                    <ImagePlus className="w-4 h-4 text-primary" />
+                    Vygenerovat AI fotografie
+                  </label>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    AI vygeneruje ilustrační fotky pro každou trasu na základě popisu a lokace
+                  </p>
+                  {generatePhotos && (
+                    <div className="flex items-center gap-3 mt-3">
+                      <span className="text-sm">Počet fotek:</span>
+                      <div className="flex gap-1">
+                        {[3, 4, 5].map((count) => (
+                          <Button
+                            key={count}
+                            variant={photoCount === count ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setPhotoCount(count)}
+                          >
+                            {count}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
             <div className="grid md:grid-cols-2 gap-4">
               <button
                 onClick={() => handleGpxModeSelect("auto")}
@@ -995,6 +1059,7 @@ export function RouteImportWizard() {
                 </div>
                 <p className="text-sm text-muted-foreground mb-3">
                   AI vygeneruje názvy, popisy a navrhne obtížnost + terén na základě GPX dat
+                  {generatePhotos && ` + ${photoCount} fotografií`}
                 </p>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <CheckCircle className="w-3 h-3 text-green-500" />
