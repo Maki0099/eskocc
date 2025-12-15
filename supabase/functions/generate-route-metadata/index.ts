@@ -434,12 +434,12 @@ async function generateImagesWithOpenAI(
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "gpt-image-1",
+          model: "dall-e-3",
           prompt: perspectives[i].prompt,
           n: 1,
           size: "1024x1024",
-          quality: "medium",
-          output_format: "png",
+          quality: "standard",
+          response_format: "b64_json",
         }),
       });
       
