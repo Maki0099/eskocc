@@ -9,6 +9,7 @@ import ChallengeAdmin from "@/components/admin/ChallengeAdmin";
 import CronJobsAdmin from "@/components/admin/CronJobsAdmin";
 import { PushNotificationsAdmin } from "@/components/admin/PushNotificationsAdmin";
 import { RoutesImportAdmin } from "@/components/admin/RoutesImportAdmin";
+import { GpxBulkUploadAdmin } from "@/components/admin/GpxBulkUploadAdmin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -394,7 +395,8 @@ const Admin = () => {
               <PushNotificationsAdmin />
             </TabsContent>
 
-            <TabsContent value="routes">
+            <TabsContent value="routes" className="space-y-6">
+              <GpxBulkUploadAdmin />
               <RoutesImportAdmin />
             </TabsContent>
           </Tabs>
