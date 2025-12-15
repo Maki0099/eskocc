@@ -899,9 +899,12 @@ export function RouteImportWizard() {
               </Button>
             </div>
 
-            <div className="flex justify-start pt-4 border-t">
+            <div className="flex items-center justify-between pt-4 border-t">
               <Button variant="outline" onClick={() => setStep("source")}>
                 Zpět
+              </Button>
+              <Button variant="ghost" onClick={handleReset} className="text-muted-foreground">
+                Zrušit import
               </Button>
             </div>
           </>
@@ -1010,9 +1013,14 @@ export function RouteImportWizard() {
             )}
 
             <div className="flex items-center justify-between pt-4 border-t">
-              <Button variant="outline" onClick={() => setStep("source")}>
-                Zpět
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" onClick={() => setStep("source")}>
+                  Zpět
+                </Button>
+                <Button variant="ghost" onClick={handleReset} className="text-muted-foreground">
+                  Zrušit
+                </Button>
+              </div>
               <div className="flex items-center gap-4">
                 <span className="text-sm text-muted-foreground">
                   Nahráno: <strong>{gpxFiles.length}</strong> souborů
@@ -1174,10 +1182,15 @@ export function RouteImportWizard() {
               </button>
             </div>
 
-            <div className="flex justify-between pt-4 border-t">
-              <Button variant="outline" onClick={() => setStep("gpx-upload")}>
-                Zpět
-              </Button>
+            <div className="flex items-center justify-between pt-4 border-t">
+              <div className="flex items-center gap-2">
+                <Button variant="outline" onClick={() => setStep("gpx-upload")}>
+                  Zpět
+                </Button>
+                <Button variant="ghost" onClick={handleReset} className="text-muted-foreground">
+                  Zrušit
+                </Button>
+              </div>
             </div>
           </div>
         )}
@@ -1228,6 +1241,12 @@ export function RouteImportWizard() {
                   )}
                 </div>
               ))}
+            </div>
+
+            <div className="flex justify-center pt-4 border-t">
+              <Button variant="ghost" onClick={handleReset} className="text-muted-foreground">
+                Přerušit a zrušit
+              </Button>
             </div>
           </div>
         )}
@@ -1687,10 +1706,15 @@ export function RouteImportWizard() {
               </button>
             </div>
 
-            <div className="flex justify-between pt-4 border-t">
-              <Button variant="outline" onClick={() => setStep("select")}>
-                Zpět
-              </Button>
+            <div className="flex items-center justify-between pt-4 border-t">
+              <div className="flex items-center gap-2">
+                <Button variant="outline" onClick={() => setStep("select")}>
+                  Zpět
+                </Button>
+                <Button variant="ghost" onClick={handleReset} className="text-muted-foreground">
+                  Zrušit
+                </Button>
+              </div>
             </div>
           </div>
         )}
@@ -1783,15 +1807,20 @@ export function RouteImportWizard() {
             </div>
 
             <div className="flex items-center justify-between pt-4 border-t">
-              <Button variant="outline" onClick={() => {
-                if (importSource === "gpx") {
-                  setStep("gpx-preview");
-                } else {
-                  setStep("mode");
-                }
-              }}>
-                Zpět k úpravám
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" onClick={() => {
+                  if (importSource === "gpx") {
+                    setStep("gpx-preview");
+                  } else {
+                    setStep("mode");
+                  }
+                }}>
+                  Zpět k úpravám
+                </Button>
+                <Button variant="ghost" onClick={handleReset} className="text-muted-foreground">
+                  Zrušit
+                </Button>
+              </div>
               <Button onClick={handleImport} className="gap-2">
                 <Download className="w-4 h-4" />
                 Importovat vše
