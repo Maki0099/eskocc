@@ -439,6 +439,7 @@ async function generateImagesWithOpenAI(
           n: 1,
           size: "1024x1024",
           quality: "medium",
+          response_format: "b64_json",
         }),
       });
       
@@ -449,8 +450,31 @@ async function generateImagesWithOpenAI(
       }
       
       const data = await response.json();
+      console.log(`[OpenAI] Response structure:`, Object.keys(data), data.data?.length ? `data[0] keys: ${Object.keys(data.data[0])}` : 'no data');
+      
       // gpt-image-1 returns base64 directly in data[0].b64_json
-      const b64 = data.data?.[0]?.b64_json;
+      let b64 = data.data?.[0]?.b64_json;
+      
+      // Fallback: pokud je URL místo base64, stáhnout a konvertovat
+      if (!b64 && data.data?.[0]?.url) {
+        console.log(`[OpenAI] Response contains URL instead of base64, downloading...`);
+        try {
+          const imageUrl = data.data[0].url;
+          const imgResponse = await fetch(imageUrl);
+          if (imgResponse.ok) {
+            const arrayBuffer = await imgResponse.arrayBuffer();
+            const uint8Array = new Uint8Array(arrayBuffer);
+            let binary = '';
+            for (let j = 0; j < uint8Array.length; j++) {
+              binary += String.fromCharCode(uint8Array[j]);
+            }
+            b64 = btoa(binary);
+            console.log(`[OpenAI] Successfully converted URL to base64`);
+          }
+        } catch (urlError) {
+          console.error(`[OpenAI] Failed to download image from URL:`, urlError);
+        }
+      }
       
       if (b64) {
         images.push({ 
@@ -458,6 +482,9 @@ async function generateImagesWithOpenAI(
           caption: perspectives[i].caption 
         });
         console.log(`[OpenAI] Successfully generated image ${i + 1}`);
+      } else {
+        console.error(`[OpenAI] No image data in response for image ${i + 1}:`, 
+          JSON.stringify(data).substring(0, 500));
       }
       
       if (i < imagesToGenerate - 1) {
