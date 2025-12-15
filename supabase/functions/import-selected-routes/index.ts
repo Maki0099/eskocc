@@ -11,6 +11,11 @@ interface GeneratedImage {
   caption: string;
 }
 
+interface ManualImage {
+  base64: string;
+  caption: string;
+}
+
 interface SelectedRoute {
   title: string;
   description?: string;
@@ -24,6 +29,7 @@ interface SelectedRoute {
   cover_url?: string;
   route_link?: string;
   generated_images?: GeneratedImage[];
+  manual_images?: ManualImage[];
 }
 
 interface ImportResult {
@@ -310,9 +316,19 @@ serve(async (req) => {
           // Upload AI-generated images if present
           if (route.generated_images && route.generated_images.length > 0) {
             console.log(`Uploading ${route.generated_images.length} AI-generated images for route ${insertedRoute.id}`);
-            imagesUploaded = await uploadGeneratedImages(supabase, insertedRoute.id, route.generated_images);
-            totalImagesUploaded += imagesUploaded;
-            console.log(`Uploaded ${imagesUploaded} AI images for route ${route.title}`);
+            const aiImagesUploaded = await uploadGeneratedImages(supabase, insertedRoute.id, route.generated_images);
+            imagesUploaded += aiImagesUploaded;
+            totalImagesUploaded += aiImagesUploaded;
+            console.log(`Uploaded ${aiImagesUploaded} AI images for route ${route.title}`);
+          }
+          
+          // Upload manual images if present
+          if (route.manual_images && route.manual_images.length > 0) {
+            console.log(`Uploading ${route.manual_images.length} manual images for route ${insertedRoute.id}`);
+            const manualImagesUploaded = await uploadGeneratedImages(supabase, insertedRoute.id, route.manual_images);
+            imagesUploaded += manualImagesUploaded;
+            totalImagesUploaded += manualImagesUploaded;
+            console.log(`Uploaded ${manualImagesUploaded} manual images for route ${route.title}`);
           }
           
           results.push({ 

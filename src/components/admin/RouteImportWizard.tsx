@@ -41,7 +41,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { RouteReviewCard, EditableRoute, GeneratedImage } from "./RouteReviewCard";
+import { RouteReviewCard, EditableRoute, GeneratedImage, ManualImage } from "./RouteReviewCard";
 import {
   RouteCompletionIndicator,
   calculateCompletionScore,
@@ -57,6 +57,7 @@ import {
 type GpxStatus = "available" | "auth-required" | "premium" | "varies" | "detection";
 type ImportSource = "url" | "gpx";
 type GpxImportMode = "auto" | "manual";
+type PhotoMode = "none" | "ai" | "manual";
 
 interface SupportedService {
   id: string;
@@ -265,7 +266,7 @@ export function RouteImportWizard() {
   const [importSource, setImportSource] = useState<ImportSource>("url");
   const [gpxFiles, setGpxFiles] = useState<GpxFileData[]>([]);
   const [aiProgress, setAiProgress] = useState({ current: 0, total: 0 });
-  const [generatePhotos, setGeneratePhotos] = useState(false);
+  const [photoMode, setPhotoMode] = useState<PhotoMode>("none");
   const [photoCount, setPhotoCount] = useState(4);
   const [isGeneratingPhotos, setIsGeneratingPhotos] = useState(false);
   const [photoProgress, setPhotoProgress] = useState({ current: 0, total: 0 });
@@ -484,7 +485,7 @@ export function RouteImportWizard() {
           { 
             body: { 
               routes: routeDataForAI,
-              generateImages: generatePhotos,
+              generateImages: photoMode === "ai",
               imageCount: photoCount
             } 
           }
@@ -622,6 +623,10 @@ export function RouteImportWizard() {
         difficulty: r.difficulty,
         terrain_type: r.terrain_type,
         generated_images: r.generated_images,
+        manual_images: r.manual_images?.map(img => ({
+          base64: img.base64,
+          caption: img.caption
+        })),
       }));
 
       const { data, error } = await supabase.functions.invoke(
@@ -1009,40 +1014,82 @@ export function RouteImportWizard() {
               </p>
             </div>
 
-            {/* Photo generation option */}
-            <div className="p-4 border rounded-lg bg-muted/20">
-              <div className="flex items-start gap-3">
-                <Checkbox 
-                  id="generate-photos"
-                  checked={generatePhotos}
-                  onCheckedChange={(checked) => setGeneratePhotos(checked === true)}
-                />
-                <div className="flex-1">
-                  <label htmlFor="generate-photos" className="font-medium flex items-center gap-2 cursor-pointer">
-                    <ImagePlus className="w-4 h-4 text-primary" />
-                    Vygenerovat AI fotografie
-                  </label>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    AI vygeneruje ilustrační fotky pro každou trasu na základě popisu a lokace
-                  </p>
-                  {generatePhotos && (
-                    <div className="flex items-center gap-3 mt-3">
-                      <span className="text-sm">Počet fotek:</span>
-                      <div className="flex gap-1">
-                        {[3, 4, 5].map((count) => (
-                          <Button
-                            key={count}
-                            variant={photoCount === count ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => setPhotoCount(count)}
-                          >
-                            {count}
-                          </Button>
-                        ))}
+            {/* Photo mode selection */}
+            <div className="p-4 border rounded-lg bg-muted/20 space-y-3">
+              <div className="font-medium flex items-center gap-2">
+                <Camera className="w-4 h-4 text-primary" />
+                Fotografie k trasám
+              </div>
+              
+              <div className="space-y-2">
+                {/* No photos */}
+                <label className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${photoMode === "none" ? "border-primary bg-primary/5" : "hover:bg-muted/50"}`}>
+                  <input
+                    type="radio"
+                    name="photoMode"
+                    checked={photoMode === "none"}
+                    onChange={() => setPhotoMode("none")}
+                    className="w-4 h-4"
+                  />
+                  <div>
+                    <span className="font-medium">Bez fotografií</span>
+                    <p className="text-xs text-muted-foreground">Trasy budou importovány bez fotek</p>
+                  </div>
+                </label>
+
+                {/* AI photos */}
+                <label className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${photoMode === "ai" ? "border-primary bg-primary/5" : "hover:bg-muted/50"}`}>
+                  <input
+                    type="radio"
+                    name="photoMode"
+                    checked={photoMode === "ai"}
+                    onChange={() => setPhotoMode("ai")}
+                    className="w-4 h-4"
+                  />
+                  <div className="flex-1">
+                    <span className="font-medium flex items-center gap-2">
+                      <Sparkles className="w-3 h-3" />
+                      AI generované fotografie
+                    </span>
+                    <p className="text-xs text-muted-foreground">AI vygeneruje ilustrační fotky na základě popisu trasy</p>
+                    {photoMode === "ai" && (
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-xs">Počet:</span>
+                        <div className="flex gap-1">
+                          {[3, 4, 5].map((count) => (
+                            <Button
+                              key={count}
+                              variant={photoCount === count ? "default" : "outline"}
+                              size="sm"
+                              className="h-6 w-6 p-0 text-xs"
+                              onClick={(e) => { e.preventDefault(); setPhotoCount(count); }}
+                            >
+                              {count}
+                            </Button>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </div>
+                    )}
+                  </div>
+                </label>
+
+                {/* Manual photos */}
+                <label className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${photoMode === "manual" ? "border-primary bg-primary/5" : "hover:bg-muted/50"}`}>
+                  <input
+                    type="radio"
+                    name="photoMode"
+                    checked={photoMode === "manual"}
+                    onChange={() => setPhotoMode("manual")}
+                    className="w-4 h-4"
+                  />
+                  <div>
+                    <span className="font-medium flex items-center gap-2">
+                      <Upload className="w-3 h-3" />
+                      Vlastní fotografie
+                    </span>
+                    <p className="text-xs text-muted-foreground">Nahrajete vlastní fotky v dalším kroku</p>
+                  </div>
+                </label>
               </div>
             </div>
 
@@ -1059,7 +1106,7 @@ export function RouteImportWizard() {
                 </div>
                 <p className="text-sm text-muted-foreground mb-3">
                   AI vygeneruje názvy, popisy a navrhne obtížnost + terén na základě GPX dat
-                  {generatePhotos && ` + ${photoCount} fotografií`}
+                  {photoMode === "ai" && ` + ${photoCount} fotografií`}
                 </p>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <CheckCircle className="w-3 h-3 text-green-500" />
@@ -1251,7 +1298,7 @@ export function RouteImportWizard() {
                       {route.generated_images && route.generated_images.length > 0 && (
                         <div className="pt-3 border-t">
                           <div className="flex items-center gap-2 mb-2">
-                            <Camera className="w-3 h-3 text-primary" />
+                            <Sparkles className="w-3 h-3 text-primary" />
                             <span className="text-xs font-medium">
                               AI fotografie ({route.generated_images.length})
                             </span>
@@ -1290,6 +1337,99 @@ export function RouteImportWizard() {
                               </div>
                             ))}
                           </div>
+                        </div>
+                      )}
+
+                      {/* Manual Photos Upload */}
+                      {photoMode === "manual" && (
+                        <div className="pt-3 border-t">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <Camera className="w-3 h-3 text-primary" />
+                              <span className="text-xs font-medium">
+                                Vlastní fotografie {route.manual_images?.length ? `(${route.manual_images.length})` : ""}
+                              </span>
+                            </div>
+                            <label className="cursor-pointer">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                className="hidden"
+                                onChange={async (e) => {
+                                  const files = e.target.files;
+                                  if (!files) return;
+                                  
+                                  const newImages: ManualImage[] = [];
+                                  for (const file of Array.from(files)) {
+                                    const base64 = await new Promise<string>((resolve) => {
+                                      const reader = new FileReader();
+                                      reader.onload = () => resolve(reader.result as string);
+                                      reader.readAsDataURL(file);
+                                    });
+                                    newImages.push({
+                                      file,
+                                      base64,
+                                      caption: file.name.replace(/\.[^/.]+$/, "")
+                                    });
+                                  }
+                                  
+                                  setRoutes(prev => prev.map(r => {
+                                    if (r.id !== route.id) return r;
+                                    return {
+                                      ...r,
+                                      manual_images: [...(r.manual_images || []), ...newImages]
+                                    };
+                                  }));
+                                }}
+                              />
+                              <span className="text-xs text-primary hover:underline flex items-center gap-1">
+                                <ImagePlus className="w-3 h-3" />
+                                Přidat fotky
+                              </span>
+                            </label>
+                          </div>
+                          
+                          {route.manual_images && route.manual_images.length > 0 ? (
+                            <div className="flex gap-2 overflow-x-auto pb-1">
+                              {route.manual_images.map((img, imgIndex) => (
+                                <div
+                                  key={imgIndex}
+                                  className="relative flex-shrink-0 w-16 h-16 rounded-md overflow-hidden border bg-muted group"
+                                  title={img.caption}
+                                >
+                                  <img
+                                    src={img.base64}
+                                    alt={img.caption}
+                                    className="w-full h-full object-cover"
+                                  />
+                                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setRoutes(prev => prev.map(r => {
+                                          if (r.id !== route.id) return r;
+                                          const newImages = r.manual_images?.filter((_, i) => i !== imgIndex);
+                                          return { ...r, manual_images: newImages?.length ? newImages : undefined };
+                                        }));
+                                      }}
+                                      className="p-1 bg-destructive/80 hover:bg-destructive rounded-full transition-colors"
+                                      title="Odstranit fotografii"
+                                    >
+                                      <XCircle className="w-3 h-3 text-white" />
+                                    </button>
+                                    <span className="text-[9px] text-white text-center px-1 line-clamp-1">
+                                      {img.caption}
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-xs text-muted-foreground italic">
+                              Zatím žádné fotky
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>

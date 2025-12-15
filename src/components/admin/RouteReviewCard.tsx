@@ -32,6 +32,12 @@ export interface GeneratedImage {
   caption: string;
 }
 
+export interface ManualImage {
+  file: File;
+  base64: string;
+  caption: string;
+}
+
 export interface EditableRoute {
   id: string;
   title: string;
@@ -47,6 +53,7 @@ export interface EditableRoute {
   difficulty?: string;
   terrain_type?: string;
   generated_images?: GeneratedImage[];
+  manual_images?: ManualImage[];
 }
 
 interface RouteReviewCardProps {
