@@ -59,6 +59,8 @@ interface EditRouteDialogProps {
     terrain_type?: string | null;
   };
   onRouteUpdated: () => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 const DIFFICULTY_LABELS = {
@@ -74,9 +76,20 @@ const TERRAIN_LABELS = {
   mixed: "Mix",
 };
 
-const EditRouteDialog = ({ route, onRouteUpdated }: EditRouteDialogProps) => {
+const EditRouteDialog = ({ route, onRouteUpdated, open: controlledOpen, onOpenChange }: EditRouteDialogProps) => {
   const { user } = useAuth();
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  
+  // Support both controlled and uncontrolled modes
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = (value: boolean) => {
+    if (isControlled) {
+      onOpenChange?.(value);
+    } else {
+      setInternalOpen(value);
+    }
+  };
   const [loading, setLoading] = useState(false);
   const [coverImage, setCoverImage] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(route.cover_image_url || null);
@@ -231,11 +244,13 @@ const EditRouteDialog = ({ route, onRouteUpdated }: EditRouteDialogProps) => {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="icon">
-          <Pencil className="w-4 h-4" />
-        </Button>
-      </DialogTrigger>
+      {!isControlled && (
+        <DialogTrigger asChild>
+          <Button variant="outline" size="icon">
+            <Pencil className="w-4 h-4" />
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Upravit trasu</DialogTitle>
