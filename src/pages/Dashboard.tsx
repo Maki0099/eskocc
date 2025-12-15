@@ -10,6 +10,7 @@ import { ChallengeWidget } from "@/components/dashboard/ChallengeWidget";
 import PendingMembershipWidget from "@/components/dashboard/PendingMembershipWidget";
 import StravaConnectPrompt from "@/components/dashboard/StravaConnectPrompt";
 import PushNotificationPrompt from "@/components/dashboard/PushNotificationPrompt";
+import UpcomingEventsWidget from "@/components/dashboard/UpcomingEventsWidget";
 import StravaClubBanner from "@/components/strava/StravaClubBanner";
 import { Badge } from "@/components/ui/badge";
 import { ROLE_LABELS, STRAVA_CLUB_URL } from "@/lib/constants";
@@ -181,9 +182,16 @@ const Dashboard = () => {
             )}
           </div>
 
-          {/* Challenge Widget */}
+          {/* Upcoming Events Widget */}
           {user && role !== "pending" && (
             <div className="mt-8">
+              <UpcomingEventsWidget userId={user.id} />
+            </div>
+          )}
+
+          {/* Challenge Widget */}
+          {user && role !== "pending" && (
+            <div className="mt-4">
               <ChallengeWidget userId={user.id} />
             </div>
           )}
