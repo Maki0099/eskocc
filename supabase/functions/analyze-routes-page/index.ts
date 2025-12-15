@@ -549,10 +549,18 @@ async function expandMapyShortUrl(shortUrl: string): Promise<{ fullUrl: string; 
 }
 
 // Helper: Extract metadata from Mapy.cz page HTML
-function extractMapyMetadata(html: string): { title?: string; distance_km?: number; elevation_m?: number } {
+function extractMapyMetadata(html: string, fullUrl?: string): { 
+  title?: string; 
+  distance_km?: number; 
+  elevation_m?: number;
+  cover_url?: string;
+  coordinates?: { lat: number; lon: number }[];
+} {
   let title: string | undefined;
   let distance_km: number | undefined;
   let elevation_m: number | undefined;
+  let cover_url: string | undefined;
+  let coordinates: { lat: number; lon: number }[] | undefined;
   
   // Extract title from various sources
   const titlePatterns = [
@@ -572,6 +580,32 @@ function extractMapyMetadata(html: string): { title?: string; distance_km?: numb
         .replace(/Mapy\.cz\s*[|–-]?\s*/i, '')
         .trim();
       if (title && title.length > 2 && !title.toLowerCase().includes('mapy')) {
+        break;
+      }
+    }
+  }
+  
+  // Extract og:image for cover
+  const ogImagePatterns = [
+    /<meta[^>]*property="og:image"[^>]*content="([^"]+)"/i,
+    /<meta[^>]*content="([^"]+)"[^>]*property="og:image"/i,
+    /<meta[^>]*name="twitter:image"[^>]*content="([^"]+)"/i
+  ];
+  
+  for (const pattern of ogImagePatterns) {
+    const match = html.match(pattern);
+    if (match && match[1]) {
+      let imgUrl = match[1];
+      // Make sure it's an absolute URL
+      if (imgUrl.startsWith('//')) {
+        imgUrl = 'https:' + imgUrl;
+      } else if (imgUrl.startsWith('/')) {
+        imgUrl = 'https://mapy.cz' + imgUrl;
+      }
+      // Skip small icons or logos
+      if (!imgUrl.includes('favicon') && !imgUrl.includes('logo') && !imgUrl.includes('icon')) {
+        cover_url = imgUrl;
+        console.log(`Found og:image: ${cover_url}`);
         break;
       }
     }
@@ -619,7 +653,64 @@ function extractMapyMetadata(html: string): { title?: string; distance_km?: numb
     }
   }
   
-  return { title, distance_km, elevation_m };
+  // Try to extract coordinates from URL for static map generation
+  // Pattern: rc=lat1,lon1,lat2,lon2,... (encoded route coordinates)
+  if (fullUrl) {
+    const rcMatch = fullUrl.match(/[?&]rc=([^&]+)/);
+    if (rcMatch) {
+      try {
+        const rcData = decodeURIComponent(rcMatch[1]);
+        // RC format can be: lat1xlon1xlat2xlon2x... or lat1,lon1,lat2,lon2,...
+        const coordPairs = rcData.split(/[x,]/).filter(Boolean);
+        coordinates = [];
+        for (let i = 0; i < coordPairs.length - 1; i += 2) {
+          const lat = parseFloat(coordPairs[i]);
+          const lon = parseFloat(coordPairs[i + 1]);
+          if (!isNaN(lat) && !isNaN(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
+            coordinates.push({ lat, lon });
+          }
+        }
+        if (coordinates.length > 0) {
+          console.log(`Extracted ${coordinates.length} coordinates from URL`);
+        } else {
+          coordinates = undefined;
+        }
+      } catch (e) {
+        console.error('Failed to parse rc parameter:', e);
+      }
+    }
+  }
+  
+  // If no og:image but we have coordinates, generate static map URL using OpenStreetMap
+  if (!cover_url && coordinates && coordinates.length >= 2) {
+    // Calculate bounding box
+    const lats = coordinates.map(c => c.lat);
+    const lons = coordinates.map(c => c.lon);
+    const minLat = Math.min(...lats);
+    const maxLat = Math.max(...lats);
+    const minLon = Math.min(...lons);
+    const maxLon = Math.max(...lons);
+    const centerLat = (minLat + maxLat) / 2;
+    const centerLon = (minLon + maxLon) / 2;
+    
+    // Calculate zoom level based on bounding box
+    const latDiff = maxLat - minLat;
+    const lonDiff = maxLon - minLon;
+    const maxDiff = Math.max(latDiff, lonDiff);
+    let zoom = 13;
+    if (maxDiff > 1) zoom = 8;
+    else if (maxDiff > 0.5) zoom = 9;
+    else if (maxDiff > 0.2) zoom = 10;
+    else if (maxDiff > 0.1) zoom = 11;
+    else if (maxDiff > 0.05) zoom = 12;
+    
+    // Use OpenStreetMap static tiles - free, no API key required
+    // Format: https://staticmap.openstreetmap.de/staticmap.php?center=lat,lon&zoom=Z&size=WxH&maptype=osmarenderer
+    cover_url = `https://staticmap.openstreetmap.de/staticmap.php?center=${centerLat.toFixed(5)},${centerLon.toFixed(5)}&zoom=${zoom}&size=600x400&maptype=osmarenderer`;
+    console.log(`Generated OSM static map URL: ${cover_url}`);
+  }
+  
+  return { title, distance_km, elevation_m, cover_url, coordinates };
 }
 
 async function parseMapyCz(html: string, baseUrl: string): Promise<ParsedRoute[]> {
@@ -637,19 +728,20 @@ async function parseMapyCz(html: string, baseUrl: string): Promise<ParsedRoute[]
     // Expand the short URL to get the full URL with route ID
     const { fullUrl, routeId } = await expandMapyShortUrl(baseUrl);
     
-    // Extract metadata from the fetched HTML
-    const metadata = extractMapyMetadata(html);
+    // Extract metadata from the fetched HTML, passing fullUrl for coordinate extraction
+    let metadata = extractMapyMetadata(html, fullUrl);
     
     let gpxUrl: string | undefined;
     let title = metadata.title || `Mapy.cz Trasa`;
+    let cover_url = metadata.cover_url;
     
     if (routeId) {
       gpxUrl = `https://mapy.cz/route/gpx?id=${routeId}`;
       console.log(`Generated GPX URL: ${gpxUrl}`);
     }
     
-    // If we still don't have title, try to get it from the expanded URL page
-    if (!metadata.title && fullUrl !== baseUrl) {
+    // If we still don't have complete metadata, try to get it from the expanded URL page
+    if ((!metadata.title || !metadata.cover_url) && fullUrl !== baseUrl) {
       try {
         const expandedResponse = await fetch(fullUrl, {
           headers: {
@@ -659,10 +751,11 @@ async function parseMapyCz(html: string, baseUrl: string): Promise<ParsedRoute[]
         });
         if (expandedResponse.ok) {
           const expandedHtml = await expandedResponse.text();
-          const expandedMetadata = extractMapyMetadata(expandedHtml);
+          const expandedMetadata = extractMapyMetadata(expandedHtml, fullUrl);
           if (expandedMetadata.title) title = expandedMetadata.title;
           if (!metadata.distance_km && expandedMetadata.distance_km) metadata.distance_km = expandedMetadata.distance_km;
           if (!metadata.elevation_m && expandedMetadata.elevation_m) metadata.elevation_m = expandedMetadata.elevation_m;
+          if (!cover_url && expandedMetadata.cover_url) cover_url = expandedMetadata.cover_url;
         }
       } catch (e) {
         console.error('Failed to fetch expanded URL for metadata:', e);
@@ -676,6 +769,7 @@ async function parseMapyCz(html: string, baseUrl: string): Promise<ParsedRoute[]
       elevation_m: metadata.elevation_m,
       gpx_url: gpxUrl,
       gpx_accessible: false,
+      cover_url,
       route_link: fullUrl
     };
     
@@ -693,7 +787,7 @@ async function parseMapyCz(html: string, baseUrl: string): Promise<ParsedRoute[]
   const fullUrlIdMatch = baseUrl.match(/[?&]id=([a-zA-Z0-9_-]+)/);
   if (fullUrlIdMatch) {
     const routeId = fullUrlIdMatch[1];
-    const metadata = extractMapyMetadata(html);
+    const metadata = extractMapyMetadata(html, baseUrl);
     
     const route: ParsedRoute = {
       id: `mapycz-${routeId}`,
@@ -702,6 +796,7 @@ async function parseMapyCz(html: string, baseUrl: string): Promise<ParsedRoute[]
       elevation_m: metadata.elevation_m,
       gpx_url: `https://mapy.cz/route/gpx?id=${routeId}`,
       gpx_accessible: false,
+      cover_url: metadata.cover_url,
       route_link: baseUrl
     };
     
