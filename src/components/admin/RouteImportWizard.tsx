@@ -278,6 +278,7 @@ export function RouteImportWizard() {
   const [isGeneratingPhotos, setIsGeneratingPhotos] = useState(false);
   const [photoProgress, setPhotoProgress] = useState({ current: 0, total: 0 });
   const [aiProviders, setAiProviders] = useState<{ text: string; image: string } | null>(null);
+  const [brokenImages, setBrokenImages] = useState<Set<string>>(new Set());
 
   // Load draft and AI providers on mount
   useEffect(() => {
@@ -1273,11 +1274,14 @@ export function RouteImportWizard() {
                   <div className="grid md:grid-cols-[200px_1fr] gap-0">
                     {/* Map Preview */}
                     <div className="relative h-[150px] md:h-full bg-muted">
-                      {route.cover_url ? (
+                      {route.cover_url && !brokenImages.has(route.id) ? (
                         <img 
                           src={route.cover_url} 
                           alt={`Mapa trasy ${route.title}`}
                           className="w-full h-full object-cover"
+                          onError={() => {
+                            setBrokenImages(prev => new Set(prev).add(route.id));
+                          }}
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
