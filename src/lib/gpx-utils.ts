@@ -295,13 +295,13 @@ export function generateStaticMapUrl(
   else if (maxSpan > 0.05) zoom = 11;
   else zoom = 12;
   
-  // Build markers string - use ol-marker format for openstreetmap.de
+  // Build markers string - use simple color names for openstreetmap.de
   let markers = "";
   if (startPoint) {
-    markers += `&markers=${startPoint.lat},${startPoint.lon},ol-marker-green`;
+    markers += `&markers=${startPoint.lat},${startPoint.lon},lightblue`;
   }
   if (endPoint && (endPoint.lat !== startPoint?.lat || endPoint.lon !== startPoint?.lon)) {
-    markers += `&markers=${endPoint.lat},${endPoint.lon},ol-marker`;
+    markers += `&markers=${endPoint.lat},${endPoint.lon},red`;
   }
   
   // Use OpenStreetMap static map service
