@@ -35,7 +35,9 @@ import {
   Pencil,
   ImagePlus,
   Camera,
+  ScanLine,
 } from "lucide-react";
+import { QrScanner } from "./QrScanner";
 import {
   Collapsible,
   CollapsibleContent,
@@ -279,8 +281,7 @@ export function RouteImportWizard() {
   const [photoProgress, setPhotoProgress] = useState({ current: 0, total: 0 });
   const [aiProviders, setAiProviders] = useState<{ text: string; image: string } | null>(null);
   const [brokenImages, setBrokenImages] = useState<Set<string>>(new Set());
-
-  // Load draft and AI providers on mount
+  const [qrScannerOpen, setQrScannerOpen] = useState(false);
   useEffect(() => {
     const draft = loadDraft();
     if (draft && draft.step !== "source" && draft.step !== "url" && draft.routes.length > 0) {
@@ -772,7 +773,7 @@ export function RouteImportWizard() {
               </p>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid md:grid-cols-3 gap-4">
               <button
                 onClick={() => {
                   setImportSource("url");
@@ -808,7 +809,37 @@ export function RouteImportWizard() {
                   Nahrát vlastní GPX soubory s možností AI doplnění metadat
                 </p>
               </button>
+
+              <button
+                onClick={() => setQrScannerOpen(true)}
+                className="p-6 border rounded-lg hover:border-primary hover:bg-primary/5 transition-colors text-left"
+              >
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 bg-primary/10 rounded-lg">
+                    <ScanLine className="w-6 h-6 text-primary" />
+                  </div>
+                  <h4 className="font-semibold">QR kód</h4>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Naskenovat QR kód s odkazem na trasu (Mapy.cz, Garmin, GPX)
+                </p>
+              </button>
             </div>
+
+            {/* QR Scanner Dialog */}
+            <QrScanner
+              open={qrScannerOpen}
+              onClose={() => setQrScannerOpen(false)}
+              onScan={(scannedUrl) => {
+                setUrl(scannedUrl);
+                setImportSource("url");
+                setStep("url");
+                // Auto-analyze after short delay
+                setTimeout(() => {
+                  document.getElementById("analyze-btn")?.click();
+                }, 100);
+              }}
+            />
           </div>
         )}
 
@@ -882,6 +913,15 @@ export function RouteImportWizard() {
                 }}
               />
               <Button
+                variant="outline"
+                onClick={() => setQrScannerOpen(true)}
+                title="Naskenovat QR kód"
+                disabled={isAnalyzing}
+              >
+                <ScanLine className="w-4 h-4" />
+              </Button>
+              <Button
+                id="analyze-btn"
                 onClick={handleAnalyze}
                 disabled={isAnalyzing || !url.trim()}
                 className="gap-2"
