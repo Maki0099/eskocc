@@ -33,6 +33,7 @@ const Statistics = lazy(() => import("./pages/Statistics"));
 const Install = lazy(() => import("./pages/Install"));
 const Documents = lazy(() => import("./pages/Documents"));
 const Notifications = lazy(() => import("./pages/Notifications"));
+const ShareTarget = lazy(() => import("./pages/ShareTarget"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -97,6 +98,7 @@ const App = () => (
                     </ProtectedRoute>
                   }
                 />
+                <Route path={ROUTES.SHARE_TARGET} element={<ShareTarget />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
