@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Bell, Check, CheckCheck, Trash2, Calendar, AlertCircle, Info, ArrowLeft, Filter, ExternalLink } from 'lucide-react';
+import { Bell, Check, CheckCheck, Trash2, Calendar, AlertCircle, Info, ArrowLeft, Filter, ExternalLink, HelpCircle } from 'lucide-react';
 import { useNotifications, Notification } from '@/hooks/useNotifications';
+import { useTour } from '@/hooks/useTour';
+import TourProvider from '@/components/tour/TourProvider';
 import { Button } from '@/components/ui/button';
 import { ROUTES } from '@/lib/routes';
 import { formatDistanceToNow, format } from 'date-fns';
@@ -121,6 +123,8 @@ const NotificationCard = ({
 const Notifications = () => {
   const navigate = useNavigate();
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
+  const { startTour, shouldAutoStart, isTourCompleted } = useTour();
+  const [tourRunning, setTourRunning] = useState(false);
   const { 
     notifications, 
     unreadCount, 
@@ -130,6 +134,18 @@ const Notifications = () => {
     deleteNotification,
     deleteAllRead
   } = useNotifications();
+
+  const handleStartTour = () => {
+    setTourRunning(true);
+    startTour("notifications");
+  };
+
+  useEffect(() => {
+    if (!loading && shouldAutoStart("notifications")) {
+      const timer = setTimeout(() => handleStartTour(), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [loading]);
 
   const filteredNotifications = filter === 'unread' 
     ? notifications.filter(n => !n.is_read)
@@ -168,7 +184,7 @@ const Notifications = () => {
       <main className="container mx-auto px-6 py-8">
         <div className="max-w-2xl mx-auto">
           {/* Page header */}
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-6" data-tour="notifications-header">
             <div>
               <h1 className="text-2xl font-semibold flex items-center gap-3">
                 <Bell className="w-6 h-6" />
@@ -181,11 +197,16 @@ const Notifications = () => {
                 }
               </p>
             </div>
+            {!isTourCompleted("notifications") && (
+              <Button variant="ghost" size="icon" onClick={handleStartTour}>
+                <HelpCircle className="w-4 h-4" />
+              </Button>
+            )}
           </div>
 
           {/* Actions bar */}
           <div className="flex items-center justify-between gap-4 mb-6">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2" data-tour="notifications-filter">
               <Button
                 variant={filter === 'all' ? 'secondary' : 'ghost'}
                 size="sm"
@@ -209,7 +230,7 @@ const Notifications = () => {
               </Button>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2" data-tour="notifications-actions">
               {unreadCount > 0 && (
                 <Button
                   variant="outline"
@@ -252,7 +273,7 @@ const Notifications = () => {
               </p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-3" data-tour="notifications-list">
               {filteredNotifications.map((notification) => (
                 <NotificationCard
                   key={notification.id}
@@ -266,6 +287,11 @@ const Notifications = () => {
           )}
         </div>
       </main>
+      <TourProvider
+        tourId="notifications"
+        run={tourRunning}
+        onFinish={() => setTourRunning(false)}
+      />
     </div>
   );
 };

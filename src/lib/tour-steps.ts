@@ -134,8 +134,114 @@ export const eventDetailSteps: Step[] = [
     placement: "top",
   },
   {
-    target: '[data-tour="event-photos"]',
+  target: '[data-tour="event-photos"]',
     content: "Po vyjížďce zde můžeš nahrát fotky a prohlédnout si fotky od ostatních.",
+    placement: "top",
+  },
+];
+
+export const statisticsSteps: Step[] = [
+  {
+    target: '[data-tour="statistics-header"]',
+    content: "Statistiky klubu zobrazují pokrok členů ve splnění ročního kilometrového cíle.",
+    disableBeacon: true,
+    placement: "bottom",
+  },
+  {
+    target: '[data-tour="club-goal"]',
+    content: "Klubový cíl ukazuje společný pokrok všech členů. Společně můžeme dosáhnout cíle!",
+    placement: "top",
+  },
+  {
+    target: '[data-tour="age-categories"]',
+    content: "Cíle jsou rozděleny podle věkových kategorií. Každá kategorie má svůj vlastní kilometrový cíl.",
+    placement: "top",
+  },
+  {
+    target: '[data-tour="leaderboard"]',
+    content: "Žebříček zobrazuje pořadí členů podle najetých kilometrů. Tvoje pozice je zvýrazněna.",
+    placement: "top",
+  },
+  {
+    target: '[data-tour="refresh-stats"]',
+    content: "Tlačítkem můžeš aktualizovat statistiky z propojených Strava účtů.",
+    placement: "bottom",
+  },
+];
+
+export const routeDetailSteps: Step[] = [
+  {
+    target: '[data-tour="route-title"]',
+    content: "Detail trasy obsahuje všechny důležité informace o oblíbené trase.",
+    disableBeacon: true,
+    placement: "bottom",
+  },
+  {
+    target: '[data-tour="route-params"]',
+    content: "Zde najdeš parametry trasy - vzdálenost, převýšení, obtížnost a typ terénu.",
+    placement: "top",
+  },
+  {
+    target: '[data-tour="route-map"]',
+    content: "Mapa zobrazuje průběh trasy. Můžeš ji prozkoumat a stáhnout GPX soubor.",
+    placement: "top",
+  },
+  {
+    target: '[data-tour="route-actions"]',
+    content: "Stáhni GPX pro navigaci nebo vytvoř vyjížďku přímo z této trasy.",
+    placement: "top",
+  },
+  {
+    target: '[data-tour="route-photos"]',
+    content: "Nahraj fotky z jízdy po této trase a prohlédni si fotky ostatních.",
+    placement: "top",
+  },
+];
+
+export const notificationsSteps: Step[] = [
+  {
+    target: '[data-tour="notifications-header"]',
+    content: "Přehled všech tvých notifikací. Nepropásneš žádnou důležitou informaci.",
+    disableBeacon: true,
+    placement: "bottom",
+  },
+  {
+    target: '[data-tour="notifications-filter"]',
+    content: "Filtruj notifikace - zobraz všechny nebo jen nepřečtené.",
+    placement: "bottom",
+  },
+  {
+    target: '[data-tour="notifications-actions"]',
+    content: "Hromadně označ všechny jako přečtené nebo smaž přečtené notifikace.",
+    placement: "bottom",
+  },
+  {
+    target: '[data-tour="notifications-list"]',
+    content: "Kliknutím na notifikaci se dostaneš na detail události. U každé můžeš označit jako přečteno nebo smazat.",
+    placement: "top",
+  },
+];
+
+export const memberProfileSteps: Step[] = [
+  {
+    target: '[data-tour="member-info"]',
+    content: "Profil člena zobrazuje základní informace a statistiky.",
+    disableBeacon: true,
+    placement: "bottom",
+  },
+  {
+    target: '[data-tour="member-strava"]',
+    content: "Propojení se Stravou umožňuje zobrazit statistiky a odkaz na Strava profil.",
+    placement: "top",
+  },
+  {
+    target: '[data-tour="member-stats"]',
+    content: "Přehled statistik člena - počet účastí na vyjížďkách a rok registrace.",
+    placement: "top",
+  },
+  {
+    target: '[data-tour="member-events"]',
+    content: "Historie účastí na vyjížďkách. Kliknutím se dostaneš na detail akce.",
     placement: "top",
   },
 ];

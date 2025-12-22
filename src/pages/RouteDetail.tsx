@@ -3,6 +3,8 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useTour } from "@/hooks/useTour";
+import TourProvider from "@/components/tour/TourProvider";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import MemberOnlyContent from "@/components/MemberOnlyContent";
@@ -25,7 +27,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Route, Mountain, Gauge, Download, ExternalLink, Trash2, MapIcon, CalendarPlus, Bike, Map, ImageIcon } from "lucide-react";
+import { ArrowLeft, Route, Mountain, Gauge, Download, ExternalLink, Trash2, MapIcon, CalendarPlus, Bike, Map, ImageIcon, HelpCircle } from "lucide-react";
 import { toast } from "sonner";
 import { ROUTES } from "@/lib/routes";
 import { getRouteSourceInfo } from "@/lib/route-source-utils";
@@ -82,11 +84,25 @@ const RouteDetail = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { isMember, isAdmin, canCreateEvents, loading: roleLoading } = useUserRole();
+  const { startTour, shouldAutoStart, isTourCompleted } = useTour();
+  const [tourRunning, setTourRunning] = useState(false);
   const [route, setRoute] = useState<FavoriteRoute | null>(null);
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  const handleStartTour = () => {
+    setTourRunning(true);
+    startTour("routeDetail");
+  };
+
+  useEffect(() => {
+    if (!loading && route && isMember && shouldAutoStart("routeDetail")) {
+      const timer = setTimeout(() => handleStartTour(), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [loading, route, isMember]);
 
   const fetchRoute = useCallback(async () => {
     if (!id) return;
@@ -231,25 +247,32 @@ const RouteDetail = () => {
           )}
 
           {/* Title and Actions */}
-          <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
+          <div className="flex flex-wrap items-start justify-between gap-4 mb-6" data-tour="route-title">
             <h1 className="text-3xl font-bold">{route.title}</h1>
-            {canEdit && (
-              <div className="flex gap-2">
-                <EditRouteDialog route={route} onRouteUpdated={fetchRoute} />
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setShowDeleteDialog(true)}
-                >
-                  <Trash2 className="w-4 h-4" />
+            <div className="flex gap-2">
+              {isMember && !isTourCompleted("routeDetail") && (
+                <Button variant="ghost" size="icon" onClick={handleStartTour}>
+                  <HelpCircle className="w-4 h-4" />
                 </Button>
-              </div>
-            )}
+              )}
+              {canEdit && (
+                <>
+                  <EditRouteDialog route={route} onRouteUpdated={fetchRoute} />
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setShowDeleteDialog(true)}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
 
           {/* Route Parameters Badges */}
           {(hasRouteParams || route.route_link) && (
-            <div className="flex flex-wrap gap-2 mb-6">
+            <div className="flex flex-wrap gap-2 mb-6" data-tour="route-params">
               {route.route_link && (() => {
                 const sourceInfo = getRouteSourceInfo(route.route_link);
                 if (sourceInfo) {
@@ -311,7 +334,7 @@ const RouteDetail = () => {
 
           {/* GPX Map */}
           {route.gpx_file_url && (
-            <Card className="mb-6">
+            <Card className="mb-6" data-tour="route-map">
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <Map className="w-5 h-5" />
@@ -325,7 +348,7 @@ const RouteDetail = () => {
           )}
 
           {/* Description and Actions */}
-          <Card className="mb-6">
+          <Card className="mb-6" data-tour="route-actions">
             <CardContent className="pt-6 space-y-4">
               {route.description && (
                 <p className="text-muted-foreground whitespace-pre-wrap">{route.description}</p>
@@ -381,7 +404,7 @@ const RouteDetail = () => {
           </Card>
 
           {/* Photos Section */}
-          <Card className="mb-6">
+          <Card className="mb-6" data-tour="route-photos">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2 text-lg">
@@ -428,6 +451,11 @@ const RouteDetail = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <TourProvider
+        tourId="routeDetail"
+        run={tourRunning}
+        onFinish={() => setTourRunning(false)}
+      />
     </div>
   );
 };
