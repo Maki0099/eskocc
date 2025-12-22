@@ -45,6 +45,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { RouteReviewCard, EditableRoute, GeneratedImage, ManualImage } from "./RouteReviewCard";
+import { GarminDownloadInstructions } from "./GarminDownloadInstructions";
 import {
   RouteCompletionIndicator,
   calculateCompletionScore,
@@ -1721,7 +1722,26 @@ export function RouteImportWizard() {
               </div>
             </div>
 
-            {routesWithoutGpx.length > 0 && (
+            {/* Garmin-specific instructions */}
+            {url.toLowerCase().includes("garmin") && routesWithoutGpx.length > 0 && (
+              <div className="space-y-2">
+                {routesWithoutGpx.map((route) => (
+                  <div key={route.id} className="flex items-center justify-between p-3 bg-cyan-500/5 border border-cyan-500/20 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium truncate max-w-[250px]">{route.title}</span>
+                      <Badge variant="outline" className="text-cyan-600 border-cyan-500/30">Garmin</Badge>
+                    </div>
+                    <GarminDownloadInstructions
+                      courseUrl={route.gpx_url || url}
+                      onGpxUpload={(file) => handleFileUpload(route.id, file)}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Generic warning for routes without GPX (non-Garmin) */}
+            {!url.toLowerCase().includes("garmin") && routesWithoutGpx.length > 0 && (
               <div className="flex items-start gap-2 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg text-sm">
                 <AlertCircle className="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0" />
                 <p>
