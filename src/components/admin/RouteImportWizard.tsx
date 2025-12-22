@@ -36,6 +36,7 @@ import {
   ImagePlus,
   Camera,
   ScanLine,
+  Info,
 } from "lucide-react";
 import { QrScanner } from "./QrScanner";
 import {
@@ -712,7 +713,12 @@ export function RouteImportWizard() {
   };
 
   const routesWithoutGpx = routes.filter(
-    (r) => !r.gpx_accessible && !r.manualGpxFile
+    (r) => !r.gpx_accessible && !r.manualGpxBase64
+  );
+
+  // Check selected routes without GPX for validation
+  const selectedRoutesWithoutGpx = selectedRoutes.filter(
+    (r) => !r.gpx_accessible && !r.manualGpxBase64
   );
 
   // Calculate average completion score
@@ -847,6 +853,12 @@ export function RouteImportWizard() {
         {/* Step: URL Input */}
         {step === "url" && (
           <>
+            {/* Inline hint */}
+            <div className="flex items-start gap-2 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg text-sm">
+              <Info className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
+              <span>Zadejte URL stránky s trasou. GPX bude automaticky stažen, pokud je dostupný.</span>
+            </div>
+            
             <Collapsible open={servicesOpen} onOpenChange={setServicesOpen}>
               <CollapsibleTrigger asChild>
                 <Button
@@ -1750,14 +1762,30 @@ export function RouteImportWizard() {
               </p>
             </div>
 
+            {/* Warning for routes without GPX */}
+            {selectedRoutesWithoutGpx.length > 0 && (
+              <div className="flex items-start gap-2 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg text-sm">
+                <AlertCircle className="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0" />
+                <span>
+                  {selectedRoutesWithoutGpx.length} {selectedRoutesWithoutGpx.length === 1 ? "trasa nemá" : selectedRoutesWithoutGpx.length < 5 ? "trasy nemají" : "tras nemá"} GPX. 
+                  Rychlý import není dostupný – je nutná kontrola a doplnění GPX souborů.
+                </span>
+              </div>
+            )}
+
             <div className="grid md:grid-cols-2 gap-4">
               <button
                 onClick={() => handleModeSelect("quick")}
-                className="p-6 border rounded-lg hover:border-primary hover:bg-primary/5 transition-colors text-left"
+                disabled={selectedRoutesWithoutGpx.length > 0}
+                className={`p-6 border rounded-lg transition-colors text-left ${
+                  selectedRoutesWithoutGpx.length > 0 
+                    ? "opacity-50 cursor-not-allowed border-muted" 
+                    : "hover:border-primary hover:bg-primary/5"
+                }`}
               >
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="p-2 bg-primary/10 rounded-lg">
-                    <Zap className="w-6 h-6 text-primary" />
+                  <div className={`p-2 rounded-lg ${selectedRoutesWithoutGpx.length > 0 ? "bg-muted" : "bg-primary/10"}`}>
+                    <Zap className={`w-6 h-6 ${selectedRoutesWithoutGpx.length > 0 ? "text-muted-foreground" : "text-primary"}`} />
                   </div>
                   <h4 className="font-semibold">Rychlý import</h4>
                 </div>
@@ -1765,6 +1793,11 @@ export function RouteImportWizard() {
                   Importovat trasy ihned bez dalších úprav. Data budou použita
                   tak, jak byla načtena.
                 </p>
+                {selectedRoutesWithoutGpx.length > 0 && (
+                  <p className="text-xs text-destructive mt-2">
+                    Nedostupné – některé trasy nemají GPX
+                  </p>
+                )}
               </button>
 
               <button
@@ -1776,10 +1809,13 @@ export function RouteImportWizard() {
                     <ClipboardCheck className="w-6 h-6 text-primary" />
                   </div>
                   <h4 className="font-semibold">S kontrolou</h4>
+                  {selectedRoutesWithoutGpx.length > 0 && (
+                    <Badge variant="default" className="text-xs">Doporučeno</Badge>
+                  )}
                 </div>
                 <p className="text-sm text-muted-foreground">
                   Projít každou trasu jednotlivě a doplnit chybějící údaje
-                  (obtížnost, terén, popis).
+                  (GPX, obtížnost, terén, popis).
                 </p>
               </button>
             </div>
@@ -1825,64 +1861,128 @@ export function RouteImportWizard() {
               </p>
             </div>
 
-            <div className="border rounded-lg overflow-hidden">
-              <div className="max-h-[300px] overflow-y-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted/50 sticky top-0">
-                    <tr>
-                      <th className="p-2 text-left">Trasa</th>
-                      <th className="p-2 w-16">GPX</th>
-                      <th className="p-2 w-16">Cover</th>
-                      <th className="p-2 w-16">Params</th>
-                      <th className="p-2 w-32">Kompletnost</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {selectedRoutes.map((route) => {
-                      const hasGpx =
-                        route.gpx_accessible || route.manualGpxBase64;
-                      const hasCover = !!route.cover_url;
-                      const hasParams =
-                        !!route.distance_km && !!route.elevation_m;
-
-                      return (
-                        <tr key={route.id} className="border-t">
-                          <td className="p-2">
-                            <span className="truncate block max-w-[200px]">
-                              {route.title}
-                            </span>
-                          </td>
-                          <td className="p-2 text-center">
-                            {hasGpx ? (
-                              <CheckCircle className="w-4 h-4 text-green-500 mx-auto" />
-                            ) : (
-                              <XCircle className="w-4 h-4 text-destructive mx-auto" />
-                            )}
-                          </td>
-                          <td className="p-2 text-center">
-                            {hasCover ? (
-                              <CheckCircle className="w-4 h-4 text-green-500 mx-auto" />
-                            ) : (
-                              <AlertCircle className="w-4 h-4 text-yellow-500 mx-auto" />
-                            )}
-                          </td>
-                          <td className="p-2 text-center">
-                            {hasParams ? (
-                              <CheckCircle className="w-4 h-4 text-green-500 mx-auto" />
-                            ) : (
-                              <AlertCircle className="w-4 h-4 text-yellow-500 mx-auto" />
-                            )}
-                          </td>
-                          <td className="p-2">
-                            <RouteCompletionIndicator route={route} size="sm" />
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+            {/* Blocking validation - routes without GPX */}
+            {selectedRoutesWithoutGpx.length > 0 && (
+              <div className="flex items-start gap-3 p-4 bg-destructive/10 border border-destructive/30 rounded-lg">
+                <XCircle className="w-5 h-5 text-destructive mt-0.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="font-medium text-destructive">
+                    {selectedRoutesWithoutGpx.length} {selectedRoutesWithoutGpx.length === 1 ? "trasa nemá" : selectedRoutesWithoutGpx.length < 5 ? "trasy nemají" : "tras nemá"} GPX soubor
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Pro import je GPX povinný. Vraťte se zpět a nahrajte GPX soubory, nebo odeberte tyto trasy z výběru.
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {selectedRoutesWithoutGpx.map((route) => (
+                      <Badge key={route.id} variant="outline" className="text-destructive border-destructive/30">
+                        {route.title.substring(0, 30)}{route.title.length > 30 ? "..." : ""}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
+
+            {/* Ready routes section */}
+            {selectedRoutes.filter(r => r.gpx_accessible || r.manualGpxBase64).length > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm font-medium text-green-600">
+                  <CheckCircle className="w-4 h-4" />
+                  Připraveno k importu ({selectedRoutes.filter(r => r.gpx_accessible || r.manualGpxBase64).length})
+                </div>
+                <div className="border rounded-lg overflow-hidden">
+                  <div className="max-h-[200px] overflow-y-auto">
+                    <table className="w-full text-sm">
+                      <thead className="bg-muted/50 sticky top-0">
+                        <tr>
+                          <th className="p-2 text-left">Trasa</th>
+                          <th className="p-2 w-16">GPX</th>
+                          <th className="p-2 w-16">Cover</th>
+                          <th className="p-2 w-16">Mapa</th>
+                          <th className="p-2 w-32">Kompletnost</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {selectedRoutes.filter(r => r.gpx_accessible || r.manualGpxBase64).map((route) => {
+                          const hasCover = !!route.cover_url;
+                          const hasRouteLink = !!route.route_link;
+
+                          return (
+                            <tr key={route.id} className="border-t">
+                              <td className="p-2">
+                                <span className="truncate block max-w-[200px]">
+                                  {route.title}
+                                </span>
+                              </td>
+                              <td className="p-2 text-center">
+                                <CheckCircle className="w-4 h-4 text-green-500 mx-auto" />
+                              </td>
+                              <td className="p-2 text-center">
+                                {hasCover ? (
+                                  <CheckCircle className="w-4 h-4 text-green-500 mx-auto" />
+                                ) : (
+                                  <AlertCircle className="w-4 h-4 text-yellow-500 mx-auto" />
+                                )}
+                              </td>
+                              <td className="p-2 text-center">
+                                {hasRouteLink ? (
+                                  <CheckCircle className="w-4 h-4 text-green-500 mx-auto" />
+                                ) : (
+                                  <span className="text-muted-foreground text-xs">—</span>
+                                )}
+                              </td>
+                              <td className="p-2">
+                                <RouteCompletionIndicator route={route} size="sm" />
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Incomplete routes section */}
+            {selectedRoutesWithoutGpx.length > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm font-medium text-destructive">
+                  <XCircle className="w-4 h-4" />
+                  Vyžaduje doplnění GPX ({selectedRoutesWithoutGpx.length})
+                </div>
+                <div className="border border-destructive/30 rounded-lg overflow-hidden">
+                  <div className="max-h-[150px] overflow-y-auto">
+                    <table className="w-full text-sm">
+                      <thead className="bg-destructive/5 sticky top-0">
+                        <tr>
+                          <th className="p-2 text-left">Trasa</th>
+                          <th className="p-2 w-16">GPX</th>
+                          <th className="p-2 w-32">Kompletnost</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {selectedRoutesWithoutGpx.map((route) => (
+                          <tr key={route.id} className="border-t border-destructive/20">
+                            <td className="p-2">
+                              <span className="truncate block max-w-[200px]">
+                                {route.title}
+                              </span>
+                            </td>
+                            <td className="p-2 text-center">
+                              <XCircle className="w-4 h-4 text-destructive mx-auto" />
+                            </td>
+                            <td className="p-2">
+                              <RouteCompletionIndicator route={route} size="sm" />
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="flex items-center justify-between pt-4 border-t">
               <div className="flex items-center gap-2">
@@ -1890,18 +1990,28 @@ export function RouteImportWizard() {
                   if (importSource === "gpx") {
                     setStep("gpx-preview");
                   } else {
-                    setStep("mode");
+                    // If there are routes without GPX, go to review mode
+                    if (selectedRoutesWithoutGpx.length > 0) {
+                      setReviewIndex(0);
+                      setStep("review");
+                    } else {
+                      setStep("mode");
+                    }
                   }
                 }}>
-                  Zpět k úpravám
+                  {selectedRoutesWithoutGpx.length > 0 ? "Upravit trasy" : "Zpět k úpravám"}
                 </Button>
                 <Button variant="ghost" onClick={handleReset} className="text-muted-foreground">
                   Zrušit
                 </Button>
               </div>
-              <Button onClick={handleImport} className="gap-2">
+              <Button 
+                onClick={handleImport} 
+                className="gap-2"
+                disabled={selectedRoutesWithoutGpx.length > 0}
+              >
                 <Download className="w-4 h-4" />
-                Importovat vše
+                Importovat {selectedRoutes.filter(r => r.gpx_accessible || r.manualGpxBase64).length} tras
               </Button>
             </div>
           </div>
