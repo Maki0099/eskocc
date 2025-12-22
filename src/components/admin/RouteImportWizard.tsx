@@ -47,6 +47,16 @@ import {
 import { RouteReviewCard, EditableRoute, GeneratedImage, ManualImage } from "./RouteReviewCard";
 import { GarminDownloadInstructions } from "./GarminDownloadInstructions";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   RouteCompletionIndicator,
   calculateCompletionScore,
 } from "./RouteCompletionIndicator";
@@ -290,6 +300,7 @@ export function RouteImportWizard() {
   const [brokenImages, setBrokenImages] = useState<Set<string>>(new Set());
   const [qrScannerOpen, setQrScannerOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
   useEffect(() => {
     const draft = loadDraft();
     if (draft && draft.step !== "source" && draft.step !== "url" && draft.routes.length > 0) {
@@ -731,6 +742,29 @@ export function RouteImportWizard() {
     setGpxFiles([]);
     setImportSource("url");
     clearDraft();
+    setShowCancelDialog(false);
+  };
+
+  // Check if there's any data worth saving
+  const hasUnsavedData = routes.length > 0 || gpxFiles.length > 0 || url.trim().length > 0;
+
+  const handleCancelClick = () => {
+    if (hasUnsavedData && step !== "source" && step !== "summary") {
+      setShowCancelDialog(true);
+    } else {
+      handleReset();
+    }
+  };
+
+  const handleSaveDraftAndClose = () => {
+    saveDraft({ url, routes, step, selectedIds: Array.from(selectedIds), importSource, reviewIndex });
+    toast.success("Draft uložen, můžete pokračovat později");
+    setShowCancelDialog(false);
+    setStep("source");
+    setUrl("");
+    setRoutes([]);
+    setSelectedIds(new Set());
+    setGpxFiles([]);
   };
 
   const getGpxStatusIcon = (route: EditableRoute) => {
@@ -767,7 +801,29 @@ export function RouteImportWizard() {
       : 0;
 
   return (
-    <Card>
+    <>
+      {/* Cancel Confirmation Dialog */}
+      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Zrušit import?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Máte rozpracovaný import s {routes.length} trasami. Co chcete udělat?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col gap-2 sm:flex-row">
+            <AlertDialogCancel>Pokračovat v importu</AlertDialogCancel>
+            <Button variant="outline" onClick={handleSaveDraftAndClose}>
+              Uložit draft
+            </Button>
+            <AlertDialogAction onClick={handleReset} className="bg-destructive hover:bg-destructive/90">
+              Zrušit bez uložení
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Route className="w-5 h-5" />
@@ -1021,7 +1077,7 @@ export function RouteImportWizard() {
               <Button variant="outline" onClick={() => setStep("source")}>
                 Zpět
               </Button>
-              <Button variant="ghost" onClick={handleReset} className="text-muted-foreground">
+              <Button variant="ghost" onClick={handleCancelClick} className="text-muted-foreground">
                 Zrušit import
               </Button>
             </div>
@@ -1158,7 +1214,7 @@ export function RouteImportWizard() {
                 <Button variant="outline" onClick={() => setStep("source")}>
                   Zpět
                 </Button>
-                <Button variant="ghost" onClick={handleReset} className="text-muted-foreground">
+                <Button variant="ghost" onClick={handleCancelClick} className="text-muted-foreground">
                   Zrušit
                 </Button>
               </div>
@@ -1328,7 +1384,7 @@ export function RouteImportWizard() {
                 <Button variant="outline" onClick={() => setStep("gpx-upload")}>
                   Zpět
                 </Button>
-                <Button variant="ghost" onClick={handleReset} className="text-muted-foreground">
+                <Button variant="ghost" onClick={handleCancelClick} className="text-muted-foreground">
                   Zrušit
                 </Button>
               </div>
@@ -1385,7 +1441,7 @@ export function RouteImportWizard() {
             </div>
 
             <div className="flex justify-center pt-4 border-t">
-              <Button variant="ghost" onClick={handleReset} className="text-muted-foreground">
+              <Button variant="ghost" onClick={handleCancelClick} className="text-muted-foreground">
                 Přerušit a zrušit
               </Button>
             </div>
@@ -1809,7 +1865,7 @@ export function RouteImportWizard() {
             )}
 
             <div className="flex items-center justify-between pt-4 border-t">
-              <Button variant="outline" onClick={handleReset}>
+              <Button variant="outline" onClick={handleCancelClick}>
                 Zrušit
               </Button>
               <div className="flex items-center gap-4">
@@ -1902,7 +1958,7 @@ export function RouteImportWizard() {
                 <Button variant="outline" onClick={() => setStep("select")}>
                   Zpět
                 </Button>
-                <Button variant="ghost" onClick={handleReset} className="text-muted-foreground">
+                <Button variant="ghost" onClick={handleCancelClick} className="text-muted-foreground">
                   Zrušit
                 </Button>
               </div>
@@ -2106,7 +2162,7 @@ export function RouteImportWizard() {
                 }}>
                   {selectedRoutesWithoutGpx.length > 0 ? "Upravit trasy" : "Zpět k úpravám"}
                 </Button>
-                <Button variant="ghost" onClick={handleReset} className="text-muted-foreground">
+                <Button variant="ghost" onClick={handleCancelClick} className="text-muted-foreground">
                   Zrušit
                 </Button>
               </div>
@@ -2202,5 +2258,6 @@ export function RouteImportWizard() {
         )}
       </CardContent>
     </Card>
+    </>
   );
 }
