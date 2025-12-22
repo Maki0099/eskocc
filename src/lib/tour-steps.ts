@@ -48,17 +48,22 @@ export const accountSteps: Step[] = [
   },
   {
     target: '[data-tour="personal-info"]',
-    content: "Vyplň své jméno a přezdívku, která se bude zobrazovat ostatním členům.",
-    placement: "right",
+    content: "Vyplň své jméno, přezdívku a datum narození. Přezdívka se bude zobrazovat ostatním členům.",
+    placement: "top",
   },
   {
     target: '[data-tour="strava-section"]',
-    content: "Propoj svůj Strava účet pro automatické sledování statistik a účast v klubu.",
+    content: "Propoj svůj Strava účet pro automatické sledování najetých kilometrů a účast v klubovém žebříčku.",
     placement: "top",
   },
   {
     target: '[data-tour="notifications-section"]',
-    content: "Nastav si push notifikace, abys nepropásl/a žádnou důležitou událost.",
+    content: "Zapni si push notifikace, abys nepropásl/a žádnou důležitou událost nebo změnu ve vyjížďkách.",
+    placement: "top",
+  },
+  {
+    target: '[data-tour="tour-restart"]',
+    content: "Kdykoliv můžeš resetovat průvodce a projít si ho znovu.",
     placement: "top",
   },
 ];
