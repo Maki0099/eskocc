@@ -1,8 +1,8 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { LogOut, User, Calendar, Image, Shield, Settings, Users } from "lucide-react";
+import { LogOut, User, Calendar, Image, Shield, Settings, Users, HelpCircle } from "lucide-react";
 import logoDark from "@/assets/logo-horizontal-dark.png";
 import logoWhite from "@/assets/logo-horizontal-white.png";
 import { StravaWidget } from "@/components/dashboard/StravaWidget";
@@ -17,6 +17,8 @@ import { ROLE_LABELS, STRAVA_CLUB_URL } from "@/lib/constants";
 import { ROUTES } from "@/lib/routes";
 import { useUserStats } from "@/hooks/useUserStats";
 import { useToast } from "@/hooks/use-toast";
+import { useTour } from "@/hooks/useTour";
+import TourProvider from "@/components/tour/TourProvider";
 
 const Dashboard = () => {
   const { user, signOut } = useAuth();
@@ -24,6 +26,9 @@ const Dashboard = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const clubMemberToastShown = useRef(false);
+  const { startTour, endTour, shouldAutoStart } = useTour();
+  const [runTour, setRunTour] = useState(false);
+  const autoStartChecked = useRef(false);
 
   // Handle Strava connection callback
   useEffect(() => {
@@ -56,6 +61,30 @@ const Dashboard = () => {
     }
   }, [profile?.is_strava_club_member, user?.id, toast]);
 
+  // Auto-start tour for new users
+  useEffect(() => {
+    if (!loading && !autoStartChecked.current) {
+      autoStartChecked.current = true;
+      if (shouldAutoStart("dashboard")) {
+        // Small delay to let the page render
+        setTimeout(() => {
+          setRunTour(true);
+          startTour("dashboard");
+        }, 500);
+      }
+    }
+  }, [loading, shouldAutoStart, startTour]);
+
+  const handleStartTour = () => {
+    setRunTour(true);
+    startTour("dashboard");
+  };
+
+  const handleEndTour = () => {
+    setRunTour(false);
+    endTour();
+  };
+
   const handleSignOut = async () => {
     await signOut();
   };
@@ -72,6 +101,9 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Tour Provider */}
+      <TourProvider tourId="dashboard" run={runTour} onFinish={handleEndTour} />
+      
       {/* Header */}
       <header className="border-b border-border/40 bg-background/80 backdrop-blur-xl">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
@@ -79,10 +111,21 @@ const Dashboard = () => {
             <img src={logoDark} alt="ESKO.cc" className="h-10 dark:hidden" />
             <img src={logoWhite} alt="ESKO.cc" className="h-10 hidden dark:block" />
           </Link>
-          <Button variant="ghost" size="sm" onClick={handleSignOut}>
-            <LogOut className="w-4 h-4 mr-2" />
-            Odhlásit se
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleStartTour}
+              data-tour="help-button"
+            >
+              <HelpCircle className="w-4 h-4 mr-2" />
+              Nápověda
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleSignOut}>
+              <LogOut className="w-4 h-4 mr-2" />
+              Odhlásit se
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -90,7 +133,7 @@ const Dashboard = () => {
       <main className="container mx-auto px-6 py-12">
         <div className="max-w-2xl mx-auto">
           {/* Welcome section */}
-          <div className="mb-12">
+          <div className="mb-12" data-tour="welcome">
             <h1 className="text-3xl font-semibold mb-2">
               Ahoj, {displayName}!
             </h1>
@@ -134,7 +177,7 @@ const Dashboard = () => {
           )}
 
           {/* Quick actions */}
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 md:grid-cols-2" data-tour="quick-actions">
             <Link
               to={ROUTES.EVENTS}
               className="group p-6 rounded-2xl border border-border/40 hover:border-border transition-colors"
@@ -184,21 +227,21 @@ const Dashboard = () => {
 
           {/* Upcoming Events Widget */}
           {user && role !== "pending" && (
-            <div className="mt-8">
+            <div className="mt-8" data-tour="events-widget">
               <UpcomingEventsWidget userId={user.id} />
             </div>
           )}
 
           {/* Challenge Widget */}
           {user && role !== "pending" && (
-            <div className="mt-4">
+            <div className="mt-4" data-tour="challenge-widget">
               <ChallengeWidget userId={user.id} />
             </div>
           )}
 
           {/* Strava Widget */}
           {user && (
-            <div className="mt-4">
+            <div className="mt-4" data-tour="strava-widget">
               <StravaWidget userId={user.id} isClubMember={profile?.is_strava_club_member ?? false} />
             </div>
           )}
@@ -214,7 +257,7 @@ const Dashboard = () => {
           )}
 
           {/* Profile info */}
-          <div className="mt-12 p-6 rounded-2xl border border-border/40">
+          <div className="mt-12 p-6 rounded-2xl border border-border/40" data-tour="profile">
             <Link to={ROUTES.ACCOUNT} className="flex items-center gap-4 group">
               <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center overflow-hidden">
                 {profile?.avatar_url ? (
