@@ -38,3 +38,6 @@ verify_jwt = false
 
 [functions.generate-route-metadata]
 verify_jwt = true
+
+[functions.strava-club-events]
+verify_jwt = false

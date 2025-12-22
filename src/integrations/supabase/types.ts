@@ -587,6 +587,57 @@ export type Database = {
           },
         ]
       }
+      strava_club_events: {
+        Row: {
+          address: string | null
+          created_at: string | null
+          description: string | null
+          event_date: string
+          id: string
+          organizing_athlete_id: string | null
+          organizing_athlete_name: string | null
+          participant_count: number | null
+          route_id: string | null
+          sport_type: string | null
+          strava_event_id: string
+          title: string
+          updated_at: string | null
+          women_only: boolean | null
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string | null
+          description?: string | null
+          event_date: string
+          id?: string
+          organizing_athlete_id?: string | null
+          organizing_athlete_name?: string | null
+          participant_count?: number | null
+          route_id?: string | null
+          sport_type?: string | null
+          strava_event_id: string
+          title: string
+          updated_at?: string | null
+          women_only?: boolean | null
+        }
+        Update: {
+          address?: string | null
+          created_at?: string | null
+          description?: string | null
+          event_date?: string
+          id?: string
+          organizing_athlete_id?: string | null
+          organizing_athlete_name?: string | null
+          participant_count?: number | null
+          route_id?: string | null
+          sport_type?: string | null
+          strava_event_id?: string
+          title?: string
+          updated_at?: string | null
+          women_only?: boolean | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
