@@ -29,7 +29,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Calendar, MapPin, Users, ChevronRight, Camera, History, Loader2, Route, Mountain, Gauge, Heart, MapIcon, RefreshCw, ExternalLink } from "lucide-react";
+import { Calendar, MapPin, Users, ChevronRight, Camera, History, Loader2, Route, Mountain, Gauge, Heart, MapIcon, RefreshCw, ExternalLink, Trash2 } from "lucide-react";
 import { format, isSameMonth, isSameYear } from "date-fns";
 import { cs } from "date-fns/locale";
 import { toast } from "sonner";
@@ -121,6 +121,8 @@ const Events = () => {
   const [routeToDelete, setRouteToDelete] = useState<FavoriteRoute | null>(null);
   const [routeToEdit, setRouteToEdit] = useState<FavoriteRoute | null>(null);
   const [deletingRoute, setDeletingRoute] = useState(false);
+  const [eventToDelete, setEventToDelete] = useState<Event | null>(null);
+  const [deletingEvent, setDeletingEvent] = useState(false);
   const [syncingStrava, setSyncingStrava] = useState(false);
   const [stravaEventsRaw, setStravaEventsRaw] = useState<StravaClubEvent[]>([]);
   const [importedStravaIds, setImportedStravaIds] = useState<Set<string>>(new Set());
@@ -350,6 +352,37 @@ const Events = () => {
     }
   };
 
+  const handleDeleteEvent = async () => {
+    if (!eventToDelete) return;
+
+    setDeletingEvent(true);
+    try {
+      // Delete from storage if there are files
+      if (eventToDelete.cover_image_url) {
+        const coverPath = eventToDelete.cover_image_url.split("/events/")[1];
+        if (coverPath) {
+          await supabase.storage.from("events").remove([coverPath]);
+        }
+      }
+
+      const { error } = await supabase
+        .from("events")
+        .delete()
+        .eq("id", eventToDelete.id);
+
+      if (error) throw error;
+
+      toast.success("Vyjížďka byla smazána");
+      setUpcomingEvents((prev) => prev.filter((e) => e.id !== eventToDelete.id));
+    } catch (error) {
+      console.error("Error deleting event:", error);
+      toast.error("Nepodařilo se smazat vyjížďku");
+    } finally {
+      setDeletingEvent(false);
+      setEventToDelete(null);
+    }
+  };
+
   useEffect(() => {
     fetchUpcomingEvents();
   }, [user]);
@@ -521,12 +554,29 @@ const Events = () => {
                   <Badge variant="default">Přihlášen/a</Badge>
                 )}
               </div>
-              <EventParticipationToggle
-                eventId={event.id}
-                userId={user.id}
-                isParticipating={event.is_participating}
-                onToggle={fetchUpcomingEvents}
-              />
+              <div className="flex items-center gap-2">
+                {/* Delete button for admins */}
+                {isAdmin && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setEventToDelete(event);
+                    }}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                )}
+                <EventParticipationToggle
+                  eventId={event.id}
+                  userId={user.id}
+                  isParticipating={event.is_participating}
+                  onToggle={fetchUpcomingEvents}
+                />
+              </div>
             </div>
           </CardContent>
         )}
@@ -754,6 +804,28 @@ const Events = () => {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {deletingRoute ? "Mazání..." : "Smazat"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Event Confirmation */}
+      <AlertDialog open={!!eventToDelete} onOpenChange={() => setEventToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Smazat vyjížďku?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Opravdu chcete smazat vyjížďku "{eventToDelete?.title}"? Tato akce smaže i všechny přihlášky účastníků a nelze ji vrátit.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Zrušit</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteEvent}
+              disabled={deletingEvent}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deletingEvent ? "Mazání..." : "Smazat"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
