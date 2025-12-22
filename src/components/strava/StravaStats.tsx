@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Bike, Mountain, Clock, TrendingUp, Loader2 } from "lucide-react";
+import { Bike, Mountain, Clock, TrendingUp } from "lucide-react";
 import stravaLogo from "@/assets/strava-logo.svg";
+import { StravaStatsSkeleton } from "@/components/strava/StravaSkeletons";
 
 interface StravaStatsProps {
   userId: string;
@@ -81,14 +82,7 @@ export const StravaStats = ({ userId, isConnected }: StravaStatsProps) => {
   if (!isConnected) return null;
 
   if (loading) {
-    return (
-      <div className="mt-6 p-4 rounded-xl bg-muted/30 border border-border/40">
-        <div className="flex items-center justify-center gap-2 text-muted-foreground">
-          <Loader2 className="w-4 h-4 animate-spin" />
-          <span className="text-sm">Načítám Strava statistiky...</span>
-        </div>
-      </div>
-    );
+    return <StravaStatsSkeleton />;
   }
 
   if (error) {
