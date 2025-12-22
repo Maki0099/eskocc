@@ -441,26 +441,60 @@ const Account = () => {
                   </Button>
                 </div>
               ) : (
-                <Button
+              <Button
                   variant="outline"
                   onClick={async () => {
                     if (!user) return;
                     setConnectingStrava(true);
+                    
+                    const redirectUrl = `${window.location.origin}/account`;
+                    console.log('[STRAVA DEBUG] Starting Strava auth flow');
+                    console.log('[STRAVA DEBUG] User ID:', user.id);
+                    console.log('[STRAVA DEBUG] Redirect URL:', redirectUrl);
+                    
                     try {
-                      const redirectUrl = `${window.location.origin}/account`;
+                      console.log('[STRAVA DEBUG] Calling strava-auth edge function...');
                       const { data, error } = await supabase.functions.invoke('strava-auth', {
                         body: { userId: user.id, redirectUrl }
                       });
-                      if (error) throw error;
-                      if (data?.authUrl) {
-                        window.location.href = data.authUrl;
+                      
+                      console.log('[STRAVA DEBUG] Response received');
+                      console.log('[STRAVA DEBUG] Data:', JSON.stringify(data, null, 2));
+                      console.log('[STRAVA DEBUG] Error:', error);
+                      
+                      if (error) {
+                        console.error('[STRAVA DEBUG] Edge function error:', error);
+                        throw error;
                       }
-                    } catch (err) {
-                      console.error('Strava auth error:', err);
+                      
+                      if (data?.authUrl) {
+                        console.log('[STRAVA DEBUG] Auth URL received:', data.authUrl);
+                        toast({
+                          title: "Přesměrovávám na Strava",
+                          description: "Za chvíli budeš přesměrován...",
+                        });
+                        // Small delay to show toast
+                        setTimeout(() => {
+                          console.log('[STRAVA DEBUG] Redirecting to Strava...');
+                          window.location.href = data.authUrl;
+                        }, 500);
+                      } else {
+                        console.error('[STRAVA DEBUG] No authUrl in response! Full data:', data);
+                        toast({
+                          variant: "destructive",
+                          title: "Chyba",
+                          description: `Edge funkce nevrátila authUrl. Data: ${JSON.stringify(data)}`,
+                        });
+                        setConnectingStrava(false);
+                      }
+                    } catch (err: any) {
+                      console.error('[STRAVA DEBUG] Exception caught:', err);
+                      console.error('[STRAVA DEBUG] Error message:', err?.message);
+                      console.error('[STRAVA DEBUG] Error details:', JSON.stringify(err, null, 2));
                       toast({
                         variant: "destructive",
                         title: "Chyba",
-                        description: "Nepodařilo se spustit propojení se Stravou",
+                        description: `Nepodařilo se spustit propojení: ${err?.message || 'Neznámá chyba'}`,
                       });
                       setConnectingStrava(false);
                     }
