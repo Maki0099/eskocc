@@ -408,6 +408,8 @@ export function RouteImportWizard() {
 
       const parsedRoutes: EditableRoute[] = data.routes.map((r: any) => ({
         ...r,
+        // Auto-set route_link from original URL if not present
+        route_link: r.route_link || r.gpx_url || url.trim(),
         difficulty: undefined,
         terrain_type: undefined,
       }));
