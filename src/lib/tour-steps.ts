@@ -1,5 +1,34 @@
 import { Step } from "react-joyride";
 
+export const indexSteps: Step[] = [
+  {
+    target: '[data-tour="hero-section"]',
+    content: "Vítej na stránkách cyklistického klubu ESKO.cc! Pojď se podívat, co všechno nabízíme.",
+    disableBeacon: true,
+    placement: "bottom",
+  },
+  {
+    target: '[data-tour="teaser-stats"]',
+    content: "Naše klubové statistiky - počet členů, najetých kilometrů a absolvovaných vyjížděk.",
+    placement: "top",
+  },
+  {
+    target: '[data-tour="features-section"]',
+    content: "Hlavní výhody členství v klubu - od společných vyjížděk po sledování pokroku.",
+    placement: "top",
+  },
+  {
+    target: '[data-tour="clubhouse-section"]',
+    content: "Naše klubovna s kavárnou je místem, kde se scházíme a plánujeme akce.",
+    placement: "top",
+  },
+  {
+    target: '[data-tour="cta-section"]',
+    content: "Připoj se k nám! Registrace je jednoduchá a rychlá.",
+    placement: "top",
+  },
+];
+
 export const dashboardSteps: Step[] = [
   {
     target: '[data-tour="welcome"]',
