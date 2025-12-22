@@ -55,6 +55,7 @@ import {
   readFileAsBase64,
   GpxMetadata,
 } from "@/lib/gpx-utils";
+import { getRouteSourceInfo } from "@/lib/route-source-utils";
 
 type GpxStatus = "available" | "auth-required" | "premium" | "varies" | "detection";
 type ImportSource = "url" | "gpx";
@@ -901,9 +902,42 @@ export function RouteImportWizard() {
               </CollapsibleContent>
             </Collapsible>
 
+            {/* URL Preview - show detected service */}
+            {(() => {
+              const detectedService = getRouteSourceInfo(url);
+              if (detectedService && url.trim()) {
+                return (
+                  <div className={`flex items-center gap-3 p-3 rounded-lg border ${detectedService.color}`}>
+                    <detectedService.icon className="w-5 h-5 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-sm">{detectedService.name}</span>
+                        {detectedService.gpxAvailable === true && (
+                          <Badge variant="outline" className="text-xs bg-green-500/10 text-green-600 border-green-500/20">
+                            <CheckCircle className="w-3 h-3 mr-1" />
+                            GPX
+                          </Badge>
+                        )}
+                        {detectedService.gpxAvailable === false && (
+                          <Badge variant="outline" className="text-xs bg-yellow-500/10 text-yellow-600 border-yellow-500/20">
+                            <AlertCircle className="w-3 h-3 mr-1" />
+                            Vyžaduje přihlášení
+                          </Badge>
+                        )}
+                      </div>
+                      {detectedService.description && (
+                        <p className="text-xs opacity-80 mt-0.5">{detectedService.description}</p>
+                      )}
+                    </div>
+                  </div>
+                );
+              }
+              return null;
+            })()}
+
             <div className="flex gap-2">
               <Input
-                placeholder="https://bicycle.holiday/cs/trasy-a-vylety/"
+                placeholder="https://mapy.com/s/kubuzesatu nebo https://connect.garmin.com/modern/course/..."
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 disabled={isAnalyzing}
