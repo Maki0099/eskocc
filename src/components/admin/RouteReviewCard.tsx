@@ -27,6 +27,7 @@ import {
   MapPin,
   Globe,
   Info,
+  ImagePlus,
 } from "lucide-react";
 import { getRouteSourceInfo } from "@/lib/route-source-utils";
 
@@ -53,6 +54,8 @@ export interface EditableRoute {
   route_link?: string;
   manualGpxFile?: File;
   manualGpxBase64?: string;
+  manualCoverFile?: File;
+  manualCoverBase64?: string;
   difficulty?: string;
   terrain_type?: string;
   generated_images?: GeneratedImage[];
@@ -102,10 +105,43 @@ export function RouteReviewCard({
     const reader = new FileReader();
     reader.onload = () => {
       const base64 = reader.result as string;
+      
+      // Clean Garmin-related warnings from description after GPX upload
+      let cleanedDescription = localRoute.description;
+      if (cleanedDescription) {
+        const garminPatterns = [
+          /Garmin Connect kurz vyžaduje přihlášení\.?\s*/gi,
+          /Pro stažení GPX je nutné přihlášení\.?\s*/gi,
+          /GPX není přímo dostupný\.?\s*/gi,
+          /Ke stažení GPX souboru je nutné přihlášení\.?\s*/gi,
+        ];
+        garminPatterns.forEach(pattern => {
+          cleanedDescription = cleanedDescription?.replace(pattern, '').trim();
+        });
+      }
+      
       const updated = {
         ...localRoute,
         manualGpxFile: file,
         manualGpxBase64: base64,
+        description: cleanedDescription,
+      };
+      setLocalRoute(updated);
+      onUpdate(updated);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleCoverUpload = (file: File | undefined) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result as string;
+      const updated = {
+        ...localRoute,
+        manualCoverFile: file,
+        manualCoverBase64: base64,
+        cover_url: base64, // Use base64 as preview
       };
       setLocalRoute(updated);
       onUpdate(updated);
@@ -114,10 +150,19 @@ export function RouteReviewCard({
   };
 
   const hasGpx = localRoute.gpx_accessible || localRoute.manualGpxBase64;
-  const hasCover = !!localRoute.cover_url;
+  const hasCover = !!(localRoute.cover_url || localRoute.manualCoverBase64);
+  const displayCover = localRoute.manualCoverBase64 || localRoute.cover_url;
 
   return (
     <div className="space-y-6">
+      {/* Inline help banner */}
+      <div className="flex items-start gap-2 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg text-sm">
+        <Info className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
+        <span className="text-muted-foreground">
+          <strong className="text-foreground">GPX je povinný</strong> pro založení trasy. Odkaz na mapu (mapy.cz, Garmin) a náhledový obrázek jsou volitelné doplňky.
+        </span>
+      </div>
+
       {/* Header with progress */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -132,10 +177,10 @@ export function RouteReviewCard({
       <div className="grid md:grid-cols-[200px_1fr] gap-6">
         {/* Cover preview */}
         <div className="space-y-3">
-          <div className="aspect-[4/3] bg-muted rounded-lg overflow-hidden flex items-center justify-center">
-            {localRoute.cover_url ? (
+          <div className="aspect-[4/3] bg-muted rounded-lg overflow-hidden flex items-center justify-center relative group">
+            {displayCover ? (
               <img
-                src={localRoute.cover_url}
+                src={displayCover}
                 alt={localRoute.title}
                 className="w-full h-full object-cover"
                 onError={(e) => {
@@ -152,6 +197,19 @@ export function RouteReviewCard({
                 <p className="text-xs text-muted-foreground">Bez náhledu</p>
               </div>
             )}
+            {/* Cover upload overlay */}
+            <label className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => handleCoverUpload(e.target.files?.[0])}
+              />
+              <div className="text-white text-center">
+                <ImagePlus className="w-6 h-6 mx-auto mb-1" />
+                <span className="text-xs">{hasCover ? "Změnit" : "Nahrát"}</span>
+              </div>
+            </label>
           </div>
 
           {/* Status badges */}
