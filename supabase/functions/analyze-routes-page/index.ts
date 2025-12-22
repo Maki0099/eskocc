@@ -969,21 +969,60 @@ async function parseGarminConnect(html: string, baseUrl: string): Promise<Parsed
   const routes: ParsedRoute[] = [];
   
   console.log('Parsing Garmin Connect page...');
+  console.log(`Base URL: ${baseUrl}`);
   
-  // Garmin Connect patterns:
-  // /modern/course/12345678 or /course/view/12345678
-  // /modern/activity/12345678
+  // Garmin Connect is a SPA - HTML content is mostly empty
+  // FIRST: Extract ID directly from the URL (this is the reliable method)
+  const urlCourseMatch = baseUrl.match(/\/(?:modern\/)?course(?:\/view)?\/(\d+)/i);
+  const urlActivityMatch = baseUrl.match(/\/(?:modern\/)?activity\/(\d+)/i);
+  
+  if (urlCourseMatch) {
+    const courseId = urlCourseMatch[1];
+    console.log(`Extracted course ID from URL: ${courseId}`);
+    
+    routes.push({
+      id: `garmin-course-${courseId}`,
+      title: `Garmin Course ${courseId}`,
+      description: 'Garmin Connect kurz - GPX vyžaduje přihlášení',
+      gpx_url: `https://connect.garmin.com/modern/proxy/course-service/course/${courseId}/gpx`,
+      gpx_accessible: false, // Garmin always requires auth
+      route_link: `https://connect.garmin.com/modern/course/${courseId}`
+    });
+  }
+  
+  if (urlActivityMatch) {
+    const activityId = urlActivityMatch[1];
+    console.log(`Extracted activity ID from URL: ${activityId}`);
+    
+    routes.push({
+      id: `garmin-activity-${activityId}`,
+      title: `Garmin Activity ${activityId}`,
+      description: 'Garmin Connect aktivita - GPX vyžaduje přihlášení',
+      gpx_url: `https://connect.garmin.com/modern/proxy/download-service/export/gpx/activity/${activityId}`,
+      gpx_accessible: false, // Garmin always requires auth
+      route_link: `https://connect.garmin.com/modern/activity/${activityId}`
+    });
+  }
+  
+  // If we already found routes from URL, we're done
+  if (routes.length > 0) {
+    console.log(`Parsed ${routes.length} routes from URL`);
+    return routes;
+  }
+  
+  // FALLBACK: Try to parse HTML for list pages (user profiles, search results)
+  // This works for pages that might have multiple courses/activities listed
   const courseIds = new Set<string>();
   const activityIds = new Set<string>();
   
-  // Course patterns
+  // Course patterns in HTML
   const coursePattern = /\/(?:modern\/)?course(?:\/view)?\/(\d+)/g;
   let match;
   while ((match = coursePattern.exec(html)) !== null) {
     courseIds.add(match[1]);
   }
   
-  // Activity patterns
+  // Activity patterns in HTML
   const activityPattern = /\/(?:modern\/)?activity\/(\d+)/g;
   while ((match = activityPattern.exec(html)) !== null) {
     activityIds.add(match[1]);
@@ -995,9 +1034,9 @@ async function parseGarminConnect(html: string, baseUrl: string): Promise<Parsed
     courseIds.add(match[1]);
   }
   
-  console.log(`Found ${courseIds.size} courses and ${activityIds.size} activities on Garmin Connect`);
+  console.log(`Found ${courseIds.size} courses and ${activityIds.size} activities in HTML`);
   
-  // Process courses
+  // Process courses from HTML
   for (const courseId of courseIds) {
     let title = `Garmin Course ${courseId}`;
     let distance_km: number | undefined;
@@ -1039,6 +1078,7 @@ async function parseGarminConnect(html: string, baseUrl: string): Promise<Parsed
     routes.push({
       id: `garmin-course-${courseId}`,
       title,
+      description: 'Garmin Connect kurz - GPX vyžaduje přihlášení',
       distance_km,
       elevation_m,
       gpx_url: `https://connect.garmin.com/modern/proxy/course-service/course/${courseId}/gpx`,
@@ -1048,7 +1088,7 @@ async function parseGarminConnect(html: string, baseUrl: string): Promise<Parsed
     });
   }
   
-  // Process activities
+  // Process activities from HTML
   for (const activityId of activityIds) {
     let title = `Garmin Activity ${activityId}`;
     let distance_km: number | undefined;
@@ -1079,7 +1119,7 @@ async function parseGarminConnect(html: string, baseUrl: string): Promise<Parsed
     routes.push({
       id: `garmin-activity-${activityId}`,
       title,
-      description: 'Garmin activity (recorded ride)',
+      description: 'Garmin Connect aktivita - GPX vyžaduje přihlášení',
       distance_km,
       elevation_m,
       gpx_url: `https://connect.garmin.com/modern/proxy/download-service/export/gpx/activity/${activityId}`,
@@ -1088,13 +1128,7 @@ async function parseGarminConnect(html: string, baseUrl: string): Promise<Parsed
     });
   }
   
-  // Test GPX accessibility
-  for (const route of routes) {
-    if (route.gpx_url) {
-      route.gpx_accessible = await testGpxAccessibility(route.gpx_url);
-    }
-  }
-  
+  console.log(`Parsed ${routes.length} routes`);
   return routes;
 }
 
