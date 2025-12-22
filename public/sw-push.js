@@ -1,4 +1,31 @@
 // Push notification handler for service worker
+
+// Badge API helper - set app badge count
+const updateBadge = async (count) => {
+  try {
+    if ('setAppBadge' in navigator) {
+      if (count > 0) {
+        await navigator.setAppBadge(count);
+      } else {
+        await navigator.clearAppBadge();
+      }
+    }
+  } catch (error) {
+    console.error('Error updating badge:', error);
+  }
+};
+
+// Listen for messages from the main app to update badge
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'UPDATE_BADGE') {
+    updateBadge(event.data.count);
+  }
+  
+  if (event.data && event.data.type === 'CLEAR_BADGE') {
+    updateBadge(0);
+  }
+});
+
 self.addEventListener('push', (event) => {
   console.log('Push notification received:', event);
 
@@ -31,6 +58,10 @@ self.addEventListener('push', (event) => {
       renotify: true
     };
 
+    // Update badge when push received
+    const badgeCount = data.data?.unreadCount || 1;
+    updateBadge(badgeCount);
+
     event.waitUntil(
       self.registration.showNotification(data.title || 'Esko.cc', options)
     );
@@ -62,6 +93,18 @@ self.addEventListener('notificationclick', (event) => {
       // Open new window if none exists
       if (clients.openWindow) {
         return clients.openWindow(url);
+      }
+    })
+  );
+});
+
+// Clear badge when all notifications are dismissed
+self.addEventListener('notificationclose', (event) => {
+  // Get all active notifications
+  event.waitUntil(
+    self.registration.getNotifications().then((notifications) => {
+      if (notifications.length === 0) {
+        updateBadge(0);
       }
     })
   );
