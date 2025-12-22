@@ -58,6 +58,10 @@ import {
   GpxMetadata,
 } from "@/lib/gpx-utils";
 import { getRouteSourceInfo } from "@/lib/route-source-utils";
+import { ImportStepper } from "./ImportStepper";
+import { RouteNavigationStrip } from "./RouteNavigationStrip";
+import { RouteSourceIcon } from "./RouteSourceIcon";
+import { BulkSettingsDropdown } from "./BulkSettingsDropdown";
 
 type GpxStatus = "available" | "auth-required" | "premium" | "varies" | "detection";
 type ImportSource = "url" | "gpx";
@@ -744,15 +748,12 @@ export function RouteImportWizard() {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Progress bar */}
+        {/* Visual Stepper */}
         {step !== "source" && (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Postup</span>
-              <span className="font-medium">{Math.round(getStepProgress())}%</span>
-            </div>
-            <Progress value={getStepProgress()} className="h-2" />
-          </div>
+          <ImportStepper
+            currentStep={step}
+            importSource={importSource}
+          />
         )}
 
         {/* Step: Source Selection */}
@@ -1618,11 +1619,19 @@ export function RouteImportWizard() {
         {/* Step: Route Selection */}
         {step === "select" && (
           <>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-2">
               <p className="text-sm text-muted-foreground">
                 Nalezené trasy ({routes.length})
               </p>
               <div className="flex gap-2">
+                <BulkSettingsDropdown
+                  selectedRoutes={routes.filter(r => selectedIds.has(r.id))}
+                  onUpdateRoutes={(updates) => {
+                    setRoutes(prev => prev.map(r => 
+                      selectedIds.has(r.id) ? { ...r, ...updates } : r
+                    ));
+                  }}
+                />
                 <Button variant="outline" size="sm" onClick={handleSelectAll}>
                   Vybrat vše
                 </Button>
@@ -1642,7 +1651,7 @@ export function RouteImportWizard() {
                       <th className="p-2 text-right w-20">km</th>
                       <th className="p-2 text-right w-20">m</th>
                       <th className="p-2 w-32">GPX</th>
-                      <th className="p-2 w-20">Cover</th>
+                      <th className="p-2 w-20">Mapa</th>
                       <th className="p-2 w-24"></th>
                     </tr>
                   </thead>
@@ -1689,11 +1698,7 @@ export function RouteImportWizard() {
                           </div>
                         </td>
                         <td className="p-2">
-                          {route.cover_url ? (
-                            <CheckCircle className="w-4 h-4 text-green-500" />
-                          ) : (
-                            <AlertCircle className="w-4 h-4 text-yellow-500" />
-                          )}
+                          <RouteSourceIcon url={route.route_link} />
                         </td>
                         <td className="p-2">
                           {!route.gpx_accessible && !route.manualGpxFile && (
@@ -1857,17 +1862,28 @@ export function RouteImportWizard() {
 
         {/* Step: Review */}
         {step === "review" && selectedRoutes[reviewIndex] && (
-          <RouteReviewCard
-            route={selectedRoutes[reviewIndex]}
-            currentIndex={reviewIndex}
-            totalCount={selectedRoutes.length}
-            onUpdate={handleRouteUpdate}
-            onNext={handleReviewNext}
-            onPrevious={handleReviewPrevious}
-            onSkip={handleReviewSkip}
-            isFirst={reviewIndex === 0}
-            isLast={reviewIndex === selectedRoutes.length - 1}
-          />
+          <div className="space-y-4">
+            {/* Route Navigation Strip */}
+            {selectedRoutes.length > 1 && (
+              <RouteNavigationStrip
+                routes={selectedRoutes}
+                currentIndex={reviewIndex}
+                onNavigate={(index) => setReviewIndex(index)}
+              />
+            )}
+            
+            <RouteReviewCard
+              route={selectedRoutes[reviewIndex]}
+              currentIndex={reviewIndex}
+              totalCount={selectedRoutes.length}
+              onUpdate={handleRouteUpdate}
+              onNext={handleReviewNext}
+              onPrevious={handleReviewPrevious}
+              onSkip={handleReviewSkip}
+              isFirst={reviewIndex === 0}
+              isLast={reviewIndex === selectedRoutes.length - 1}
+            />
+          </div>
         )}
 
         {/* Step: Summary */}
@@ -1947,11 +1963,7 @@ export function RouteImportWizard() {
                                 )}
                               </td>
                               <td className="p-2 text-center">
-                                {hasRouteLink ? (
-                                  <CheckCircle className="w-4 h-4 text-green-500 mx-auto" />
-                                ) : (
-                                  <span className="text-muted-foreground text-xs">—</span>
-                                )}
+                                <RouteSourceIcon url={route.route_link} />
                               </td>
                               <td className="p-2">
                                 <RouteCompletionIndicator route={route} size="sm" />
@@ -1979,20 +1991,41 @@ export function RouteImportWizard() {
                       <thead className="bg-destructive/5 sticky top-0">
                         <tr>
                           <th className="p-2 text-left">Trasa</th>
-                          <th className="p-2 w-16">GPX</th>
-                          <th className="p-2 w-32">Kompletnost</th>
+                          <th className="p-2 w-16">Mapa</th>
+                          <th className="p-2 w-24">GPX</th>
+                          <th className="p-2 w-28">Kompletnost</th>
                         </tr>
                       </thead>
                       <tbody>
                         {selectedRoutesWithoutGpx.map((route) => (
                           <tr key={route.id} className="border-t border-destructive/20">
                             <td className="p-2">
-                              <span className="truncate block max-w-[200px]">
+                              <span className="truncate block max-w-[180px]">
                                 {route.title}
                               </span>
                             </td>
                             <td className="p-2 text-center">
-                              <XCircle className="w-4 h-4 text-destructive mx-auto" />
+                              <RouteSourceIcon url={route.route_link} />
+                            </td>
+                            <td className="p-2">
+                              <label className="cursor-pointer">
+                                <input
+                                  type="file"
+                                  accept=".gpx"
+                                  className="hidden"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) handleFileUpload(route.id, file);
+                                  }}
+                                />
+                                <Badge
+                                  variant="outline"
+                                  className="gap-1 cursor-pointer hover:bg-muted border-destructive/50 text-destructive"
+                                >
+                                  <FileUp className="w-3 h-3" />
+                                  Nahrát
+                                </Badge>
+                              </label>
                             </td>
                             <td className="p-2">
                               <RouteCompletionIndicator route={route} size="sm" />
