@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { LogOut, User, Calendar, Image, Shield, Settings, Users } from "lucide-react";
+import { LogOut, User, Calendar, Image, Shield, Settings, Users, HelpCircle } from "lucide-react";
 import logoDark from "@/assets/logo-horizontal-dark.png";
 import logoWhite from "@/assets/logo-horizontal-white.png";
 import { StravaWidget } from "@/components/dashboard/StravaWidget";
@@ -98,6 +98,13 @@ const Dashboard = () => {
             <img src={logoWhite} alt="ESKO.cc" className="h-10 hidden dark:block" />
           </Link>
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => startTour("dashboard")}
+              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+              aria-label="Nápověda"
+            >
+              <HelpCircle className="h-5 w-5" />
+            </button>
             <Button variant="ghost" size="sm" onClick={handleSignOut}>
               <LogOut className="w-4 h-4 mr-2" />
               Odhlásit se
