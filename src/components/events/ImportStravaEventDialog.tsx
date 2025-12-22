@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -21,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Download, Loader2 } from "lucide-react";
+import { Download, Loader2, FileDown } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
@@ -41,6 +42,7 @@ interface StravaClubEvent {
   terrain?: number | null;
   route_polyline?: string | null;
   strava_route_id?: string | null;
+  route_id?: string | null;
 }
 
 interface ImportStravaEventDialogProps {
@@ -72,6 +74,7 @@ const ImportStravaEventDialog = ({ stravaEvent, onImported }: ImportStravaEventD
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [downloadingGpx, setDownloadingGpx] = useState(false);
   
   // Form state with pre-filled values from Strava
   const [title, setTitle] = useState(stravaEvent.title);
@@ -81,8 +84,37 @@ const ImportStravaEventDialog = ({ stravaEvent, onImported }: ImportStravaEventD
   const [terrainType, setTerrainType] = useState(mapTerrain(stravaEvent.terrain) || "");
   const [distanceKm, setDistanceKm] = useState("");
   const [elevationM, setElevationM] = useState("");
+  
+  // GPX download option
+  const [downloadGpx, setDownloadGpx] = useState(true);
+  const hasRoute = !!(stravaEvent.strava_route_id || stravaEvent.route_id);
 
   const stravaEventUrl = `https://www.strava.com/clubs/1860524/group_events/${stravaEvent.strava_event_id}`;
+
+  const downloadGpxFromStrava = async (): Promise<string | null> => {
+    const routeId = stravaEvent.strava_route_id || stravaEvent.route_id;
+    if (!routeId) return null;
+
+    setDownloadingGpx(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('strava-route-gpx', {
+        body: { route_id: routeId, user_id: user?.id }
+      });
+
+      if (error) throw error;
+      if (data?.gpx_url) {
+        console.log('GPX downloaded from Strava:', data.gpx_url);
+        return data.gpx_url;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error downloading GPX from Strava:', error);
+      toast.error("Nepodařilo se stáhnout GPX ze Strava");
+      return null;
+    } finally {
+      setDownloadingGpx(false);
+    }
+  };
 
   const handleImport = async () => {
     if (!user) {
@@ -92,6 +124,12 @@ const ImportStravaEventDialog = ({ stravaEvent, onImported }: ImportStravaEventD
 
     setImporting(true);
     try {
+      // Optionally download GPX from Strava
+      let gpxFileUrl: string | null = null;
+      if (downloadGpx && hasRoute) {
+        gpxFileUrl = await downloadGpxFromStrava();
+      }
+
       const { error } = await supabase.from("events").insert({
         title,
         description: description || null,
@@ -104,13 +142,16 @@ const ImportStravaEventDialog = ({ stravaEvent, onImported }: ImportStravaEventD
         strava_event_id: stravaEvent.strava_event_id,
         strava_event_url: stravaEventUrl,
         start_latlng: stravaEvent.start_latlng || null,
+        gpx_file_url: gpxFileUrl,
         created_by: user.id,
       });
 
       if (error) throw error;
 
       toast.success("Vyjížďka byla importována ze Strava", {
-        description: "Nyní můžete přidat cover image, GPX soubor a další detaily.",
+        description: gpxFileUrl 
+          ? "GPX trasa byla automaticky stažena." 
+          : "Nyní můžete přidat cover image, GPX soubor a další detaily.",
       });
       setOpen(false);
       onImported();
@@ -133,6 +174,7 @@ const ImportStravaEventDialog = ({ stravaEvent, onImported }: ImportStravaEventD
       setTerrainType(mapTerrain(stravaEvent.terrain) || "");
       setDistanceKm("");
       setElevationM("");
+      setDownloadGpx(true);
     }
   };
 
@@ -248,17 +290,40 @@ const ImportStravaEventDialog = ({ stravaEvent, onImported }: ImportStravaEventD
               </Select>
             </div>
           </div>
+
+          {/* GPX Download Option */}
+          {hasRoute && (
+            <div className="flex items-center space-x-2 p-3 bg-muted/50 rounded-lg">
+              <Checkbox
+                id="downloadGpx"
+                checked={downloadGpx}
+                onCheckedChange={(checked) => setDownloadGpx(checked === true)}
+              />
+              <div className="grid gap-0.5 leading-none">
+                <Label
+                  htmlFor="downloadGpx"
+                  className="text-sm font-medium cursor-pointer flex items-center gap-1.5"
+                >
+                  <FileDown className="w-4 h-4" />
+                  Stáhnout GPX trasu ze Strava
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Automaticky stáhne GPX soubor z připojené trasy
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>
             Zrušit
           </Button>
-          <Button onClick={handleImport} disabled={importing || !title}>
-            {importing ? (
+          <Button onClick={handleImport} disabled={importing || downloadingGpx || !title}>
+            {importing || downloadingGpx ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Importuji...
+                {downloadingGpx ? "Stahuji GPX..." : "Importuji..."}
               </>
             ) : (
               <>
