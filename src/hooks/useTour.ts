@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 
 const STORAGE_KEY = "esko_completed_tours";
 
-export type TourId = "dashboard" | "account" | "events" | "gallery" | "eventDetail";
+export type TourId = "dashboard" | "account" | "events" | "gallery" | "eventDetail" | "statistics" | "routeDetail" | "notifications" | "memberProfile";
 
 interface UseTourReturn {
   isRunning: boolean;

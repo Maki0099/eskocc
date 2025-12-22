@@ -2,7 +2,9 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { ArrowLeft, Calendar, MapPin, ExternalLink, Check } from "lucide-react";
+import { useTour } from "@/hooks/useTour";
+import TourProvider from "@/components/tour/TourProvider";
+import { ArrowLeft, Calendar, MapPin, ExternalLink, Check, HelpCircle } from "lucide-react";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
@@ -40,11 +42,25 @@ const MemberProfile = () => {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { startTour, shouldAutoStart, isTourCompleted } = useTour();
+  const [tourRunning, setTourRunning] = useState(false);
   const [member, setMember] = useState<MemberData | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
   const [participations, setParticipations] = useState<EventParticipation[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+
+  const handleStartTour = () => {
+    setTourRunning(true);
+    startTour("memberProfile");
+  };
+
+  useEffect(() => {
+    if (!loading && member && shouldAutoStart("memberProfile")) {
+      const timer = setTimeout(() => handleStartTour(), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [loading, member]);
 
   useEffect(() => {
     const fetchMemberData = async () => {
@@ -159,16 +175,23 @@ const MemberProfile = () => {
             <img src={logoRound} alt="Esko.cc" className="h-10 w-10" />
             <span className="font-bold text-xl text-foreground">ESKO.cc</span>
           </Link>
-          <Button onClick={() => navigate(-1)} variant="ghost" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Zpět
-          </Button>
+          <div className="flex items-center gap-2">
+            {!isTourCompleted("memberProfile") && (
+              <Button variant="ghost" size="icon" onClick={handleStartTour}>
+                <HelpCircle className="w-4 h-4" />
+              </Button>
+            )}
+            <Button onClick={() => navigate(-1)} variant="ghost" size="sm">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Zpět
+            </Button>
+          </div>
         </div>
       </header>
 
       <main className="container mx-auto px-4 py-8 max-w-2xl">
         {/* Profile Card */}
-        <Card className="mb-8">
+        <Card className="mb-8" data-tour="member-info">
           <CardContent className="pt-8 pb-6 flex flex-col items-center text-center">
             <Avatar className="h-24 w-24 mb-4 ring-4 ring-primary/20">
               {member.avatar_url && (
@@ -199,7 +222,7 @@ const MemberProfile = () => {
             </p>
 
             {member.strava_id && (
-              <div className="flex flex-col items-center gap-2 mt-3">
+              <div className="flex flex-col items-center gap-2 mt-3" data-tour="member-strava">
                 <a
                   href={`https://www.strava.com/athletes/${member.strava_id}`}
                   target="_blank"
@@ -233,7 +256,7 @@ const MemberProfile = () => {
         )}
 
         {/* Statistics */}
-        <div className="grid grid-cols-2 gap-4 mb-8">
+        <div className="grid grid-cols-2 gap-4 mb-8" data-tour="member-stats">
           <Card>
             <CardContent className="pt-6 text-center">
               <p className="text-3xl font-bold text-primary mb-1">
@@ -256,7 +279,7 @@ const MemberProfile = () => {
 
         {/* Event Participations */}
         {participations.length > 0 && (
-          <Card>
+          <Card data-tour="member-events">
             <CardHeader>
               <CardTitle className="text-lg">Účasti na vyjížďkách</CardTitle>
             </CardHeader>
@@ -287,13 +310,18 @@ const MemberProfile = () => {
         )}
 
         {participations.length === 0 && (
-          <Card>
+          <Card data-tour="member-events">
             <CardContent className="py-8 text-center text-muted-foreground">
               Tento člen se zatím nezúčastnil žádné vyjížďky.
             </CardContent>
           </Card>
         )}
       </main>
+      <TourProvider
+        tourId="memberProfile"
+        run={tourRunning}
+        onFinish={() => setTourRunning(false)}
+      />
     </div>
   );
 };

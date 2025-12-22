@@ -1,7 +1,17 @@
 import Joyride, { CallBackProps, STATUS, Step } from "react-joyride";
 import { useTheme } from "@/components/ThemeProvider";
 import { TourId, useTour } from "@/hooks/useTour";
-import { dashboardSteps, accountSteps, eventsSteps, gallerySteps, eventDetailSteps } from "@/lib/tour-steps";
+import { 
+  dashboardSteps, 
+  accountSteps, 
+  eventsSteps, 
+  gallerySteps, 
+  eventDetailSteps,
+  statisticsSteps,
+  routeDetailSteps,
+  notificationsSteps,
+  memberProfileSteps
+} from "@/lib/tour-steps";
 
 const tourStepsMap: Record<TourId, Step[]> = {
   dashboard: dashboardSteps,
@@ -9,6 +19,10 @@ const tourStepsMap: Record<TourId, Step[]> = {
   events: eventsSteps,
   gallery: gallerySteps,
   eventDetail: eventDetailSteps,
+  statistics: statisticsSteps,
+  routeDetail: routeDetailSteps,
+  notifications: notificationsSteps,
+  memberProfile: memberProfileSteps,
 };
 
 interface TourProviderProps {

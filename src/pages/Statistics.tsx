@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useTour } from "@/hooks/useTour";
+import TourProvider from "@/components/tour/TourProvider";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import MemberOnlyContent from "@/components/MemberOnlyContent";
@@ -23,7 +25,8 @@ import {
   CheckCircle2,
   Check,
   RefreshCw,
-  Clock
+  Clock,
+  HelpCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
@@ -47,6 +50,8 @@ interface MemberStats {
 const Statistics = () => {
   const { user } = useAuth();
   const { isMember, loading: roleLoading } = useUserRole();
+  const { startTour, shouldAutoStart, isTourCompleted } = useTour();
+  const [tourRunning, setTourRunning] = useState(false);
   const [loading, setLoading] = useState(true);
   const [settings, setSettings] = useState<ChallengeSettings | null>(null);
   const [members, setMembers] = useState<MemberStats[]>([]);
@@ -55,6 +60,18 @@ const Statistics = () => {
   const [userStravaId, setUserStravaId] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+
+  const handleStartTour = () => {
+    setTourRunning(true);
+    startTour("statistics");
+  };
+
+  useEffect(() => {
+    if (!loading && isMember && shouldAutoStart("statistics")) {
+      const timer = setTimeout(() => handleStartTour(), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [loading, isMember]);
 
   const currentYear = new Date().getFullYear();
 
@@ -314,7 +331,7 @@ const Statistics = () => {
       <main className="flex-1 container mx-auto px-4 pt-24 pb-12">
         <div className="max-w-4xl mx-auto space-y-8">
           {/* Header */}
-          <div className="text-center space-y-2">
+          <div className="text-center space-y-2" data-tour="statistics-header">
             <div className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary mb-4">
               <Target className="w-4 h-4" />
               <span className="text-sm font-medium">Výzva {currentYear}</span>
@@ -323,6 +340,18 @@ const Statistics = () => {
             <p className="text-lg text-muted-foreground max-w-md mx-auto">
               Sleduj pokrok členů a celého klubu ve splnění ročního cíle
             </p>
+            {isMember && !isTourCompleted("statistics") && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleStartTour}
+                className="mt-2 gap-2"
+                data-tour="refresh-stats"
+              >
+                <HelpCircle className="w-4 h-4" />
+                Spustit průvodce
+              </Button>
+            )}
           </div>
 
           {!isMember && !roleLoading ? (
@@ -343,7 +372,7 @@ const Statistics = () => {
               <StravaClubBanner hasStravaConnected={!!userStravaId} isClubMember={members.some(m => m.id === user?.id && m.is_strava_club_member)} />
               {/* Club Goal Card */}
               {settings && (
-                <Card className="overflow-hidden border-0 shadow-lg animate-fade-up">
+                <Card className="overflow-hidden border-0 shadow-lg animate-fade-up" data-tour="club-goal">
                   <div className="bg-gradient-to-br from-accent to-secondary p-6 md:p-8 text-accent-foreground">
                     <div className="flex items-center gap-3 mb-6">
                       <div className="w-12 h-12 rounded-full bg-accent-foreground/20 flex items-center justify-center">
@@ -399,7 +428,7 @@ const Statistics = () => {
 
               {/* Stats Cards */}
               {settings && (
-                <div className="grid gap-4 md:grid-cols-4">
+                <div className="grid gap-4 md:grid-cols-4" data-tour="age-categories">
                   {/* Strava Club Members Count */}
                   <Card className="text-center animate-fade-up">
                     <CardContent className="pt-6 pb-5">
@@ -441,7 +470,7 @@ const Statistics = () => {
               )}
 
               {/* Leaderboard */}
-              <Card className="animate-fade-up animation-delay-400">
+              <Card className="animate-fade-up animation-delay-400" data-tour="leaderboard">
                 <CardHeader className="pb-4">
                   <CardTitle className="flex items-center gap-2 text-lg">
                     <Trophy className="w-5 h-5 text-primary" />
@@ -566,6 +595,11 @@ const Statistics = () => {
         </div>
       </main>
       <Footer />
+      <TourProvider
+        tourId="statistics"
+        run={tourRunning}
+        onFinish={() => setTourRunning(false)}
+      />
     </div>
   );
 };
