@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -80,6 +80,11 @@ export function RouteReviewCard({
   isLast,
 }: RouteReviewCardProps) {
   const [localRoute, setLocalRoute] = useState<EditableRoute>(route);
+
+  // Synchronize localRoute when the route prop changes (e.g., after GPX parsing)
+  useEffect(() => {
+    setLocalRoute(route);
+  }, [route]);
 
   const handleChange = <K extends keyof EditableRoute>(
     key: K,
