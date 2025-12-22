@@ -239,9 +239,35 @@ serve(async (req) => {
     // Get existing strava event IDs to detect new ones
     const { data: existingEvents } = await supabase
       .from('strava_club_events')
-      .select('strava_event_id');
+      .select('strava_event_id, title, event_date');
     
     const existingEventIds = new Set((existingEvents || []).map(e => e.strava_event_id));
+    
+    // Clean up potentially corrupted records (IDs ending in 000 that may be precision-loss duplicates)
+    // These were created before the large number handling fix
+    const corruptedRecords = (existingEvents || []).filter(e => {
+      const id = e.strava_event_id;
+      // Check if ID ends in 000 and has at least 16 digits (indicating potential precision loss)
+      return id && id.length >= 16 && id.endsWith('000');
+    });
+    
+    if (corruptedRecords.length > 0) {
+      console.log(`Found ${corruptedRecords.length} potentially corrupted records to clean up`);
+      for (const record of corruptedRecords) {
+        // Delete the corrupted record
+        const { error: deleteError } = await supabase
+          .from('strava_club_events')
+          .delete()
+          .eq('strava_event_id', record.strava_event_id);
+        
+        if (deleteError) {
+          console.warn(`Failed to delete corrupted record ${record.strava_event_id}:`, deleteError);
+        } else {
+          console.log(`Cleaned up corrupted record: ${record.strava_event_id} (${record.title})`);
+          existingEventIds.delete(record.strava_event_id);
+        }
+      }
+    }
 
     // Find an admin or active member with valid Strava tokens to use for API calls
     const { data: profiles, error: profilesError } = await supabase
@@ -416,6 +442,34 @@ serve(async (req) => {
     console.log(`${stravaEventsRaw.length} events from API, ${eventsToUpsert.length} have valid dates`);
 
     if (eventsToUpsert.length > 0) {
+      // Before upserting, check for and remove duplicates by title and date (but different strava_event_id)
+      // This handles cases where old corrupted IDs created duplicate entries
+      for (const event of eventsToUpsert) {
+        const duplicates = (existingEvents || []).filter(existing => 
+          existing.title === event.title && 
+          existing.strava_event_id !== event.strava_event_id &&
+          // Check if dates are the same (within same day)
+          existing.event_date && 
+          new Date(existing.event_date).toDateString() === new Date(event.event_date).toDateString()
+        );
+        
+        if (duplicates.length > 0) {
+          console.log(`Found ${duplicates.length} duplicate(s) for event "${event.title}", removing...`);
+          for (const dup of duplicates) {
+            const { error: dupDeleteError } = await supabase
+              .from('strava_club_events')
+              .delete()
+              .eq('strava_event_id', dup.strava_event_id);
+            
+            if (dupDeleteError) {
+              console.warn(`Failed to delete duplicate ${dup.strava_event_id}:`, dupDeleteError);
+            } else {
+              console.log(`Removed duplicate: ${dup.strava_event_id}`);
+            }
+          }
+        }
+      }
+
       const { error: upsertError } = await supabase
         .from('strava_club_events')
         .upsert(eventsToUpsert, { 
