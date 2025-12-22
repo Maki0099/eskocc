@@ -73,7 +73,10 @@ const StartLocationMap = ({ coordinates, className }: StartLocationMapProps) => 
       })
         .setLngLat(lngLat)
         .setPopup(
-          new mapboxgl.Popup({ offset: 25 }).setHTML(`
+          new mapboxgl.Popup({ 
+            offset: 25,
+            focusAfterOpen: false // Prevent auto-focus which causes scroll
+          }).setHTML(`
             <div style="padding: 8px;">
               <strong style="font-size: 14px;">Místo startu</strong>
             </div>
@@ -81,8 +84,12 @@ const StartLocationMap = ({ coordinates, className }: StartLocationMapProps) => 
         )
         .addTo(map.current);
 
-      // Open popup by default
-      marker.current.togglePopup();
+      // Open popup after map is fully loaded to prevent scroll issues
+      map.current.on('load', () => {
+        setTimeout(() => {
+          marker.current?.togglePopup();
+        }, 100);
+      });
 
       map.current.on("error", (e) => {
         console.error("Mapbox error:", e);
