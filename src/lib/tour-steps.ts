@@ -95,13 +95,18 @@ export const eventsSteps: Step[] = [
 export const gallerySteps: Step[] = [
   {
     target: '[data-tour="gallery-header"]',
-    content: "Galerie obsahuje fotky z klubových akcí a vyjížděk.",
+    content: "Fotogalerie klubu ESKO.cc - zde najdeš fotky z akcí a vyjížděk.",
     disableBeacon: true,
     placement: "bottom",
   },
   {
     target: '[data-tour="gallery-albums"]',
-    content: "Procházej jednotlivá alba podle akcí.",
+    content: "Externí alba z Google Photos obsahují fotky z vícedenních výjezdů jako Mallorca. Kliknutím se otevřou v novém okně.",
+    placement: "top",
+  },
+  {
+    target: '[data-tour="gallery-tabs"]',
+    content: "Přepínej mezi všemi fotkami, fotkami z vyjížděk nebo ostatními. Můžeš také nahrát vlastní fotky.",
     placement: "top",
   },
 ];

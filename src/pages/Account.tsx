@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Camera, CalendarIcon, Loader2, Link as LinkIcon, Check, X, Bell, HelpCircle, RotateCcw } from "lucide-react";
+import { ArrowLeft, Camera, CalendarIcon, Loader2, Link as LinkIcon, Check, X, Bell, RotateCcw } from "lucide-react";
 import { ROUTES } from "@/lib/routes";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
@@ -18,7 +18,6 @@ import { StravaStats } from "@/components/strava/StravaStats";
 import StravaClubBanner from "@/components/strava/StravaClubBanner";
 import { PushNotificationToggle } from "@/components/notifications/PushNotificationToggle";
 import { useTour } from "@/hooks/useTour";
-import TourProvider from "@/components/tour/TourProvider";
 
 interface Profile {
   full_name: string | null;
@@ -42,18 +41,7 @@ const Account = () => {
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [connectingStrava, setConnectingStrava] = useState(false);
-  const { startTour, endTour, resetAllTours } = useTour();
-  const [runTour, setRunTour] = useState(false);
-
-  const handleStartTour = () => {
-    setRunTour(true);
-    startTour("account");
-  };
-
-  const handleEndTour = () => {
-    setRunTour(false);
-    endTour();
-  };
+  const { resetAllTours } = useTour();
 
   const handleResetAllTours = () => {
     resetAllTours();
@@ -281,9 +269,6 @@ const Account = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Tour Provider */}
-      <TourProvider tourId="account" run={runTour} onFinish={handleEndTour} />
-      
       {/* Header */}
       <header className="border-b border-border/40 bg-background/80 backdrop-blur-xl" data-tour="account-header">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
@@ -291,14 +276,6 @@ const Account = () => {
             <img src={logoDark} alt="ESKO.cc" className="h-8" />
           </Link>
           <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleStartTour}
-            >
-              <HelpCircle className="w-4 h-4 mr-2" />
-              Nápověda
-            </Button>
             <Link to="/dashboard">
               <Button variant="ghost" size="sm">
                 <ArrowLeft className="w-4 h-4 mr-2" />
