@@ -10,6 +10,7 @@ import CronJobsAdmin from "@/components/admin/CronJobsAdmin";
 import { PushNotificationsAdmin } from "@/components/admin/PushNotificationsAdmin";
 import { RoutesImportAdmin } from "@/components/admin/RoutesImportAdmin";
 import { GpxBulkUploadAdmin } from "@/components/admin/GpxBulkUploadAdmin";
+import { StravaEventsSyncAdmin } from "@/components/admin/StravaEventsSyncAdmin";
 import { AiSettingsAdmin } from "@/components/admin/AiSettingsAdmin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -401,6 +402,7 @@ const Admin = () => {
             </TabsContent>
 
             <TabsContent value="routes" className="space-y-6">
+              <StravaEventsSyncAdmin />
               <GpxBulkUploadAdmin />
               <RoutesImportAdmin />
             </TabsContent>
