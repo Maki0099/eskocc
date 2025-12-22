@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Bike, Mountain, TrendingUp, Loader2, LinkIcon, Users, ExternalLink, RefreshCw, Clock } from "lucide-react";
+import { Bike, Mountain, TrendingUp, LinkIcon, Users, ExternalLink, RefreshCw, Clock } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { STRAVA_CLUB_URL } from "@/lib/constants";
 import stravaLogo from "@/assets/strava-logo.svg";
+import { StravaWidgetSkeleton } from "@/components/strava/StravaSkeletons";
 interface StravaWidgetProps {
   userId: string;
   isClubMember?: boolean;
@@ -182,14 +183,7 @@ export const StravaWidget = ({ userId, isClubMember = false }: StravaWidgetProps
   };
 
   if (loading) {
-    return (
-      <div className="p-6 rounded-2xl border border-orange-500/20 bg-gradient-to-br from-orange-500/10 to-orange-600/5">
-        <div className="flex items-center justify-center gap-2 text-muted-foreground">
-          <Loader2 className="w-4 h-4 animate-spin" />
-          <span className="text-sm">Načítám...</span>
-        </div>
-      </div>
-    );
+    return <StravaWidgetSkeleton />;
   }
 
   if (!isConnected) {
