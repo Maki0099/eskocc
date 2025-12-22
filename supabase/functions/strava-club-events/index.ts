@@ -9,6 +9,152 @@ const corsHeaders = {
 // ESKO.cc Strava Club ID
 const STRAVA_CLUB_ID = 1860524;
 
+// ============= Web Push Helper Functions =============
+
+function base64urlToUint8Array(base64url: string): Uint8Array {
+  const padding = '='.repeat((4 - base64url.length % 4) % 4);
+  const base64 = (base64url + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
+function uint8ArrayToBase64url(uint8Array: Uint8Array): string {
+  let binary = '';
+  for (let i = 0; i < uint8Array.length; i++) {
+    binary += String.fromCharCode(uint8Array[i]);
+  }
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+async function createVapidJwt(audience: string, subject: string, privateKeyBytes: Uint8Array): Promise<string> {
+  const header = { alg: 'ES256', typ: 'JWT' };
+  const now = Math.floor(Date.now() / 1000);
+  const payload = {
+    aud: audience,
+    exp: now + 12 * 60 * 60,
+    sub: subject,
+  };
+
+  const headerB64 = uint8ArrayToBase64url(new TextEncoder().encode(JSON.stringify(header)));
+  const payloadB64 = uint8ArrayToBase64url(new TextEncoder().encode(JSON.stringify(payload)));
+  const unsignedToken = `${headerB64}.${payloadB64}`;
+
+  const key = await crypto.subtle.importKey(
+    'pkcs8',
+    privateKeyBytes.buffer as ArrayBuffer,
+    { name: 'ECDSA', namedCurve: 'P-256' },
+    false,
+    ['sign']
+  );
+
+  const signature = await crypto.subtle.sign(
+    { name: 'ECDSA', hash: 'SHA-256' },
+    key,
+    new TextEncoder().encode(unsignedToken)
+  );
+
+  return `${unsignedToken}.${uint8ArrayToBase64url(new Uint8Array(signature))}`;
+}
+
+async function encryptPayload(payload: string, p256dhB64: string, authB64: string): Promise<{ body: ArrayBuffer; salt: Uint8Array; localPublicKey: Uint8Array }> {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const localKeyPair = await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveBits']);
+  const localPublicKeyRaw = await crypto.subtle.exportKey('raw', localKeyPair.publicKey);
+  const localPublicKey = new Uint8Array(localPublicKeyRaw);
+
+  const subscriberPublicKeyBytes = base64urlToUint8Array(p256dhB64);
+  const subscriberPublicKey = await crypto.subtle.importKey(
+    'raw',
+    subscriberPublicKeyBytes.buffer as ArrayBuffer,
+    { name: 'ECDH', namedCurve: 'P-256' },
+    false,
+    []
+  );
+
+  const sharedSecret = await crypto.subtle.deriveBits(
+    { name: 'ECDH', public: subscriberPublicKey },
+    localKeyPair.privateKey,
+    256
+  );
+
+  const authSecret = base64urlToUint8Array(authB64);
+  const ikm = await crypto.subtle.importKey('raw', sharedSecret, { name: 'HKDF' }, false, ['deriveBits']);
+  
+  const prk = await crypto.subtle.deriveBits(
+    { name: 'HKDF', hash: 'SHA-256', salt: authSecret.buffer as ArrayBuffer, info: new TextEncoder().encode('Content-Encoding: auth\0') },
+    ikm,
+    256
+  );
+
+  const prkKey = await crypto.subtle.importKey('raw', prk, { name: 'HKDF' }, false, ['deriveBits']);
+  const context = new Uint8Array([
+    ...new TextEncoder().encode('P-256\0'),
+    0, 65, ...subscriberPublicKeyBytes,
+    0, 65, ...localPublicKey,
+  ]);
+
+  const cekInfo = new Uint8Array([...new TextEncoder().encode('Content-Encoding: aesgcm\0'), ...context]);
+  const nonceInfo = new Uint8Array([...new TextEncoder().encode('Content-Encoding: nonce\0'), ...context]);
+
+  const cekBits = await crypto.subtle.deriveBits({ name: 'HKDF', hash: 'SHA-256', salt: salt.buffer as ArrayBuffer, info: cekInfo }, prkKey, 128);
+  const nonceBits = await crypto.subtle.deriveBits({ name: 'HKDF', hash: 'SHA-256', salt: salt.buffer as ArrayBuffer, info: nonceInfo }, prkKey, 96);
+
+  const cek = await crypto.subtle.importKey('raw', cekBits, { name: 'AES-GCM' }, false, ['encrypt']);
+  const paddedPayload = new Uint8Array([0, 0, ...new TextEncoder().encode(payload)]);
+  const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: nonceBits }, cek, paddedPayload);
+
+  return { body: encrypted, salt, localPublicKey };
+}
+
+interface PushSubscription {
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+  user_id: string;
+}
+
+interface VapidKeys {
+  public_key: string;
+  private_key: string;
+}
+
+async function sendPushNotification(subscription: PushSubscription, payload: string, vapidKeys: VapidKeys): Promise<void> {
+  const url = new URL(subscription.endpoint);
+  const audience = `${url.protocol}//${url.host}`;
+
+  const privateKeyPem = vapidKeys.private_key;
+  const pemContents = privateKeyPem
+    .replace('-----BEGIN PRIVATE KEY-----', '')
+    .replace('-----END PRIVATE KEY-----', '')
+    .replace(/\s/g, '');
+  const privateKeyBytes = base64urlToUint8Array(pemContents.replace(/\+/g, '-').replace(/\//g, '_'));
+
+  const jwt = await createVapidJwt(audience, 'mailto:info@eskocc.cz', privateKeyBytes);
+  const { body, salt, localPublicKey } = await encryptPayload(payload, subscription.p256dh, subscription.auth);
+
+  const response = await fetch(subscription.endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/octet-stream',
+      'Content-Encoding': 'aesgcm',
+      'TTL': '86400',
+      'Authorization': `vapid t=${jwt}, k=${vapidKeys.public_key}`,
+      'Crypto-Key': `dh=${uint8ArrayToBase64url(localPublicKey)}; p256ecdsa=${vapidKeys.public_key}`,
+      'Encryption': `salt=${uint8ArrayToBase64url(salt)}`,
+    },
+    body,
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Push failed: ${response.status} - ${errorText}`);
+  }
+}
+
 async function refreshStravaToken(
   refreshToken: string,
   clientId: string,
@@ -80,6 +226,13 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Get existing strava event IDs to detect new ones
+    const { data: existingEvents } = await supabase
+      .from('strava_club_events')
+      .select('strava_event_id');
+    
+    const existingEventIds = new Set((existingEvents || []).map(e => e.strava_event_id));
+
     // Find an admin or active member with valid Strava tokens to use for API calls
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
@@ -99,7 +252,6 @@ serve(async (req) => {
 
     // Try each profile until one works
     let accessToken: string | null = null;
-    let workingProfileId: string | null = null;
 
     for (const profile of profiles) {
       let token = profile.strava_access_token;
@@ -142,7 +294,6 @@ serve(async (req) => {
 
       if (testResponse.ok) {
         accessToken = token;
-        workingProfileId = profile.id;
         console.log(`Using token from profile ${profile.id}`);
         break;
       } else {
@@ -177,6 +328,10 @@ serve(async (req) => {
 
     const stravaEvents: StravaGroupEvent[] = await eventsResponse.json();
     console.log(`Fetched ${stravaEvents.length} group events from Strava`);
+
+    // Detect new events
+    const newEvents = stravaEvents.filter(event => !existingEventIds.has(String(event.id)));
+    console.log(`Detected ${newEvents.length} new events`);
 
     // Upsert events into database
     const eventsToUpsert = stravaEvents.map(event => ({
@@ -215,6 +370,100 @@ serve(async (req) => {
       console.log(`Successfully upserted ${eventsToUpsert.length} events`);
     }
 
+    // Send push notifications for new events
+    if (newEvents.length > 0) {
+      console.log('Sending push notifications for new events...');
+
+      // Get VAPID keys
+      const { data: vapidKeys } = await supabase
+        .from('vapid_keys')
+        .select('*')
+        .limit(1)
+        .single();
+
+      if (vapidKeys) {
+        // Get all push subscriptions for members with push notifications enabled
+        const { data: subscriptions } = await supabase
+          .from('push_subscriptions')
+          .select('endpoint, p256dh, auth, user_id');
+
+        if (subscriptions && subscriptions.length > 0) {
+          for (const newEvent of newEvents) {
+            const eventDate = new Date(newEvent.start_date_local || newEvent.start_date);
+            const dateStr = eventDate.toLocaleDateString('cs-CZ', { 
+              weekday: 'long', 
+              day: 'numeric', 
+              month: 'long',
+              hour: '2-digit',
+              minute: '2-digit'
+            });
+
+            const payload = JSON.stringify({
+              title: '🚴 Nová vyjížďka na Stravě!',
+              body: `${newEvent.title} - ${dateStr}`,
+              icon: '/pwa-192x192.png',
+              badge: '/pwa-64x64.png',
+              data: {
+                url: '/events',
+                type: 'strava_event',
+                strava_event_id: String(newEvent.id)
+              }
+            });
+
+            // Send to all subscriptions
+            let sentCount = 0;
+            for (const sub of subscriptions) {
+              try {
+                await sendPushNotification(sub as PushSubscription, payload, vapidKeys);
+                sentCount++;
+              } catch (error) {
+                console.error(`Failed to send notification to subscription:`, error);
+              }
+            }
+            console.log(`Sent ${sentCount} notifications for event "${newEvent.title}"`);
+          }
+
+          // Also create in-app notifications for all members
+          const { data: memberRoles } = await supabase
+            .from('user_roles')
+            .select('user_id')
+            .in('role', ['member', 'active_member', 'admin']);
+
+          if (memberRoles && memberRoles.length > 0) {
+            for (const newEvent of newEvents) {
+              const eventDate = new Date(newEvent.start_date_local || newEvent.start_date);
+              const dateStr = eventDate.toLocaleDateString('cs-CZ', { 
+                weekday: 'long', 
+                day: 'numeric', 
+                month: 'long'
+              });
+
+              const notifications = memberRoles.map(member => ({
+                user_id: member.user_id,
+                title: '🚴 Nová vyjížďka na Stravě',
+                message: `${newEvent.title} - ${dateStr}`,
+                type: 'event',
+                url: '/events',
+                is_read: false
+              }));
+
+              const { error: notifError } = await supabase
+                .from('notifications')
+                .insert(notifications);
+
+              if (notifError) {
+                console.error('Failed to create in-app notifications:', notifError);
+              } else {
+                console.log(`Created ${notifications.length} in-app notifications for event "${newEvent.title}"`);
+              }
+            }
+          }
+        }
+      } else {
+        console.log('No VAPID keys found, skipping push notifications');
+      }
+    }
+
     // Clean up old events (past events older than 7 days)
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -232,6 +481,7 @@ serve(async (req) => {
       JSON.stringify({ 
         success: true, 
         synced_count: eventsToUpsert.length,
+        new_events_count: newEvents.length,
         events: eventsToUpsert.map(e => ({ title: e.title, date: e.event_date }))
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
