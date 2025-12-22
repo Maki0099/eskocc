@@ -33,11 +33,13 @@ const MobileNotificationLink = () => {
 
 // Helper to determine tour ID from current path
 const getTourIdFromPath = (pathname: string): TourId | null => {
+  if (pathname === "/") return "index";
   if (pathname === "/dashboard") return "dashboard";
   if (pathname === "/account") return "account";
   if (pathname === "/events") return "events";
   if (pathname.startsWith("/events/")) return "eventDetail";
   if (pathname === "/gallery") return "gallery";
+  if (pathname === "/statistics") return "statistics";
   return null;
 };
 
