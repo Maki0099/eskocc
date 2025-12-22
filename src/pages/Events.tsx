@@ -13,6 +13,7 @@ import RouteListItem from "@/components/routes/RouteListItem";
 import MemberOnlyContent from "@/components/MemberOnlyContent";
 import EventParticipationToggle from "@/components/events/EventParticipationToggle";
 import StravaEventBadge from "@/components/events/StravaEventBadge";
+import ImportStravaEventDialog from "@/components/events/ImportStravaEventDialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SkeletonEventCard } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -50,6 +51,7 @@ interface Event {
   terrain_type?: string | null;
   is_strava_event?: boolean;
   strava_event_id?: string;
+  strava_event_url?: string | null;
   organizing_athlete_name?: string | null;
 }
 
@@ -63,6 +65,11 @@ interface StravaClubEvent {
   sport_type: string | null;
   organizing_athlete_name: string | null;
   participant_count: number;
+  start_latlng?: any;
+  skill_level?: number | null;
+  terrain?: number | null;
+  route_polyline?: string | null;
+  strava_route_id?: string | null;
 }
 
 interface FavoriteRoute {
@@ -115,11 +122,13 @@ const Events = () => {
   const [routeToEdit, setRouteToEdit] = useState<FavoriteRoute | null>(null);
   const [deletingRoute, setDeletingRoute] = useState(false);
   const [syncingStrava, setSyncingStrava] = useState(false);
+  const [stravaEventsRaw, setStravaEventsRaw] = useState<StravaClubEvent[]>([]);
+  const [importedStravaIds, setImportedStravaIds] = useState<Set<string>>(new Set());
 
   const { ref: headerRef, isVisible: headerVisible } = useScrollAnimation();
   const { ref: listRef, isVisible: listVisible } = useScrollAnimation();
 
-  const fetchStravaEvents = async (): Promise<Event[]> => {
+  const fetchStravaEvents = async (): Promise<{ events: Event[], rawEvents: StravaClubEvent[] }> => {
     try {
       const { data: stravaEvents, error: stravaError } = await supabase
         .from("strava_club_events")
@@ -129,10 +138,11 @@ const Events = () => {
 
       if (stravaError) {
         console.error("Error fetching Strava events:", stravaError);
-        return [];
+        return { events: [], rawEvents: [] };
       }
 
-      return (stravaEvents || []).map((event: StravaClubEvent) => ({
+      const rawEvents = stravaEvents || [];
+      const mappedEvents = rawEvents.map((event: StravaClubEvent) => ({
         id: event.id,
         title: event.title,
         description: event.description,
@@ -145,9 +155,11 @@ const Events = () => {
         strava_event_id: event.strava_event_id,
         organizing_athlete_name: event.organizing_athlete_name,
       }));
+      
+      return { events: mappedEvents, rawEvents };
     } catch (error) {
       console.error("Error fetching Strava events:", error);
-      return [];
+      return { events: [], rawEvents: [] };
     }
   };
 
@@ -192,10 +204,24 @@ const Events = () => {
       );
 
       // Fetch Strava club events
-      const stravaEvents = await fetchStravaEvents();
+      const { events: stravaEvents, rawEvents } = await fetchStravaEvents();
+      setStravaEventsRaw(rawEvents);
+      
+      // Get list of strava_event_ids that are already imported as local events
+      const importedIds = new Set(
+        (eventsData || [])
+          .filter((e: any) => e.strava_event_id)
+          .map((e: any) => e.strava_event_id)
+      );
+      setImportedStravaIds(importedIds);
+      
+      // Filter out Strava events that are already imported as local events
+      const unimportedStravaEvents = stravaEvents.filter(
+        (e) => !importedIds.has(e.strava_event_id)
+      );
 
       // Combine and sort by date
-      const allEvents = [...eventsWithDetails, ...stravaEvents].sort(
+      const allEvents = [...eventsWithDetails, ...unimportedStravaEvents].sort(
         (a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime()
       );
 
@@ -399,6 +425,12 @@ const Events = () => {
                   {event.title}
                 </CardTitle>
                 {isStravaEvent && <StravaEventBadge />}
+                {/* Show badge for local events imported from Strava */}
+                {!isStravaEvent && event.strava_event_id && (
+                  <Badge variant="outline" className="gap-1 text-[#FC4C02] border-[#FC4C02]/30">
+                    Ze Strava
+                  </Badge>
+                )}
                 {isPast && (
                   <Badge variant="outline" className="text-muted-foreground">
                     Proběhlo
@@ -502,7 +534,15 @@ const Events = () => {
         {/* Strava link for Strava events */}
         {!isPast && isStravaEvent && (
           <CardContent className="pt-0 pb-4">
-            <div className="flex items-center justify-end border-t pt-4">
+            <div className="flex items-center justify-between border-t pt-4">
+              {/* Import button for admins */}
+              {isAdmin && stravaEventsRaw.find(e => e.strava_event_id === event.strava_event_id) && (
+                <ImportStravaEventDialog
+                  stravaEvent={stravaEventsRaw.find(e => e.strava_event_id === event.strava_event_id)!}
+                  onImported={fetchUpcomingEvents}
+                />
+              )}
+              {(!isAdmin || !stravaEventsRaw.find(e => e.strava_event_id === event.strava_event_id)) && <div />}
               <a
                 href={stravaEventUrl!}
                 target="_blank"
