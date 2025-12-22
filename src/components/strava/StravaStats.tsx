@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Bike, Mountain, Clock, TrendingUp, Loader2 } from "lucide-react";
+import stravaLogo from "@/assets/strava-logo.svg";
 
 interface StravaStatsProps {
   userId: string;
@@ -107,7 +108,7 @@ export const StravaStats = ({ userId, isConnected }: StravaStatsProps) => {
     <div className="mt-6 space-y-4">
       <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
         <img 
-          src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Strava_Logo.svg" 
+          src={stravaLogo} 
           alt="Strava" 
           className="h-4 w-auto"
         />
