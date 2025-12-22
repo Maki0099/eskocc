@@ -28,8 +28,10 @@ import {
   Globe,
   Info,
   ImagePlus,
+  MapIcon,
 } from "lucide-react";
 import { getRouteSourceInfo } from "@/lib/route-source-utils";
+import { GpxPreviewMap } from "@/components/map/GpxPreviewMap";
 
 export interface GeneratedImage {
   base64: string;
@@ -244,6 +246,19 @@ export function RouteReviewCard({
               </div>
             )}
           </div>
+
+          {/* GPX Map Preview */}
+          {hasGpx && localRoute.manualGpxBase64 && (
+            <div className="pt-3 border-t">
+              <p className="text-xs font-medium mb-2 text-muted-foreground flex items-center gap-1">
+                <MapIcon className="w-3 h-3" />
+                Náhled trasy
+              </p>
+              <div className="aspect-square rounded-lg overflow-hidden bg-muted">
+                <GpxPreviewMap gpxData={localRoute.manualGpxBase64} compact />
+              </div>
+            </div>
+          )}
 
           {/* Completion details */}
           <div className="pt-3 border-t">
