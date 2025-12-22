@@ -15,8 +15,6 @@ import MemberOnlyContent from "@/components/MemberOnlyContent";
 import EventParticipationToggle from "@/components/events/EventParticipationToggle";
 import StravaEventBadge from "@/components/events/StravaEventBadge";
 import ImportStravaEventDialog from "@/components/events/ImportStravaEventDialog";
-import TourProvider from "@/components/tour/TourProvider";
-import { useTour } from "@/hooks/useTour";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SkeletonEventCard } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -32,7 +30,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Calendar, MapPin, Users, ChevronRight, Camera, History, Loader2, Route, Mountain, Gauge, Heart, MapIcon, RefreshCw, ExternalLink, Trash2, Pencil, HelpCircle } from "lucide-react";
+import { Calendar, MapPin, Users, ChevronRight, Camera, History, Loader2, Route, Mountain, Gauge, Heart, MapIcon, RefreshCw, ExternalLink, Trash2, Pencil } from "lucide-react";
 import { format, isSameMonth, isSameYear } from "date-fns";
 import { cs } from "date-fns/locale";
 import { toast } from "sonner";
@@ -134,18 +132,6 @@ const Events = () => {
 
   const { ref: headerRef, isVisible: headerVisible } = useScrollAnimation();
   const { ref: listRef, isVisible: listVisible } = useScrollAnimation();
-  const { startTour, endTour } = useTour();
-  const [runTour, setRunTour] = useState(false);
-
-  const handleStartTour = () => {
-    setRunTour(true);
-    startTour("events");
-  };
-
-  const handleEndTour = () => {
-    setRunTour(false);
-    endTour();
-  };
 
   const fetchStravaEvents = async (): Promise<{ events: Event[], rawEvents: StravaClubEvent[] }> => {
     try {
@@ -656,9 +642,6 @@ const Events = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      {/* Tour Provider */}
-      <TourProvider tourId="events" run={runTour} onFinish={handleEndTour} />
-      
       <Header />
       <main className="flex-1 container mx-auto px-4 pt-24 pb-12">
         <div className="max-w-4xl mx-auto">
@@ -668,17 +651,7 @@ const Events = () => {
             data-tour="events-header"
           >
             <div className="min-w-0">
-              <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-3xl sm:text-4xl font-bold">Vyjížďky</h1>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleStartTour}
-                  className="shrink-0"
-                >
-                  <HelpCircle className="w-5 h-5" />
-                </Button>
-              </div>
+              <h1 className="text-3xl sm:text-4xl font-bold mb-2">Vyjížďky</h1>
               <p className="text-muted-foreground">
                 Přehled plánovaných a minulých cyklistických vyjížděk klubu Eskocc
               </p>

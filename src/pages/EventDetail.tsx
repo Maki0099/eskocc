@@ -11,8 +11,6 @@ import PhotoGrid from "@/components/gallery/PhotoGrid";
 import PhotoUpload from "@/components/gallery/PhotoUpload";
 import GpxMap from "@/components/map/GpxMap";
 import StartLocationMap from "@/components/map/StartLocationMap";
-import TourProvider from "@/components/tour/TourProvider";
-import { useTour } from "@/hooks/useTour";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -42,8 +40,7 @@ import {
   Gauge,
   Bike,
   Map,
-  Heart,
-  HelpCircle
+  Heart
 } from "lucide-react";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
@@ -134,21 +131,9 @@ const EventDetail = () => {
   const [isParticipating, setIsParticipating] = useState(false);
   const [loading, setLoading] = useState(true);
   const [addingToFavorites, setAddingToFavorites] = useState(false);
-  const { startTour, endTour } = useTour();
-  const [runTour, setRunTour] = useState(false);
 
   const isCreator = user && event?.created_by === user.id;
   const canEdit = isCreator || isAdmin;
-
-  const handleStartTour = () => {
-    setRunTour(true);
-    startTour("eventDetail");
-  };
-
-  const handleEndTour = () => {
-    setRunTour(false);
-    endTour();
-  };
 
   const fetchEvent = async () => {
     if (!id) return;
@@ -340,9 +325,6 @@ const EventDetail = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      {/* Tour Provider */}
-      <TourProvider tourId="eventDetail" run={runTour} onFinish={handleEndTour} />
-      
       <Header />
       <main className="flex-1 container mx-auto px-4 pt-24 pb-12">
         <div className="max-w-3xl mx-auto">
@@ -354,13 +336,6 @@ const EventDetail = () => {
               <ArrowLeft className="w-4 h-4" />
               Zpět na vyjížďky
             </Link>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleStartTour}
-            >
-              <HelpCircle className="w-5 h-5" />
-            </Button>
           </div>
 
           {/* Cover Image */}

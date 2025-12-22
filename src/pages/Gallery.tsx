@@ -102,6 +102,7 @@ const Gallery = () => {
           <div 
             ref={headerRef}
             className={`flex items-start justify-between gap-4 mb-8 animate-on-scroll slide-up ${headerVisible ? 'is-visible' : ''}`}
+            data-tour="gallery-header"
           >
             <div>
               <h1 className="text-4xl font-bold mb-2">Fotogalerie</h1>
@@ -124,6 +125,7 @@ const Gallery = () => {
                 ref={albumsRef}
                 className={`mb-12 animate-on-scroll slide-up ${albumsVisible ? 'is-visible' : ''}`}
                 style={{ transitionDelay: '100ms' }}
+                data-tour="gallery-albums"
               >
                 <h2 className="text-2xl font-semibold mb-4">Výjezdy - Google Foto</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -170,7 +172,7 @@ const Gallery = () => {
                     </CardContent>
                   </Card>
                 ) : (
-                  <Tabs defaultValue="all" className="space-y-6">
+                  <Tabs defaultValue="all" className="space-y-6" data-tour="gallery-tabs">
                     <TabsList>
                       <TabsTrigger value="all">Všechny ({photos.length})</TabsTrigger>
                       <TabsTrigger value="events">Z vyjížděk ({eventPhotos.length})</TabsTrigger>

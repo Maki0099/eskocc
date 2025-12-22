@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, User, ChevronRight, Moon, Sun, Sunrise, Download, Bell } from "lucide-react";
+import { Menu, X, User, ChevronRight, Moon, Sun, Sunrise, Download, Bell, HelpCircle } from "lucide-react";
+import { useTour, TourId } from "@/hooks/useTour";
+import TourProvider from "@/components/tour/TourProvider";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/components/ThemeProvider";
@@ -29,11 +31,38 @@ const MobileNotificationLink = () => {
   );
 };
 
+// Helper to determine tour ID from current path
+const getTourIdFromPath = (pathname: string): TourId | null => {
+  if (pathname === "/dashboard") return "dashboard";
+  if (pathname === "/account") return "account";
+  if (pathname === "/events") return "events";
+  if (pathname.startsWith("/events/")) return "eventDetail";
+  if (pathname === "/gallery") return "gallery";
+  return null;
+};
+
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, loading } = useAuth();
   const { theme, setTheme, effectiveTheme, sunTimes } = useTheme();
   const location = useLocation();
+  const { startTour, endTour } = useTour();
+  const [runTour, setRunTour] = useState(false);
+
+  const currentTourId = getTourIdFromPath(location.pathname);
+  const hasTour = currentTourId !== null;
+
+  const handleStartTour = () => {
+    if (currentTourId) {
+      setRunTour(true);
+      startTour(currentTourId);
+    }
+  };
+
+  const handleEndTour = () => {
+    setRunTour(false);
+    endTour();
+  };
 
   const cycleTheme = () => {
     if (theme === "auto") {
@@ -92,6 +121,11 @@ const Header = () => {
 
   return (
     <>
+      {/* Tour Provider - renders only when tour is available for current page */}
+      {currentTourId && (
+        <TourProvider tourId={currentTourId} run={runTour} onFinish={handleEndTour} />
+      )}
+      
       <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
@@ -133,6 +167,15 @@ const Header = () => {
               >
                 {getThemeIcon()}
               </button>
+              {hasTour && (
+                <button
+                  onClick={handleStartTour}
+                  className="relative p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                  aria-label="Nápověda"
+                >
+                  <HelpCircle className="h-5 w-5" />
+                </button>
+              )}
               {loading ? (
                 <div className="w-20 h-8 bg-muted animate-pulse rounded-lg"></div>
               ) : user ? (
@@ -229,6 +272,22 @@ const Header = () => {
                 <div className={`w-2 h-2 rounded-full transition-colors ${theme === "dark" ? "bg-primary" : "bg-muted-foreground/30"}`} />
               </div>
             </button>
+
+            {hasTour && (
+              <button
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  handleStartTour();
+                }}
+                className="flex items-center justify-between w-full px-4 py-3 rounded-xl bg-background hover:bg-muted/50 transition-colors"
+              >
+                <span className="text-sm font-medium flex items-center gap-2">
+                  <HelpCircle className="w-4 h-4" />
+                  Nápověda pro tuto stránku
+                </span>
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+              </button>
+            )}
             
             {loading ? (
               <div className="h-12 bg-muted animate-pulse rounded-xl"></div>
