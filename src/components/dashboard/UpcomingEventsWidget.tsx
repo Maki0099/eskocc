@@ -4,9 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import EventParticipationToggle from "@/components/events/EventParticipationToggle";
 import StravaEventBadge from "@/components/events/StravaEventBadge";
+import { UpcomingEventsWidgetSkeleton } from "@/components/dashboard/DashboardSkeletons";
 import { Calendar, MapPin, Users, ChevronRight, Route, Mountain, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
@@ -109,24 +109,7 @@ const UpcomingEventsWidget = ({ userId }: UpcomingEventsWidgetProps) => {
   }, [userId]);
 
   if (loading) {
-    return (
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Calendar className="w-5 h-5" />
-            Nadcházející vyjížďky
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {[1, 2].map((i) => (
-            <div key={i} className="p-3 rounded-lg border">
-              <Skeleton className="h-5 w-3/4 mb-2" />
-              <Skeleton className="h-4 w-1/2" />
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-    );
+    return <UpcomingEventsWidgetSkeleton />;
   }
 
   if (events.length === 0) {

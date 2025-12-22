@@ -3,9 +3,10 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Target, ChevronRight, Loader2, AlertCircle, PartyPopper } from "lucide-react";
+import { Target, ChevronRight, AlertCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { ROUTES } from "@/lib/routes";
+import { ChallengeWidgetSkeleton } from "@/components/dashboard/DashboardSkeletons";
 
 interface ChallengeWidgetProps {
   userId: string;
@@ -158,13 +159,7 @@ export const ChallengeWidget = ({ userId }: ChallengeWidgetProps) => {
   }, [isCompleted, loading, currentYear, userId, target, isConnected]);
 
   if (loading) {
-    return (
-      <Card>
-        <CardContent className="py-8 flex justify-center">
-          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-        </CardContent>
-      </Card>
-    );
+    return <ChallengeWidgetSkeleton />;
   }
 
   if (!isConnected) {
