@@ -50,6 +50,29 @@ export default defineConfig(({ mode }) => ({
             purpose: "maskable"
           }
         ],
+        shortcuts: [
+          {
+            name: "Dashboard",
+            short_name: "Dashboard",
+            description: "Přehled vašeho účtu a statistik",
+            url: "/dashboard",
+            icons: [{ src: "/pwa-192x192.png", sizes: "192x192" }]
+          },
+          {
+            name: "Vyjížďky",
+            short_name: "Vyjížďky",
+            description: "Nadcházející klubové vyjížďky",
+            url: "/events",
+            icons: [{ src: "/pwa-192x192.png", sizes: "192x192" }]
+          },
+          {
+            name: "Statistiky",
+            short_name: "Statistiky",
+            description: "Statistiky členů a klubu",
+            url: "/statistiky",
+            icons: [{ src: "/pwa-192x192.png", sizes: "192x192" }]
+          }
+        ],
         share_target: {
           action: "/share-target",
           method: "POST",
