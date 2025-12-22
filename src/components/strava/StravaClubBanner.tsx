@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { X, Users, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { STRAVA_CLUB_URL } from "@/lib/constants";
+import stravaLogo from "@/assets/strava-logo.svg";
 
 const STORAGE_KEY = "strava_club_dismissed";
 
@@ -46,7 +47,7 @@ const StravaClubBanner = ({ hasStravaConnected, isClubMember }: StravaClubBanner
 
       <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-4">
         <div className="flex-shrink-0 w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
-          <Users className="w-6 h-6" />
+          <img src={stravaLogo} alt="Strava" className="w-6 h-6" />
         </div>
         
         <div className="flex-1 min-w-0">
