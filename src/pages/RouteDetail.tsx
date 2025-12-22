@@ -47,6 +47,8 @@ interface FavoriteRoute {
   description: string | null;
   distance_km: number | null;
   elevation_m: number | null;
+  min_elevation: number | null;
+  max_elevation: number | null;
   difficulty: string | null;
   terrain_type: string | null;
   route_link: string | null;
@@ -286,6 +288,11 @@ const RouteDetail = () => {
                 <Badge variant="outline" className="gap-1.5 py-1.5 px-3">
                   <Mountain className="w-3.5 h-3.5" />
                   {route.elevation_m} m
+                  {route.min_elevation !== null && route.max_elevation !== null && (
+                    <span className="text-muted-foreground ml-1">
+                      ({route.min_elevation}–{route.max_elevation} m n.m.)
+                    </span>
+                  )}
                 </Badge>
               )}
               {route.difficulty && (

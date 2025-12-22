@@ -21,6 +21,8 @@ interface SelectedRoute {
   description?: string;
   distance_km?: number;
   elevation_m?: number;
+  min_elevation?: number;
+  max_elevation?: number;
   difficulty?: string;
   terrain_type?: string;
   gpx_url?: string;
@@ -295,6 +297,8 @@ serve(async (req) => {
             description: route.description || null,
             distance_km: route.distance_km ? Math.round(route.distance_km) : null,
             elevation_m: route.elevation_m ? Math.round(route.elevation_m) : null,
+            min_elevation: route.min_elevation ? Math.round(route.min_elevation) : null,
+            max_elevation: route.max_elevation ? Math.round(route.max_elevation) : null,
             difficulty,
             terrain_type: route.terrain_type || 'road',
             gpx_file_url: gpxFileUrl,

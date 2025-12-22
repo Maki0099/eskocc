@@ -72,6 +72,7 @@ import { ImportStepper } from "./ImportStepper";
 import { RouteNavigationStrip } from "./RouteNavigationStrip";
 import { RouteSourceIcon } from "./RouteSourceIcon";
 import { BulkSettingsDropdown } from "./BulkSettingsDropdown";
+import { GpxPreviewMap } from "@/components/map/GpxPreviewMap";
 
 type GpxStatus = "available" | "auth-required" | "premium" | "varies" | "detection";
 type ImportSource = "url" | "gpx";
@@ -524,6 +525,8 @@ export function RouteImportWizard() {
         description: gpxData.metadata.description || "",
         distance_km: gpxData.metadata.distanceKm,
         elevation_m: gpxData.metadata.elevationM,
+        min_elevation: gpxData.metadata.minElevation || undefined,
+        max_elevation: gpxData.metadata.maxElevation || undefined,
         gpx_url: undefined,
         gpx_accessible: false,
         cover_url: coverUrl,
@@ -690,6 +693,8 @@ export function RouteImportWizard() {
         description: r.description,
         distance_km: r.distance_km,
         elevation_m: r.elevation_m,
+        min_elevation: r.min_elevation,
+        max_elevation: r.max_elevation,
         gpx_url: r.gpx_accessible ? r.gpx_url : undefined,
         gpx_base64: r.manualGpxBase64,
         gpx_filename: r.manualGpxFile?.name,
@@ -2035,38 +2040,68 @@ export function RouteImportWizard() {
                   Připraveno k importu ({selectedRoutes.filter(r => r.gpx_accessible || r.manualGpxBase64).length})
                 </div>
                 <div className="border rounded-lg overflow-hidden">
-                  <div className="max-h-[200px] overflow-y-auto">
+                  <div className="max-h-[300px] overflow-y-auto">
                     <table className="w-full text-sm">
                       <thead className="bg-muted/50 sticky top-0">
                         <tr>
                           <th className="p-2 text-left">Trasa</th>
+                          <th className="p-2 w-14">Náhled</th>
+                          <th className="p-2 w-16">Obtížnost</th>
                           <th className="p-2 w-16">GPX</th>
-                          <th className="p-2 w-16">Cover</th>
                           <th className="p-2 w-16">Mapa</th>
-                          <th className="p-2 w-32">Kompletnost</th>
+                          <th className="p-2 w-28">Kompletnost</th>
                         </tr>
                       </thead>
                       <tbody>
                         {selectedRoutes.filter(r => r.gpx_accessible || r.manualGpxBase64).map((route) => {
                           const hasCover = !!route.cover_url;
-                          const hasRouteLink = !!route.route_link;
+                          const difficulty = route.difficulty;
 
                           return (
                             <tr key={route.id} className="border-t">
                               <td className="p-2">
-                                <span className="truncate block max-w-[200px]">
+                                <span className="truncate block max-w-[180px]">
                                   {route.title}
                                 </span>
                               </td>
-                              <td className="p-2 text-center">
-                                <CheckCircle className="w-4 h-4 text-green-500 mx-auto" />
+                              <td className="p-2">
+                                {route.manualGpxBase64 ? (
+                                  <div className="w-12 h-12 rounded overflow-hidden bg-muted">
+                                    <GpxPreviewMap 
+                                      gpxData={route.manualGpxBase64} 
+                                      compact
+                                    />
+                                  </div>
+                                ) : hasCover ? (
+                                  <img 
+                                    src={route.cover_url} 
+                                    alt="" 
+                                    className="w-12 h-12 rounded object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-12 h-12 rounded bg-muted flex items-center justify-center">
+                                    <Map className="w-5 h-5 text-muted-foreground" />
+                                  </div>
+                                )}
                               </td>
                               <td className="p-2 text-center">
-                                {hasCover ? (
-                                  <CheckCircle className="w-4 h-4 text-green-500 mx-auto" />
-                                ) : (
-                                  <AlertCircle className="w-4 h-4 text-yellow-500 mx-auto" />
+                                {difficulty && (
+                                  <Badge 
+                                    variant="outline" 
+                                    className={`text-xs ${
+                                      difficulty === "easy" 
+                                        ? "bg-green-500/10 text-green-600 border-green-500/30" 
+                                        : difficulty === "medium" 
+                                        ? "bg-yellow-500/10 text-yellow-600 border-yellow-500/30" 
+                                        : "bg-red-500/10 text-red-600 border-red-500/30"
+                                    }`}
+                                  >
+                                    {difficulty === "easy" ? "L" : difficulty === "medium" ? "S" : "T"}
+                                  </Badge>
                                 )}
+                              </td>
+                              <td className="p-2 text-center">
+                                <CheckCircle className="w-4 h-4 text-green-500 mx-auto" />
                               </td>
                               <td className="p-2 text-center">
                                 <RouteSourceIcon url={route.route_link} />

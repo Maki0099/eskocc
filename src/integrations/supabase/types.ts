@@ -265,6 +265,8 @@ export type Database = {
           gpx_file_url: string | null
           id: string
           location: string
+          max_elevation: number | null
+          min_elevation: number | null
           route_link: string | null
           terrain_type: string | null
           title: string
@@ -282,6 +284,8 @@ export type Database = {
           gpx_file_url?: string | null
           id?: string
           location: string
+          max_elevation?: number | null
+          min_elevation?: number | null
           route_link?: string | null
           terrain_type?: string | null
           title: string
@@ -299,6 +303,8 @@ export type Database = {
           gpx_file_url?: string | null
           id?: string
           location?: string
+          max_elevation?: number | null
+          min_elevation?: number | null
           route_link?: string | null
           terrain_type?: string | null
           title?: string
@@ -332,6 +338,8 @@ export type Database = {
           elevation_m: number | null
           gpx_file_url: string | null
           id: string
+          max_elevation: number | null
+          min_elevation: number | null
           route_link: string | null
           terrain_type: string | null
           title: string
@@ -347,6 +355,8 @@ export type Database = {
           elevation_m?: number | null
           gpx_file_url?: string | null
           id?: string
+          max_elevation?: number | null
+          min_elevation?: number | null
           route_link?: string | null
           terrain_type?: string | null
           title: string
@@ -362,6 +372,8 @@ export type Database = {
           elevation_m?: number | null
           gpx_file_url?: string | null
           id?: string
+          max_elevation?: number | null
+          min_elevation?: number | null
           route_link?: string | null
           terrain_type?: string | null
           title?: string
