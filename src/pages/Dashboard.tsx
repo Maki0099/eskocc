@@ -17,6 +17,7 @@ import { ROLE_LABELS, STRAVA_CLUB_URL } from "@/lib/constants";
 import { ROUTES } from "@/lib/routes";
 import { useUserStats } from "@/hooks/useUserStats";
 import { useToast } from "@/hooks/use-toast";
+import { useTour } from "@/hooks/useTour";
 
 const Dashboard = () => {
   const { user, signOut } = useAuth();
@@ -24,6 +25,22 @@ const Dashboard = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const clubMemberToastShown = useRef(false);
+  const { startTour, shouldAutoStart, markTourCompleted } = useTour();
+  const autoStartChecked = useRef(false);
+
+  // Auto-start tour for new users
+  useEffect(() => {
+    if (!loading && !autoStartChecked.current) {
+      autoStartChecked.current = true;
+      if (shouldAutoStart("dashboard")) {
+        // Small delay to let the page render
+        setTimeout(() => {
+          startTour("dashboard");
+          markTourCompleted("dashboard");
+        }, 500);
+      }
+    }
+  }, [loading, shouldAutoStart, startTour, markTourCompleted]);
 
   // Handle Strava connection callback
   useEffect(() => {
