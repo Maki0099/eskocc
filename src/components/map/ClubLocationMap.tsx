@@ -53,7 +53,10 @@ const ClubLocationMap = ({ className }: ClubLocationMapProps) => {
       })
         .setLngLat(CLUB_COORDINATES)
         .setPopup(
-          new mapboxgl.Popup({ offset: 25 }).setHTML(`
+          new mapboxgl.Popup({ 
+            offset: 25,
+            focusAfterOpen: false // Prevent auto-focus which causes scroll
+          }).setHTML(`
             <div style="padding: 8px;">
               <strong style="font-size: 14px;">ESKO.cc</strong>
               <p style="margin: 4px 0 0; font-size: 12px; color: #666;">
@@ -65,8 +68,12 @@ const ClubLocationMap = ({ className }: ClubLocationMapProps) => {
         )
         .addTo(map.current);
 
-      // Open popup by default
-      marker.current.togglePopup();
+      // Open popup after map is fully loaded to prevent scroll issues
+      map.current.on('load', () => {
+        setTimeout(() => {
+          marker.current?.togglePopup();
+        }, 100);
+      });
 
       map.current.on("error", (e) => {
         console.error("Mapbox error:", e);
