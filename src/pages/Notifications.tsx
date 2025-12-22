@@ -189,6 +189,11 @@ const Notifications = () => {
               <h1 className="text-2xl font-semibold flex items-center gap-3">
                 <Bell className="w-6 h-6" />
                 Notifikace
+                {!isTourCompleted("notifications") && (
+                  <Button variant="ghost" size="icon" onClick={handleStartTour} className="ml-1">
+                    <HelpCircle className="w-5 h-5" />
+                  </Button>
+                )}
               </h1>
               <p className="text-muted-foreground text-sm mt-1">
                 {unreadCount > 0 
@@ -197,11 +202,6 @@ const Notifications = () => {
                 }
               </p>
             </div>
-            {!isTourCompleted("notifications") && (
-              <Button variant="ghost" size="icon" onClick={handleStartTour}>
-                <HelpCircle className="w-4 h-4" />
-              </Button>
-            )}
           </div>
 
           {/* Actions bar */}
