@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Camera, CalendarIcon, Loader2, Link as LinkIcon, Check, X, Bell } from "lucide-react";
+import { ArrowLeft, Camera, CalendarIcon, Loader2, Link as LinkIcon, Check, X, Bell, HelpCircle, RotateCcw } from "lucide-react";
 import { ROUTES } from "@/lib/routes";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
@@ -17,6 +17,8 @@ import logoDark from "@/assets/logo-horizontal-dark.png";
 import { StravaStats } from "@/components/strava/StravaStats";
 import StravaClubBanner from "@/components/strava/StravaClubBanner";
 import { PushNotificationToggle } from "@/components/notifications/PushNotificationToggle";
+import { useTour } from "@/hooks/useTour";
+import TourProvider from "@/components/tour/TourProvider";
 
 interface Profile {
   full_name: string | null;
@@ -40,6 +42,26 @@ const Account = () => {
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [connectingStrava, setConnectingStrava] = useState(false);
+  const { startTour, endTour, resetAllTours } = useTour();
+  const [runTour, setRunTour] = useState(false);
+
+  const handleStartTour = () => {
+    setRunTour(true);
+    startTour("account");
+  };
+
+  const handleEndTour = () => {
+    setRunTour(false);
+    endTour();
+  };
+
+  const handleResetAllTours = () => {
+    resetAllTours();
+    toast({
+      title: "Průvodce resetován",
+      description: "Průvodce aplikací se znovu zobrazí při další návštěvě.",
+    });
+  };
 
   const [fullName, setFullName] = useState("");
   const [nickname, setNickname] = useState("");
@@ -259,18 +281,31 @@ const Account = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Tour Provider */}
+      <TourProvider tourId="account" run={runTour} onFinish={handleEndTour} />
+      
       {/* Header */}
-      <header className="border-b border-border/40 bg-background/80 backdrop-blur-xl">
+      <header className="border-b border-border/40 bg-background/80 backdrop-blur-xl" data-tour="account-header">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <Link to="/">
             <img src={logoDark} alt="ESKO.cc" className="h-8" />
           </Link>
-          <Link to="/dashboard">
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Zpět
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleStartTour}
+            >
+              <HelpCircle className="w-4 h-4 mr-2" />
+              Nápověda
             </Button>
-          </Link>
+            <Link to="/dashboard">
+              <Button variant="ghost" size="sm">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Zpět
+              </Button>
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -320,7 +355,7 @@ const Account = () => {
           </div>
 
           {/* Profile form */}
-          <div className="space-y-4">
+          <div className="space-y-4" data-tour="personal-info">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -388,7 +423,7 @@ const Account = () => {
             </div>
 
             {/* Strava connection */}
-            <div className="space-y-2">
+            <div className="space-y-2" data-tour="strava-section">
               <Label>Strava propojení</Label>
               {stravaId ? (
                 <div className="flex items-center gap-3 p-3 rounded-xl bg-green-500/10 border border-green-500/20">
@@ -524,7 +559,7 @@ const Account = () => {
           </div>
 
           {/* Notifications section */}
-          <div className="mt-12 pt-8 border-t border-border/40">
+          <div className="mt-12 pt-8 border-t border-border/40" data-tour="notifications-section">
             <h2 className="font-medium mb-4">Notifikace</h2>
             <div className="space-y-4">
               <PushNotificationToggle />
@@ -535,6 +570,22 @@ const Account = () => {
                 </Button>
               </Link>
             </div>
+          </div>
+
+          {/* Tour restart section */}
+          <div className="mt-8 pt-8 border-t border-border/40" data-tour="tour-restart">
+            <h2 className="font-medium mb-4">Nápověda</h2>
+            <Button
+              variant="outline"
+              onClick={handleResetAllTours}
+              className="w-full h-12 rounded-xl gap-2"
+            >
+              <RotateCcw className="w-4 h-4" />
+              Resetovat průvodce aplikací
+            </Button>
+            <p className="text-xs text-muted-foreground mt-2">
+              Průvodce se znovu zobrazí při další návštěvě dashboardu
+            </p>
           </div>
 
           {/* Password section */}
