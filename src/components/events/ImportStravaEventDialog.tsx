@@ -170,6 +170,10 @@ const ImportStravaEventDialog = ({ stravaEvent, onImported }: ImportStravaEventD
         gpx_file_url: gpxFileUrl,
         cover_image_url: coverImageUrl,
         created_by: user.id,
+        // Additional Strava fields
+        sport_type: stravaEvent.sport_type || null,
+        organizing_athlete_name: stravaEvent.organizing_athlete_name || null,
+        women_only: false, // Strava doesn't expose this in club events API currently
       });
 
       if (error) throw error;

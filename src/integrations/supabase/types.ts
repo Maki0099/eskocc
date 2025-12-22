@@ -267,13 +267,16 @@ export type Database = {
           location: string
           max_elevation: number | null
           min_elevation: number | null
+          organizing_athlete_name: string | null
           route_link: string | null
+          sport_type: string | null
           start_latlng: Json | null
           strava_event_id: string | null
           strava_event_url: string | null
           terrain_type: string | null
           title: string
           updated_at: string
+          women_only: boolean | null
         }
         Insert: {
           cover_image_url?: string | null
@@ -289,13 +292,16 @@ export type Database = {
           location: string
           max_elevation?: number | null
           min_elevation?: number | null
+          organizing_athlete_name?: string | null
           route_link?: string | null
+          sport_type?: string | null
           start_latlng?: Json | null
           strava_event_id?: string | null
           strava_event_url?: string | null
           terrain_type?: string | null
           title: string
           updated_at?: string
+          women_only?: boolean | null
         }
         Update: {
           cover_image_url?: string | null
@@ -311,13 +317,16 @@ export type Database = {
           location?: string
           max_elevation?: number | null
           min_elevation?: number | null
+          organizing_athlete_name?: string | null
           route_link?: string | null
+          sport_type?: string | null
           start_latlng?: Json | null
           strava_event_id?: string | null
           strava_event_url?: string | null
           terrain_type?: string | null
           title?: string
           updated_at?: string
+          women_only?: boolean | null
         }
         Relationships: [
           {
