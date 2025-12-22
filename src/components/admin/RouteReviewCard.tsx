@@ -32,8 +32,9 @@ import {
 } from "lucide-react";
 import { getRouteSourceInfo } from "@/lib/route-source-utils";
 import { GpxPreviewMap } from "@/components/map/GpxPreviewMap";
-import { parseGpxFile, calculateDifficulty } from "@/lib/gpx-utils";
+import { parseGpxMetadata, calculateDifficulty } from "@/lib/gpx-utils";
 import { toast } from "sonner";
+import { Mountain } from "lucide-react";
 
 export interface GeneratedImage {
   base64: string;
@@ -64,6 +65,9 @@ export interface EditableRoute {
   terrain_type?: string;
   generated_images?: GeneratedImage[];
   manual_images?: ManualImage[];
+  // Elevation stats from GPX
+  min_elevation?: number;
+  max_elevation?: number;
 }
 
 interface RouteReviewCardProps {
@@ -124,26 +128,35 @@ export function RouteReviewCard({
         });
       }
       
-      // Parse GPX to extract distance and elevation
+      // Parse GPX to extract distance, elevation and stats
       let parsedDistance = localRoute.distance_km;
       let parsedElevation = localRoute.elevation_m;
       let parsedDifficulty = localRoute.difficulty;
+      let minElevation = localRoute.min_elevation;
+      let maxElevation = localRoute.max_elevation;
       
       try {
-        const gpxStats = await parseGpxFile(file);
-        if (gpxStats) {
+        const gpxMetadata = await parseGpxMetadata(file);
+        if (gpxMetadata) {
           // Only update if values are missing or zero
           if (!parsedDistance || parsedDistance === 0) {
-            parsedDistance = gpxStats.distanceKm;
+            parsedDistance = gpxMetadata.distanceKm;
           }
           if (!parsedElevation || parsedElevation === 0) {
-            parsedElevation = gpxStats.elevationM;
+            parsedElevation = gpxMetadata.elevationM;
           }
           // Auto-calculate difficulty if not set
-          if (!parsedDifficulty && gpxStats.distanceKm > 0) {
-            parsedDifficulty = calculateDifficulty(gpxStats.distanceKm, gpxStats.elevationM);
+          if (!parsedDifficulty && gpxMetadata.distanceKm > 0) {
+            parsedDifficulty = calculateDifficulty(gpxMetadata.distanceKm, gpxMetadata.elevationM);
           }
-          toast.success(`Doplněno z GPX: ${gpxStats.distanceKm} km, ${gpxStats.elevationM} m převýšení`);
+          // Set min/max elevation
+          if (gpxMetadata.minElevation !== null) {
+            minElevation = gpxMetadata.minElevation;
+          }
+          if (gpxMetadata.maxElevation !== null) {
+            maxElevation = gpxMetadata.maxElevation;
+          }
+          toast.success(`Doplněno z GPX: ${gpxMetadata.distanceKm} km, ${gpxMetadata.elevationM} m převýšení`);
         }
       } catch (e) {
         console.error("Error parsing GPX for stats:", e);
@@ -157,6 +170,8 @@ export function RouteReviewCard({
         distance_km: parsedDistance,
         elevation_m: parsedElevation,
         difficulty: parsedDifficulty,
+        min_elevation: minElevation,
+        max_elevation: maxElevation,
       };
       setLocalRoute(updated);
       onUpdate(updated);
@@ -273,6 +288,17 @@ export function RouteReviewCard({
                 >
                   Zdrojová mapa
                 </a>
+              </div>
+            )}
+            {/* Elevation stats */}
+            {(localRoute.min_elevation !== undefined || localRoute.max_elevation !== undefined) && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Mountain className="w-4 h-4" />
+                <span>
+                  {localRoute.min_elevation !== undefined && `${localRoute.min_elevation} m`}
+                  {localRoute.min_elevation !== undefined && localRoute.max_elevation !== undefined && " – "}
+                  {localRoute.max_elevation !== undefined && `${localRoute.max_elevation} m`}
+                </span>
               </div>
             )}
           </div>
