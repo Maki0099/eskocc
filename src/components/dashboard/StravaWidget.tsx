@@ -5,6 +5,7 @@ import { Bike, Mountain, TrendingUp, Loader2, LinkIcon, Users, ExternalLink, Ref
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { STRAVA_CLUB_URL } from "@/lib/constants";
+import stravaLogo from "@/assets/strava-logo.svg";
 interface StravaWidgetProps {
   userId: string;
   isClubMember?: boolean;
@@ -199,7 +200,7 @@ export const StravaWidget = ({ userId, isClubMember = false }: StravaWidgetProps
       >
         <div className="flex items-center gap-3 mb-3">
           <img 
-            src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Strava_Logo.svg" 
+            src={stravaLogo} 
             alt="Strava" 
             className="h-5 w-auto opacity-50 group-hover:opacity-100 transition-opacity"
           />
@@ -221,7 +222,7 @@ export const StravaWidget = ({ userId, isClubMember = false }: StravaWidgetProps
       <div className="p-6 rounded-2xl border border-orange-500/20 bg-gradient-to-br from-orange-500/10 to-orange-600/5">
         <div className="flex items-center gap-3 mb-3">
           <img 
-            src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Strava_Logo.svg" 
+            src={stravaLogo} 
             alt="Strava" 
             className="h-5 w-auto"
           />
@@ -250,7 +251,7 @@ export const StravaWidget = ({ userId, isClubMember = false }: StravaWidgetProps
           className="flex items-center gap-3 hover:opacity-80 transition-opacity"
         >
           <img 
-            src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Strava_Logo.svg" 
+            src={stravaLogo} 
             alt="Strava" 
             className="h-5 w-auto"
           />
