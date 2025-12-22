@@ -336,7 +336,18 @@ serve(async (req) => {
       );
     }
 
-    const stravaEventsRaw = await eventsResponse.json();
+    // Parse JSON with large number handling
+    // Strava uses large numeric IDs that exceed JavaScript's safe integer limit (2^53)
+    // We need to convert these to strings before parsing to preserve precision
+    const eventsText = await eventsResponse.text();
+    
+    // Convert large numeric IDs to strings in the JSON text
+    // This regex finds numeric values in "id": contexts and wraps them in quotes
+    const safeJsonText = eventsText
+      .replace(/"id"\s*:\s*(\d{15,})/g, '"id": "$1"')
+      .replace(/"route_id"\s*:\s*(\d{15,})/g, '"route_id": "$1"');
+    
+    const stravaEventsRaw = JSON.parse(safeJsonText);
     console.log(`Fetched ${stravaEventsRaw.length} group events from Strava`);
     
     // Log raw event data for debugging
