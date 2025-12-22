@@ -57,8 +57,9 @@ export default defineConfig(({ mode }) => ({
         globIgnores: ["**/documents/**"],
         importScripts: ['/sw-push.js'],
         runtimeCaching: [
+          // Supabase API calls - Network first with cache fallback
           {
-            urlPattern: /^https:\/\/mtlycegceaeueuyymkyv\.supabase\.co\/.*/i,
+            urlPattern: /^https:\/\/mtlycegceaeueuyymkyv\.supabase\.co\/rest\/.*/i,
             handler: "NetworkFirst",
             options: {
               cacheName: "supabase-api-cache",
@@ -71,6 +72,67 @@ export default defineConfig(({ mode }) => ({
               }
             }
           },
+          // Supabase Storage - images and files with StaleWhileRevalidate
+          {
+            urlPattern: /^https:\/\/mtlycegceaeueuyymkyv\.supabase\.co\/storage\/.*/i,
+            handler: "StaleWhileRevalidate",
+            options: {
+              cacheName: "supabase-storage-cache",
+              expiration: {
+                maxEntries: 200,
+                maxAgeSeconds: 60 * 60 * 24 * 7 // 7 days
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          },
+          // GPX files - cache for offline use
+          {
+            urlPattern: /\.gpx$/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "gpx-cache",
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          },
+          // Mapbox tiles and API
+          {
+            urlPattern: /^https:\/\/api\.mapbox\.com\/.*/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "mapbox-cache",
+              expiration: {
+                maxEntries: 500,
+                maxAgeSeconds: 60 * 60 * 24 * 7 // 7 days
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          },
+          // Image files from any source
+          {
+            urlPattern: /\.(?:png|jpg|jpeg|gif|webp|svg|ico)$/i,
+            handler: "StaleWhileRevalidate",
+            options: {
+              cacheName: "images-cache",
+              expiration: {
+                maxEntries: 150,
+                maxAgeSeconds: 60 * 60 * 24 * 14 // 14 days
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          },
+          // Google Fonts stylesheets
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
             handler: "CacheFirst",
@@ -85,6 +147,7 @@ export default defineConfig(({ mode }) => ({
               }
             }
           },
+          // Google Fonts files
           {
             urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
             handler: "CacheFirst",

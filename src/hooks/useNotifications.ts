@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { updateAppBadge } from '@/lib/badge-utils';
 
 export interface Notification {
   id: string;
@@ -39,7 +40,10 @@ export const useNotifications = () => {
 
       const notifs = (data || []) as Notification[];
       setNotifications(notifs);
-      setUnreadCount(notifs.filter(n => !n.is_read).length);
+      const count = notifs.filter(n => !n.is_read).length;
+      setUnreadCount(count);
+      // Update app badge
+      updateAppBadge(count);
     } catch (error) {
       console.error('Error fetching notifications:', error);
     } finally {
@@ -69,7 +73,11 @@ export const useNotifications = () => {
         (payload) => {
           const newNotif = payload.new as Notification;
           setNotifications(prev => [newNotif, ...prev]);
-          setUnreadCount(prev => prev + 1);
+          setUnreadCount(prev => {
+            const newCount = prev + 1;
+            updateAppBadge(newCount);
+            return newCount;
+          });
         }
       )
       .on(
@@ -87,7 +95,9 @@ export const useNotifications = () => {
           );
           // Recalculate unread count
           setNotifications(current => {
-            setUnreadCount(current.filter(n => !n.is_read).length);
+            const count = current.filter(n => !n.is_read).length;
+            setUnreadCount(count);
+            updateAppBadge(count);
             return current;
           });
         }
@@ -124,7 +134,11 @@ export const useNotifications = () => {
       setNotifications(prev =>
         prev.map(n => n.id === notificationId ? { ...n, is_read: true } : n)
       );
-      setUnreadCount(prev => Math.max(0, prev - 1));
+      setUnreadCount(prev => {
+        const newCount = Math.max(0, prev - 1);
+        updateAppBadge(newCount);
+        return newCount;
+      });
     } catch (error) {
       console.error('Error marking notification as read:', error);
     }
@@ -144,6 +158,7 @@ export const useNotifications = () => {
 
       setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
       setUnreadCount(0);
+      updateAppBadge(0);
     } catch (error) {
       console.error('Error marking all as read:', error);
     }
@@ -162,7 +177,11 @@ export const useNotifications = () => {
 
       setNotifications(prev => prev.filter(n => n.id !== notificationId));
       if (notif && !notif.is_read) {
-        setUnreadCount(prev => Math.max(0, prev - 1));
+        setUnreadCount(prev => {
+          const newCount = Math.max(0, prev - 1);
+          updateAppBadge(newCount);
+          return newCount;
+        });
       }
     } catch (error) {
       console.error('Error deleting notification:', error);
