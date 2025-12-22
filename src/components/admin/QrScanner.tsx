@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from "react";
-import { Html5Qrcode } from "html5-qrcode";
 import {
   Dialog,
   DialogContent,
@@ -7,8 +6,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ScanLine, Camera, Upload, X, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
-import { toast } from "sonner";
+import { ScanLine, Camera, Upload, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 
 interface QrScannerProps {
   open: boolean;
@@ -65,7 +63,8 @@ export function QrScanner({ open, onClose, onScan }: QrScannerProps) {
   const [isScanning, setIsScanning] = useState(false);
   const [scannedUrl, setScannedUrl] = useState<string | null>(null);
   const [scanError, setScanError] = useState<string | null>(null);
-  const scannerRef = useRef<Html5Qrcode | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const scannerRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -87,17 +86,23 @@ export function QrScanner({ open, onClose, onScan }: QrScannerProps) {
   const startScanner = async () => {
     setScanError(null);
     setScannedUrl(null);
+    setIsLoading(true);
     
     // Wait for DOM to be ready
     await new Promise(resolve => setTimeout(resolve, 100));
     
     if (!containerRef.current) {
       setScanError("Nepodařilo se inicializovat scanner");
+      setIsLoading(false);
       return;
     }
 
     try {
+      // Dynamic import to avoid SSR issues
+      const { Html5Qrcode } = await import("html5-qrcode");
+      
       setIsScanning(true);
+      setIsLoading(false);
       
       const scanner = new Html5Qrcode("qr-reader");
       scannerRef.current = scanner;
@@ -108,7 +113,7 @@ export function QrScanner({ open, onClose, onScan }: QrScannerProps) {
           fps: 10,
           qrbox: { width: 250, height: 250 },
         },
-        (decodedText) => {
+        (decodedText: string) => {
           handleScanSuccess(decodedText);
         },
         () => {
@@ -118,6 +123,7 @@ export function QrScanner({ open, onClose, onScan }: QrScannerProps) {
     } catch (err) {
       console.error("Scanner error:", err);
       setIsScanning(false);
+      setIsLoading(false);
       
       if (err instanceof Error) {
         if (err.message.includes("NotAllowedError") || err.message.includes("Permission")) {
@@ -153,8 +159,11 @@ export function QrScanner({ open, onClose, onScan }: QrScannerProps) {
 
     setScanError(null);
     setScannedUrl(null);
+    setIsLoading(true);
 
     try {
+      // Dynamic import to avoid SSR issues
+      const { Html5Qrcode } = await import("html5-qrcode");
       const scanner = new Html5Qrcode("qr-file-reader");
       
       const result = await scanner.scanFile(file, true);
@@ -164,6 +173,8 @@ export function QrScanner({ open, onClose, onScan }: QrScannerProps) {
     } catch (err) {
       console.error("File scan error:", err);
       setScanError("Nepodařilo se načíst QR kód z obrázku. Zkontrolujte, že obrázek obsahuje čitelný QR kód.");
+    } finally {
+      setIsLoading(false);
     }
     
     // Reset file input
