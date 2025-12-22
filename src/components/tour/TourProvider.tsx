@@ -1,13 +1,14 @@
 import Joyride, { CallBackProps, STATUS, Step } from "react-joyride";
 import { useTheme } from "@/components/ThemeProvider";
 import { TourId, useTour } from "@/hooks/useTour";
-import { dashboardSteps, accountSteps, eventsSteps, gallerySteps } from "@/lib/tour-steps";
+import { dashboardSteps, accountSteps, eventsSteps, gallerySteps, eventDetailSteps } from "@/lib/tour-steps";
 
 const tourStepsMap: Record<TourId, Step[]> = {
   dashboard: dashboardSteps,
   account: accountSteps,
   events: eventsSteps,
   gallery: gallerySteps,
+  eventDetail: eventDetailSteps,
 };
 
 interface TourProviderProps {

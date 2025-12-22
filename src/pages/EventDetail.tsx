@@ -11,6 +11,8 @@ import PhotoGrid from "@/components/gallery/PhotoGrid";
 import PhotoUpload from "@/components/gallery/PhotoUpload";
 import GpxMap from "@/components/map/GpxMap";
 import StartLocationMap from "@/components/map/StartLocationMap";
+import TourProvider from "@/components/tour/TourProvider";
+import { useTour } from "@/hooks/useTour";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -40,7 +42,8 @@ import {
   Gauge,
   Bike,
   Map,
-  Heart
+  Heart,
+  HelpCircle
 } from "lucide-react";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
@@ -131,9 +134,21 @@ const EventDetail = () => {
   const [isParticipating, setIsParticipating] = useState(false);
   const [loading, setLoading] = useState(true);
   const [addingToFavorites, setAddingToFavorites] = useState(false);
+  const { startTour, endTour } = useTour();
+  const [runTour, setRunTour] = useState(false);
 
   const isCreator = user && event?.created_by === user.id;
   const canEdit = isCreator || isAdmin;
+
+  const handleStartTour = () => {
+    setRunTour(true);
+    startTour("eventDetail");
+  };
+
+  const handleEndTour = () => {
+    setRunTour(false);
+    endTour();
+  };
 
   const fetchEvent = async () => {
     if (!id) return;
@@ -325,16 +340,28 @@ const EventDetail = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      {/* Tour Provider */}
+      <TourProvider tourId="eventDetail" run={runTour} onFinish={handleEndTour} />
+      
       <Header />
       <main className="flex-1 container mx-auto px-4 pt-24 pb-12">
         <div className="max-w-3xl mx-auto">
-          <Link
-            to="/events"
-            className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Zpět na vyjížďky
-          </Link>
+          <div className="flex items-center justify-between mb-6">
+            <Link
+              to="/events"
+              className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Zpět na vyjížďky
+            </Link>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleStartTour}
+            >
+              <HelpCircle className="w-5 h-5" />
+            </Button>
+          </div>
 
           {/* Cover Image */}
           {event.cover_image_url && (
@@ -348,7 +375,7 @@ const EventDetail = () => {
             </div>
           )}
 
-          <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
+          <div className="flex flex-wrap items-start justify-between gap-4 mb-6" data-tour="event-title">
             <div className="flex flex-wrap items-center gap-3">
               <h1 className="text-3xl font-bold">{event.title}</h1>
               {/* Badge for events imported from Strava */}
@@ -440,7 +467,7 @@ const EventDetail = () => {
 
           {/* GPX Map or Start Location Map */}
           {event.gpx_file_url ? (
-            <Card className="mb-6">
+            <Card className="mb-6" data-tour="event-map">
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <Map className="w-5 h-5" />
@@ -452,7 +479,7 @@ const EventDetail = () => {
               </CardContent>
             </Card>
           ) : event.start_latlng && (
-            <Card className="mb-6">
+            <Card className="mb-6" data-tour="event-map">
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <MapPin className="w-5 h-5" />
@@ -465,7 +492,7 @@ const EventDetail = () => {
             </Card>
           )}
 
-          <Card className="mb-6">
+          <Card className="mb-6" data-tour="event-info">
             <CardContent className="pt-6 space-y-4">
               {event.description && (
                 <p className="text-muted-foreground">{event.description}</p>
@@ -560,7 +587,7 @@ const EventDetail = () => {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card data-tour="event-participants">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
                 <Users className="w-5 h-5" />
@@ -608,7 +635,7 @@ const EventDetail = () => {
           </Card>
 
           {/* Gallery Section */}
-          <Card className="mt-6">
+          <Card className="mt-6" data-tour="event-photos">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2 text-lg">
