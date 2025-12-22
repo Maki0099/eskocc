@@ -32,6 +32,8 @@ import {
 } from "lucide-react";
 import { getRouteSourceInfo } from "@/lib/route-source-utils";
 import { GpxPreviewMap } from "@/components/map/GpxPreviewMap";
+import { parseGpxFile, calculateDifficulty } from "@/lib/gpx-utils";
+import { toast } from "sonner";
 
 export interface GeneratedImage {
   base64: string;
@@ -103,9 +105,9 @@ export function RouteReviewCard({
     onUpdate(updated);
   };
 
-  const handleGpxUpload = (file: File) => {
+  const handleGpxUpload = async (file: File) => {
     const reader = new FileReader();
-    reader.onload = () => {
+    reader.onload = async () => {
       const base64 = reader.result as string;
       
       // Clean Garmin-related warnings from description after GPX upload
@@ -122,11 +124,39 @@ export function RouteReviewCard({
         });
       }
       
+      // Parse GPX to extract distance and elevation
+      let parsedDistance = localRoute.distance_km;
+      let parsedElevation = localRoute.elevation_m;
+      let parsedDifficulty = localRoute.difficulty;
+      
+      try {
+        const gpxStats = await parseGpxFile(file);
+        if (gpxStats) {
+          // Only update if values are missing or zero
+          if (!parsedDistance || parsedDistance === 0) {
+            parsedDistance = gpxStats.distanceKm;
+          }
+          if (!parsedElevation || parsedElevation === 0) {
+            parsedElevation = gpxStats.elevationM;
+          }
+          // Auto-calculate difficulty if not set
+          if (!parsedDifficulty && gpxStats.distanceKm > 0) {
+            parsedDifficulty = calculateDifficulty(gpxStats.distanceKm, gpxStats.elevationM);
+          }
+          toast.success(`Doplněno z GPX: ${gpxStats.distanceKm} km, ${gpxStats.elevationM} m převýšení`);
+        }
+      } catch (e) {
+        console.error("Error parsing GPX for stats:", e);
+      }
+      
       const updated = {
         ...localRoute,
         manualGpxFile: file,
         manualGpxBase64: base64,
         description: cleanedDescription,
+        distance_km: parsedDistance,
+        elevation_m: parsedElevation,
+        difficulty: parsedDifficulty,
       };
       setLocalRoute(updated);
       onUpdate(updated);
