@@ -19,6 +19,7 @@ export const ROUTES = {
   DOCUMENTS: '/dokumenty',
   INSTALL: '/install',
   NOTIFICATIONS: '/notifications',
+  SHARE_TARGET: '/share-target',
 } as const;
 
 // Dynamic route patterns (for Route definitions in App.tsx)

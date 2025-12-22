@@ -1,4 +1,6 @@
-// Push notification handler for service worker
+// Push notification and Share Target handler for service worker
+
+const SHARE_CACHE_NAME = 'shared-files-cache';
 
 // Badge API helper - set app badge count
 const updateBadge = async (count) => {
@@ -14,6 +16,52 @@ const updateBadge = async (count) => {
     console.error('Error updating badge:', error);
   }
 };
+
+// Share Target handler - intercept POST requests to /share-target
+self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+  
+  // Only handle POST requests to /share-target
+  if (url.pathname === '/share-target' && event.request.method === 'POST') {
+    event.respondWith(handleShareTarget(event.request));
+  }
+});
+
+async function handleShareTarget(request) {
+  try {
+    const formData = await request.formData();
+    const gpxFile = formData.get('gpx');
+    
+    if (!gpxFile || !(gpxFile instanceof File)) {
+      console.error('No GPX file found in share target request');
+      return Response.redirect('/events', 303);
+    }
+    
+    // Generate unique share ID
+    const shareId = `share-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    
+    // Store file in cache
+    const cache = await caches.open(SHARE_CACHE_NAME);
+    const response = new Response(gpxFile, {
+      headers: {
+        'Content-Type': gpxFile.type || 'application/gpx+xml',
+        'X-File-Name': encodeURIComponent(gpxFile.name),
+        'X-Share-Id': shareId,
+      }
+    });
+    
+    await cache.put(`/${shareId}`, response);
+    
+    console.log('Shared GPX file cached with ID:', shareId);
+    
+    // Redirect to share target page with the share ID
+    return Response.redirect(`/share-target?shareId=${shareId}`, 303);
+    
+  } catch (error) {
+    console.error('Error handling share target:', error);
+    return Response.redirect('/events', 303);
+  }
+}
 
 // Listen for messages from the main app to update badge
 self.addEventListener('message', (event) => {
