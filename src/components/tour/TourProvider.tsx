@@ -2,6 +2,7 @@ import Joyride, { CallBackProps, STATUS, Step } from "react-joyride";
 import { useTheme } from "@/components/ThemeProvider";
 import { TourId, useTour } from "@/hooks/useTour";
 import { 
+  indexSteps,
   dashboardSteps, 
   accountSteps, 
   eventsSteps, 
@@ -14,6 +15,7 @@ import {
 } from "@/lib/tour-steps";
 
 const tourStepsMap: Record<TourId, Step[]> = {
+  index: indexSteps,
   dashboard: dashboardSteps,
   account: accountSteps,
   events: eventsSteps,
