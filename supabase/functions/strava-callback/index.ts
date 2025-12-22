@@ -2,11 +2,16 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 serve(async (req) => {
+  console.log('=== STRAVA CALLBACK START ===');
+  console.log('Full request URL:', req.url);
+  
   try {
     const url = new URL(req.url);
     const code = url.searchParams.get('code');
     const stateParam = url.searchParams.get('state');
     const error = url.searchParams.get('error');
+
+    console.log('Parsed params - code:', code ? 'present' : 'MISSING', 'state:', stateParam ? 'present' : 'MISSING', 'error:', error || 'none');
 
     // Default fallback URL
     let frontendUrl = 'https://eskocc.cz/account';
@@ -14,17 +19,20 @@ serve(async (req) => {
 
     // Parse state to get userId and redirectUrl
     if (stateParam) {
+      console.log('Decoding state param...');
       try {
         const stateData = JSON.parse(atob(stateParam));
         userId = stateData.userId || '';
         frontendUrl = stateData.redirectUrl || frontendUrl;
+        console.log('State decoded - userId:', userId, 'redirectUrl:', frontendUrl);
       } catch (e) {
         // Legacy: state might just be userId
+        console.log('State decode failed, using as userId directly');
         userId = stateParam;
       }
     }
 
-    console.log('Callback received - userId:', userId, 'frontendUrl:', frontendUrl);
+    console.log('Final values - userId:', userId, 'frontendUrl:', frontendUrl);
 
     if (error) {
       console.error('Strava OAuth error:', error);
