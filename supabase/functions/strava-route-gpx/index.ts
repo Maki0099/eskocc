@@ -37,6 +37,60 @@ async function refreshStravaToken(
   }
 }
 
+// Generate a static map image URL from Mapbox using the route polyline
+async function generateCoverImage(
+  polyline: string,
+  mapboxToken: string,
+  supabase: any
+): Promise<string | null> {
+  try {
+    // Encode the polyline for URL
+    const encodedPolyline = encodeURIComponent(polyline);
+    
+    // Build Mapbox Static Images API URL
+    // Using path overlay with the polyline
+    const mapboxUrl = `https://api.mapbox.com/styles/v1/mapbox/outdoors-v12/static/path-4+fc4c02-0.8(${encodedPolyline})/auto/800x400@2x?access_token=${mapboxToken}&padding=50`;
+    
+    console.log('Fetching map image from Mapbox...');
+    
+    const response = await fetch(mapboxUrl);
+    
+    if (!response.ok) {
+      console.error('Mapbox API error:', response.status, await response.text());
+      return null;
+    }
+    
+    const imageBlob = await response.blob();
+    const imageBuffer = await imageBlob.arrayBuffer();
+    
+    // Upload to Supabase Storage
+    const fileName = `strava_cover_${Date.now()}.png`;
+    const filePath = `routes/covers/${fileName}`;
+    
+    const { error: uploadError } = await supabase.storage
+      .from('events')
+      .upload(filePath, imageBuffer, {
+        contentType: 'image/png',
+        upsert: false,
+      });
+    
+    if (uploadError) {
+      console.error('Failed to upload cover image:', uploadError);
+      return null;
+    }
+    
+    const { data: urlData } = supabase.storage
+      .from('events')
+      .getPublicUrl(filePath);
+    
+    console.log('Cover image uploaded:', urlData.publicUrl);
+    return urlData.publicUrl;
+  } catch (error) {
+    console.error('Error generating cover image:', error);
+    return null;
+  }
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -44,7 +98,7 @@ serve(async (req) => {
   }
 
   try {
-    const { route_id, user_id } = await req.json();
+    const { route_id, user_id, polyline } = await req.json();
 
     if (!route_id) {
       return new Response(
@@ -59,6 +113,7 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const clientId = Deno.env.get('STRAVA_CLIENT_ID');
     const clientSecret = Deno.env.get('STRAVA_CLIENT_SECRET');
+    const mapboxToken = Deno.env.get('MAPBOX_PUBLIC_TOKEN');
 
     if (!supabaseUrl || !supabaseServiceKey || !clientId || !clientSecret) {
       console.error('Missing environment variables');
@@ -175,6 +230,31 @@ serve(async (req) => {
       );
     }
 
+    // Fetch route details to get polyline if not provided
+    let routePolyline = polyline;
+    let routeDistance: number | null = null;
+    let routeElevation: number | null = null;
+    
+    if (!routePolyline) {
+      console.log('Fetching route details from Strava...');
+      const routeResponse = await fetch(
+        `https://www.strava.com/api/v3/routes/${route_id}`,
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        }
+      );
+      
+      if (routeResponse.ok) {
+        const routeData = await routeResponse.json();
+        routePolyline = routeData.map?.summary_polyline || routeData.map?.polyline;
+        routeDistance = routeData.distance ? Math.round(routeData.distance / 1000) : null;
+        routeElevation = routeData.elevation_gain ? Math.round(routeData.elevation_gain) : null;
+        console.log(`Route details: distance=${routeDistance}km, elevation=${routeElevation}m, has polyline=${!!routePolyline}`);
+      } else {
+        console.log('Could not fetch route details:', routeResponse.status);
+      }
+    }
+
     // Fetch GPX from Strava
     const gpxResponse = await fetch(
       `https://www.strava.com/api/v3/routes/${route_id}/export_gpx`,
@@ -223,17 +303,28 @@ serve(async (req) => {
       );
     }
 
-    // Get public URL
-    const { data: urlData } = supabase.storage
+    // Get public URL for GPX
+    const { data: gpxUrlData } = supabase.storage
       .from('events')
       .getPublicUrl(filePath);
 
-    console.log(`GPX uploaded successfully: ${urlData.publicUrl}`);
+    console.log(`GPX uploaded successfully: ${gpxUrlData.publicUrl}`);
+
+    // Generate cover image from polyline if available
+    let coverImageUrl: string | null = null;
+    if (routePolyline && mapboxToken) {
+      coverImageUrl = await generateCoverImage(routePolyline, mapboxToken, supabase);
+    } else {
+      console.log('Skipping cover image generation: polyline or mapbox token not available');
+    }
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        gpx_url: urlData.publicUrl,
+        gpx_url: gpxUrlData.publicUrl,
+        cover_image_url: coverImageUrl,
+        distance_km: routeDistance,
+        elevation_m: routeElevation,
         file_name: fileName
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

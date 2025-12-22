@@ -91,26 +91,38 @@ const ImportStravaEventDialog = ({ stravaEvent, onImported }: ImportStravaEventD
 
   const stravaEventUrl = `https://www.strava.com/clubs/1860524/group_events/${stravaEvent.strava_event_id}`;
 
-  const downloadGpxFromStrava = async (): Promise<string | null> => {
+  const downloadFromStrava = async (): Promise<{
+    gpx_url: string | null;
+    cover_image_url: string | null;
+    distance_km: number | null;
+    elevation_m: number | null;
+  }> => {
     const routeId = stravaEvent.strava_route_id || stravaEvent.route_id;
-    if (!routeId) return null;
+    if (!routeId) return { gpx_url: null, cover_image_url: null, distance_km: null, elevation_m: null };
 
     setDownloadingGpx(true);
     try {
       const { data, error } = await supabase.functions.invoke('strava-route-gpx', {
-        body: { route_id: routeId, user_id: user?.id }
+        body: { 
+          route_id: routeId, 
+          user_id: user?.id,
+          polyline: stravaEvent.route_polyline
+        }
       });
 
       if (error) throw error;
-      if (data?.gpx_url) {
-        console.log('GPX downloaded from Strava:', data.gpx_url);
-        return data.gpx_url;
-      }
-      return null;
+      
+      console.log('Downloaded from Strava:', data);
+      return {
+        gpx_url: data?.gpx_url || null,
+        cover_image_url: data?.cover_image_url || null,
+        distance_km: data?.distance_km || null,
+        elevation_m: data?.elevation_m || null
+      };
     } catch (error) {
-      console.error('Error downloading GPX from Strava:', error);
-      toast.error("Nepodařilo se stáhnout GPX ze Strava");
-      return null;
+      console.error('Error downloading from Strava:', error);
+      toast.error("Nepodařilo se stáhnout data ze Strava");
+      return { gpx_url: null, cover_image_url: null, distance_km: null, elevation_m: null };
     } finally {
       setDownloadingGpx(false);
     }
@@ -124,10 +136,23 @@ const ImportStravaEventDialog = ({ stravaEvent, onImported }: ImportStravaEventD
 
     setImporting(true);
     try {
-      // Optionally download GPX from Strava
+      // Optionally download GPX and cover image from Strava
       let gpxFileUrl: string | null = null;
+      let coverImageUrl: string | null = null;
+      let routeDistance: number | null = distanceKm ? parseInt(distanceKm) : null;
+      let routeElevation: number | null = elevationM ? parseInt(elevationM) : null;
+      
       if (downloadGpx && hasRoute) {
-        gpxFileUrl = await downloadGpxFromStrava();
+        const stravaData = await downloadFromStrava();
+        gpxFileUrl = stravaData.gpx_url;
+        coverImageUrl = stravaData.cover_image_url;
+        // Use Strava route data if user didn't enter values
+        if (!routeDistance && stravaData.distance_km) {
+          routeDistance = stravaData.distance_km;
+        }
+        if (!routeElevation && stravaData.elevation_m) {
+          routeElevation = stravaData.elevation_m;
+        }
       }
 
       const { error } = await supabase.from("events").insert({
@@ -137,20 +162,26 @@ const ImportStravaEventDialog = ({ stravaEvent, onImported }: ImportStravaEventD
         location: location || "Viz Strava",
         difficulty: difficulty || null,
         terrain_type: terrainType || null,
-        distance_km: distanceKm ? parseInt(distanceKm) : null,
-        elevation_m: elevationM ? parseInt(elevationM) : null,
+        distance_km: routeDistance,
+        elevation_m: routeElevation,
         strava_event_id: stravaEvent.strava_event_id,
         strava_event_url: stravaEventUrl,
         start_latlng: stravaEvent.start_latlng || null,
         gpx_file_url: gpxFileUrl,
+        cover_image_url: coverImageUrl,
         created_by: user.id,
       });
 
       if (error) throw error;
 
+      const downloadedItems = [
+        gpxFileUrl && "GPX trasa",
+        coverImageUrl && "cover image"
+      ].filter(Boolean);
+
       toast.success("Vyjížďka byla importována ze Strava", {
-        description: gpxFileUrl 
-          ? "GPX trasa byla automaticky stažena." 
+        description: downloadedItems.length > 0
+          ? `Automaticky staženo: ${downloadedItems.join(", ")}.`
           : "Nyní můžete přidat cover image, GPX soubor a další detaily.",
       });
       setOpen(false);
