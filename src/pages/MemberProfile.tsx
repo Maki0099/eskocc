@@ -14,6 +14,7 @@ import logoRound from "@/assets/logo-round-dark.png";
 import type { AppRole } from "@/lib/types";
 import { ROLE_LABELS } from "@/lib/constants";
 import { getInitials } from "@/lib/user-utils";
+import { MemberProfileSkeleton } from "@/components/skeletons/PageSkeletons";
 
 interface MemberData {
   full_name: string | null;
@@ -117,8 +118,18 @@ const MemberProfile = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      <div className="min-h-screen bg-background">
+        <header className="border-b border-border bg-card">
+          <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <img src={logoRound} alt="Esko.cc" className="h-10 w-10" />
+              <span className="font-bold text-xl text-foreground">ESKO.cc</span>
+            </div>
+          </div>
+        </header>
+        <main className="container mx-auto px-4 py-8">
+          <MemberProfileSkeleton />
+        </main>
       </div>
     );
   }
