@@ -18,6 +18,7 @@ import { ROUTES } from "@/lib/routes";
 import { useUserStats } from "@/hooks/useUserStats";
 import { useToast } from "@/hooks/use-toast";
 import { useTour } from "@/hooks/useTour";
+import TourProvider from "@/components/tour/TourProvider";
 
 const Dashboard = () => {
   const { user, signOut } = useAuth();
@@ -25,8 +26,19 @@ const Dashboard = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const clubMemberToastShown = useRef(false);
-  const { startTour, shouldAutoStart, markTourCompleted } = useTour();
+  const { startTour, endTour, shouldAutoStart, markTourCompleted } = useTour();
   const autoStartChecked = useRef(false);
+  const [runTour, setRunTour] = useState(false);
+
+  const handleStartTour = () => {
+    setRunTour(true);
+    startTour("dashboard");
+  };
+
+  const handleEndTour = () => {
+    setRunTour(false);
+    endTour();
+  };
 
   // Auto-start tour for new users
   useEffect(() => {
@@ -35,12 +47,12 @@ const Dashboard = () => {
       if (shouldAutoStart("dashboard")) {
         // Small delay to let the page render
         setTimeout(() => {
-          startTour("dashboard");
+          handleStartTour();
           markTourCompleted("dashboard");
         }, 500);
       }
     }
-  }, [loading, shouldAutoStart, startTour, markTourCompleted]);
+  }, [loading, shouldAutoStart, markTourCompleted]);
 
   // Handle Strava connection callback
   useEffect(() => {
@@ -90,6 +102,9 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Tour Provider */}
+      <TourProvider tourId="dashboard" run={runTour} onFinish={handleEndTour} />
+      
       {/* Header */}
       <header className="border-b border-border/40 bg-background/80 backdrop-blur-xl">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
@@ -99,7 +114,7 @@ const Dashboard = () => {
           </Link>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => startTour("dashboard")}
+              onClick={handleStartTour}
               className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
               aria-label="Nápověda"
             >
