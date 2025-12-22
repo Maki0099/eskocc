@@ -326,8 +326,32 @@ serve(async (req) => {
       );
     }
 
-    const stravaEvents: StravaGroupEvent[] = await eventsResponse.json();
-    console.log(`Fetched ${stravaEvents.length} group events from Strava`);
+    const stravaEventsRaw = await eventsResponse.json();
+    console.log(`Fetched ${stravaEventsRaw.length} group events from Strava`);
+    
+    // Log raw event data for debugging
+    if (stravaEventsRaw.length > 0) {
+      console.log('Raw event data sample:', JSON.stringify(stravaEventsRaw[0], null, 2));
+    }
+
+    // Strava API may return upcoming_occurrences instead of start_date for recurring events
+    // Map the raw data to our expected format, extracting the first upcoming occurrence
+    const stravaEvents: StravaGroupEvent[] = stravaEventsRaw.map((event: any) => {
+      // Try to get date from various possible fields
+      let eventDate = event.start_date_local || event.start_date;
+      
+      // Check for upcoming_occurrences (recurring events)
+      if (!eventDate && event.upcoming_occurrences && event.upcoming_occurrences.length > 0) {
+        eventDate = event.upcoming_occurrences[0];
+        console.log(`Event "${event.title}" using upcoming_occurrence: ${eventDate}`);
+      }
+      
+      return {
+        ...event,
+        start_date_local: eventDate,
+        start_date: eventDate,
+      };
+    });
 
     // Detect new events
     const newEvents = stravaEvents.filter(event => !existingEventIds.has(String(event.id)));
@@ -335,7 +359,13 @@ serve(async (req) => {
 
     // Filter out events without valid dates and prepare for upsert
     const eventsToUpsert = stravaEvents
-      .filter(event => event.start_date_local || event.start_date)
+      .filter(event => {
+        const hasDate = event.start_date_local || event.start_date;
+        if (!hasDate) {
+          console.log(`Skipping event "${event.title}" (ID: ${event.id}) - no valid date`);
+        }
+        return hasDate;
+      })
       .map(event => ({
         strava_event_id: String(event.id),
         title: event.title,
@@ -356,7 +386,7 @@ serve(async (req) => {
     // Also filter newEvents for the same reason
     const validNewEvents = newEvents.filter(event => event.start_date_local || event.start_date);
     
-    console.log(`${stravaEvents.length} events from API, ${eventsToUpsert.length} have valid dates`);
+    console.log(`${stravaEventsRaw.length} events from API, ${eventsToUpsert.length} have valid dates`);
 
     if (eventsToUpsert.length > 0) {
       const { error: upsertError } = await supabase
