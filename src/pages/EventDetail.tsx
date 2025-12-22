@@ -10,6 +10,7 @@ import EventNotificationToggle from "@/components/events/EventNotificationToggle
 import PhotoGrid from "@/components/gallery/PhotoGrid";
 import PhotoUpload from "@/components/gallery/PhotoUpload";
 import GpxMap from "@/components/map/GpxMap";
+import StartLocationMap from "@/components/map/StartLocationMap";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -437,8 +438,8 @@ const EventDetail = () => {
             </div>
           )}
 
-          {/* GPX Map */}
-          {event.gpx_file_url && (
+          {/* GPX Map or Start Location Map */}
+          {event.gpx_file_url ? (
             <Card className="mb-6">
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-lg">
@@ -448,6 +449,18 @@ const EventDetail = () => {
               </CardHeader>
               <CardContent>
                 <GpxMap gpxUrl={event.gpx_file_url} />
+              </CardContent>
+            </Card>
+          ) : event.start_latlng && (
+            <Card className="mb-6">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <MapPin className="w-5 h-5" />
+                  Místo startu
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <StartLocationMap coordinates={event.start_latlng} />
               </CardContent>
             </Card>
           )}
