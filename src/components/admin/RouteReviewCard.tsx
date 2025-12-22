@@ -25,7 +25,10 @@ import {
   FileUp,
   Image,
   MapPin,
+  Globe,
+  Info,
 } from "lucide-react";
+import { getRouteSourceInfo } from "@/lib/route-source-utils";
 
 export interface GeneratedImage {
   base64: string;
@@ -283,15 +286,43 @@ export function RouteReviewCard({
             </div>
           </div>
 
-          {/* GPX Upload */}
+          {/* Route Link (optional) */}
+          <div className="space-y-2">
+            <Label htmlFor="route_link" className="flex items-center gap-2">
+              <Globe className="w-4 h-4" />
+              Odkaz na mapu
+              <Badge variant="outline" className="text-xs font-normal">volitelné</Badge>
+            </Label>
+            <Input
+              id="route_link"
+              value={localRoute.route_link || ""}
+              onChange={(e) => handleChange("route_link", e.target.value)}
+              placeholder="https://mapy.cz/s/... nebo https://connect.garmin.com/..."
+            />
+            {localRoute.route_link && (() => {
+              const sourceInfo = getRouteSourceInfo(localRoute.route_link);
+              if (sourceInfo) {
+                return (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <CheckCircle className="w-3 h-3 text-green-500" />
+                    <sourceInfo.icon className="w-3 h-3" />
+                    <span>Rozpoznáno: {sourceInfo.name}</span>
+                  </div>
+                );
+              }
+              return null;
+            })()}
+          </div>
+
+          {/* GPX Upload - Required warning */}
           {!hasGpx && (
-            <div className="p-4 border border-dashed rounded-lg bg-muted/30">
+            <div className="p-4 border-2 border-dashed border-destructive/50 rounded-lg bg-destructive/5">
               <div className="flex items-center gap-3">
-                <FileUp className="w-5 h-5 text-muted-foreground" />
+                <XCircle className="w-5 h-5 text-destructive" />
                 <div className="flex-1">
-                  <p className="text-sm font-medium">Nahrát GPX soubor</p>
+                  <p className="text-sm font-medium text-destructive">Nahrát GPX soubor *</p>
                   <p className="text-xs text-muted-foreground">
-                    GPX není automaticky dostupný, nahrajte jej ručně
+                    GPX je povinný pro založení trasy
                   </p>
                 </div>
                 <label className="cursor-pointer">

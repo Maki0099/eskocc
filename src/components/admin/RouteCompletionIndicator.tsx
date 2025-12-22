@@ -35,7 +35,7 @@ export function calculateCompletionScore(route: RouteData): {
   
   const fields: CompletionField[] = [
     { name: "Název", weight: 20, filled: !!route.title?.trim(), required: true },
-    { name: "GPX", weight: 25, filled: hasGpx },
+    { name: "GPX", weight: 25, filled: hasGpx, required: true },
     { name: "Vzdálenost", weight: 10, filled: !!route.distance_km },
     { name: "Převýšení", weight: 10, filled: !!route.elevation_m },
     { name: "Cover", weight: 15, filled: !!route.cover_url },
