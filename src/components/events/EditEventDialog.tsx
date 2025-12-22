@@ -73,6 +73,7 @@ interface EditEventDialogProps {
     terrain_type?: string | null;
   };
   onEventUpdated: () => void;
+  trigger?: React.ReactNode;
 }
 
 const DIFFICULTY_LABELS = {
@@ -88,7 +89,7 @@ const TERRAIN_LABELS = {
   mixed: "Mix",
 };
 
-const EditEventDialog = ({ event, onEventUpdated }: EditEventDialogProps) => {
+const EditEventDialog = ({ event, onEventUpdated, trigger }: EditEventDialogProps) => {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -263,9 +264,11 @@ const EditEventDialog = ({ event, onEventUpdated }: EditEventDialogProps) => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="icon">
-          <Pencil className="w-4 h-4" />
-        </Button>
+        {trigger || (
+          <Button variant="outline" size="icon">
+            <Pencil className="w-4 h-4" />
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>

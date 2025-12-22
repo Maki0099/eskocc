@@ -7,6 +7,7 @@ import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import CreateEventDialog from "@/components/events/CreateEventDialog";
+import EditEventDialog from "@/components/events/EditEventDialog";
 import CreateRouteDialog from "@/components/routes/CreateRouteDialog";
 import EditRouteDialog from "@/components/routes/EditRouteDialog";
 import RouteListItem from "@/components/routes/RouteListItem";
@@ -29,7 +30,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Calendar, MapPin, Users, ChevronRight, Camera, History, Loader2, Route, Mountain, Gauge, Heart, MapIcon, RefreshCw, ExternalLink, Trash2 } from "lucide-react";
+import { Calendar, MapPin, Users, ChevronRight, Camera, History, Loader2, Route, Mountain, Gauge, Heart, MapIcon, RefreshCw, ExternalLink, Trash2, Pencil } from "lucide-react";
 import { format, isSameMonth, isSameYear } from "date-fns";
 import { cs } from "date-fns/locale";
 import { toast } from "sonner";
@@ -555,6 +556,22 @@ const Events = () => {
                 )}
               </div>
               <div className="flex items-center gap-2">
+                {/* Edit button for admins */}
+                {isAdmin && (
+                  <EditEventDialog
+                    event={event}
+                    onEventUpdated={fetchUpcomingEvents}
+                    trigger={
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                    }
+                  />
+                )}
                 {/* Delete button for admins */}
                 {isAdmin && (
                   <Button
