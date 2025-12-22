@@ -56,7 +56,12 @@ export function StravaEventsSyncAdmin() {
       
       if (error) throw error;
       
-      toast.success(`Synchronizováno ${data?.synced_count || 0} vyjížděk ze Strava`);
+      const newCount = data?.new_events_count || 0;
+      if (newCount > 0) {
+        toast.success(`Synchronizováno ${data?.synced_count || 0} vyjížděk, ${newCount} nových (notifikace odeslány)`);
+      } else {
+        toast.success(`Synchronizováno ${data?.synced_count || 0} vyjížděk ze Strava`);
+      }
       await fetchCachedEvents();
     } catch (error) {
       console.error("Error syncing Strava events:", error);
