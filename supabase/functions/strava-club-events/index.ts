@@ -333,23 +333,30 @@ serve(async (req) => {
     const newEvents = stravaEvents.filter(event => !existingEventIds.has(String(event.id)));
     console.log(`Detected ${newEvents.length} new events`);
 
-    // Upsert events into database
-    const eventsToUpsert = stravaEvents.map(event => ({
-      strava_event_id: String(event.id),
-      title: event.title,
-      description: event.description,
-      event_date: event.start_date_local || event.start_date,
-      address: event.address,
-      route_id: event.route_id ? String(event.route_id) : null,
-      sport_type: event.sport_type,
-      organizing_athlete_id: event.organizing_athlete?.id ? String(event.organizing_athlete.id) : null,
-      organizing_athlete_name: event.organizing_athlete 
-        ? `${event.organizing_athlete.firstname} ${event.organizing_athlete.lastname.charAt(0)}.`
-        : null,
-      participant_count: event.athlete_count || 0,
-      women_only: event.women_only || false,
-      updated_at: new Date().toISOString(),
-    }));
+    // Filter out events without valid dates and prepare for upsert
+    const eventsToUpsert = stravaEvents
+      .filter(event => event.start_date_local || event.start_date)
+      .map(event => ({
+        strava_event_id: String(event.id),
+        title: event.title,
+        description: event.description,
+        event_date: event.start_date_local || event.start_date,
+        address: event.address,
+        route_id: event.route_id ? String(event.route_id) : null,
+        sport_type: event.sport_type,
+        organizing_athlete_id: event.organizing_athlete?.id ? String(event.organizing_athlete.id) : null,
+        organizing_athlete_name: event.organizing_athlete 
+          ? `${event.organizing_athlete.firstname} ${event.organizing_athlete.lastname.charAt(0)}.`
+          : null,
+        participant_count: event.athlete_count || 0,
+        women_only: event.women_only || false,
+        updated_at: new Date().toISOString(),
+      }));
+
+    // Also filter newEvents for the same reason
+    const validNewEvents = newEvents.filter(event => event.start_date_local || event.start_date);
+    
+    console.log(`${stravaEvents.length} events from API, ${eventsToUpsert.length} have valid dates`);
 
     if (eventsToUpsert.length > 0) {
       const { error: upsertError } = await supabase
@@ -370,9 +377,9 @@ serve(async (req) => {
       console.log(`Successfully upserted ${eventsToUpsert.length} events`);
     }
 
-    // Send push notifications for new events
-    if (newEvents.length > 0) {
-      console.log('Sending push notifications for new events...');
+    // Send push notifications for new events (use validNewEvents)
+    if (validNewEvents.length > 0) {
+      console.log(`Sending push notifications for ${validNewEvents.length} new events...`);
 
       // Get VAPID keys
       const { data: vapidKeys } = await supabase
@@ -388,7 +395,7 @@ serve(async (req) => {
           .select('endpoint, p256dh, auth, user_id');
 
         if (subscriptions && subscriptions.length > 0) {
-          for (const newEvent of newEvents) {
+          for (const newEvent of validNewEvents) {
             const eventDate = new Date(newEvent.start_date_local || newEvent.start_date);
             const dateStr = eventDate.toLocaleDateString('cs-CZ', { 
               weekday: 'long', 
@@ -430,7 +437,7 @@ serve(async (req) => {
             .in('role', ['member', 'active_member', 'admin']);
 
           if (memberRoles && memberRoles.length > 0) {
-            for (const newEvent of newEvents) {
+            for (const newEvent of validNewEvents) {
               const eventDate = new Date(newEvent.start_date_local || newEvent.start_date);
               const dateStr = eventDate.toLocaleDateString('cs-CZ', { 
                 weekday: 'long', 
@@ -481,7 +488,8 @@ serve(async (req) => {
       JSON.stringify({ 
         success: true, 
         synced_count: eventsToUpsert.length,
-        new_events_count: newEvents.length,
+        new_events_count: validNewEvents.length,
+        skipped_no_date: stravaEvents.length - eventsToUpsert.length,
         events: eventsToUpsert.map(e => ({ title: e.title, date: e.event_date }))
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
