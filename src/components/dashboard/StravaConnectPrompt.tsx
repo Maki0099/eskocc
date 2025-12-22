@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Activity, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface StravaConnectPromptProps {
   userId: string;
@@ -12,6 +13,7 @@ interface StravaConnectPromptProps {
 const StravaConnectPrompt = ({ userId, hasStrava }: StravaConnectPromptProps) => {
   const [showPrompt, setShowPrompt] = useState(false);
   const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     const pending = localStorage.getItem("stravaConnectPending");
@@ -23,17 +25,25 @@ const StravaConnectPrompt = ({ userId, hasStrava }: StravaConnectPromptProps) =>
   const handleConnect = async () => {
     setLoading(true);
     try {
+      const redirectUrl = `${window.location.origin}/dashboard`;
       const { data, error } = await supabase.functions.invoke("strava-auth", {
-        body: { userId },
+        body: { userId, redirectUrl },
       });
 
       if (error) throw error;
-      if (data?.url) {
+      if (data?.authUrl) {
         localStorage.removeItem("stravaConnectPending");
-        window.location.href = data.url;
+        window.location.href = data.authUrl;
+      } else {
+        throw new Error("Nepodařilo se získat Strava URL");
       }
     } catch (error) {
       console.error("Strava auth error:", error);
+      toast({
+        title: "Chyba propojení",
+        description: "Nepodařilo se propojit se Stravou. Zkuste to prosím později.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
