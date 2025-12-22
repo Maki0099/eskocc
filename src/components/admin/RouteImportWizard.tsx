@@ -289,6 +289,7 @@ export function RouteImportWizard() {
   const [aiProviders, setAiProviders] = useState<{ text: string; image: string } | null>(null);
   const [brokenImages, setBrokenImages] = useState<Set<string>>(new Set());
   const [qrScannerOpen, setQrScannerOpen] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   useEffect(() => {
     const draft = loadDraft();
     if (draft && draft.step !== "source" && draft.step !== "url" && draft.routes.length > 0) {
@@ -467,6 +468,32 @@ export function RouteImportWizard() {
       toast.success(`Nahráno ${newGpxFiles.length} GPX souborů`);
     }
   };
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Only set to false if leaving the drop zone entirely
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setIsDragging(false);
+    }
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      handleGpxFilesSelect(files);
+    }
+  }, []);
 
   const handleRemoveGpxFile = (index: number) => {
     setGpxFiles(prev => prev.filter((_, i) => i !== index));
@@ -1011,16 +1038,39 @@ export function RouteImportWizard() {
               </p>
             </div>
 
-            {/* Upload area */}
-            <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/30 transition-colors">
-              <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                <Upload className="w-10 h-10 mb-3 text-muted-foreground" />
-                <p className="mb-2 text-sm text-muted-foreground">
-                  <span className="font-semibold">Klikněte pro výběr</span> nebo přetáhněte soubory
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Pouze GPX soubory
-                </p>
+            {/* Upload area with drag & drop */}
+            <label 
+              className={`flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-lg cursor-pointer transition-all duration-200 ${
+                isDragging 
+                  ? "border-primary bg-primary/10 scale-[1.02] shadow-lg" 
+                  : "border-muted-foreground/25 hover:bg-muted/30 hover:border-muted-foreground/50"
+              }`}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
+              <div className="flex flex-col items-center justify-center pt-5 pb-6 pointer-events-none">
+                <div className={`transition-transform duration-200 ${isDragging ? "scale-110" : ""}`}>
+                  {isDragging ? (
+                    <FileUp className="w-10 h-10 mb-3 text-primary animate-bounce" />
+                  ) : (
+                    <Upload className="w-10 h-10 mb-3 text-muted-foreground" />
+                  )}
+                </div>
+                {isDragging ? (
+                  <p className="text-sm font-semibold text-primary">
+                    Pusťte soubory zde
+                  </p>
+                ) : (
+                  <>
+                    <p className="mb-2 text-sm text-muted-foreground">
+                      <span className="font-semibold">Klikněte pro výběr</span> nebo přetáhněte soubory
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Pouze GPX soubory
+                    </p>
+                  </>
+                )}
               </div>
               <input
                 type="file"
