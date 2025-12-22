@@ -46,6 +46,7 @@ import { format } from "date-fns";
 import { cs } from "date-fns/locale";
 import { toast } from "sonner";
 import { getInitials } from "@/lib/user-utils";
+import { EventDetailSkeleton } from "@/components/skeletons/PageSkeletons";
 
 interface EventData {
   id: string;
@@ -307,10 +308,7 @@ const EventDetail = () => {
       <div className="min-h-screen flex flex-col bg-background">
         <Header />
         <main className="flex-1 container mx-auto px-4 pt-24 pb-12">
-          <div className="max-w-3xl mx-auto animate-pulse space-y-6">
-            <div className="h-8 bg-muted rounded w-1/3" />
-            <div className="h-48 bg-muted rounded" />
-          </div>
+          <EventDetailSkeleton />
         </main>
         <Footer />
       </div>

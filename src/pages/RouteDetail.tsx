@@ -14,7 +14,7 @@ import PhotoGrid from "@/components/gallery/PhotoGrid";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { RouteDetailSkeleton } from "@/components/skeletons/PageSkeletons";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -161,11 +161,7 @@ const RouteDetail = () => {
       <div className="min-h-screen flex flex-col bg-background">
         <Header />
         <main className="flex-1 container mx-auto px-4 pt-24 pb-12">
-          <div className="max-w-3xl mx-auto space-y-6">
-            <Skeleton className="h-8 w-48" />
-            <Skeleton className="h-64 w-full rounded-xl" />
-            <Skeleton className="h-32 w-full" />
-          </div>
+          <RouteDetailSkeleton />
         </main>
         <Footer />
       </div>

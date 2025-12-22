@@ -8,6 +8,7 @@ import { formatDistanceToNow, format } from 'date-fns';
 import { cs } from 'date-fns/locale';
 import logoDark from "@/assets/logo-horizontal-dark.png";
 import logoWhite from "@/assets/logo-horizontal-white.png";
+import { NotificationsSkeleton } from "@/components/skeletons/PageSkeletons";
 
 const getNotificationIcon = (type: string) => {
   switch (type) {
@@ -236,20 +237,7 @@ const Notifications = () => {
 
           {/* Notifications list */}
           {loading ? (
-            <div className="space-y-3">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="p-4 rounded-xl border border-border/40 animate-pulse">
-                  <div className="flex gap-4">
-                    <div className="w-8 h-8 rounded-full bg-muted" />
-                    <div className="flex-1 space-y-2">
-                      <div className="h-4 bg-muted rounded w-3/4" />
-                      <div className="h-3 bg-muted rounded w-full" />
-                      <div className="h-3 bg-muted rounded w-1/4" />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <NotificationsSkeleton />
           ) : filteredNotifications.length === 0 ? (
             <div className="text-center py-12">
               <Bell className="w-12 h-12 mx-auto text-muted-foreground/30 mb-4" />

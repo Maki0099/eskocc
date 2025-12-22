@@ -9,6 +9,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Camera, CalendarIcon, Loader2, Link as LinkIcon, Check, X, Bell, RotateCcw, HelpCircle } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ROUTES } from "@/lib/routes";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
@@ -19,6 +20,7 @@ import StravaClubBanner from "@/components/strava/StravaClubBanner";
 import { PushNotificationToggle } from "@/components/notifications/PushNotificationToggle";
 import { useTour } from "@/hooks/useTour";
 import TourProvider from "@/components/tour/TourProvider";
+import { AccountPageSkeleton } from "@/components/skeletons/PageSkeletons";
 
 interface Profile {
   full_name: string | null;
@@ -273,8 +275,16 @@ const Account = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="min-h-screen bg-background">
+        <header className="border-b border-border/40 bg-background/80 backdrop-blur-xl">
+          <div className="container mx-auto px-6 py-4 flex items-center justify-between">
+            <Skeleton className="h-8 w-24" />
+            <Skeleton className="h-9 w-16" />
+          </div>
+        </header>
+        <main className="container mx-auto px-6 py-12">
+          <AccountPageSkeleton />
+        </main>
       </div>
     );
   }
