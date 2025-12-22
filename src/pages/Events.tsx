@@ -17,6 +17,7 @@ import StravaEventBadge from "@/components/events/StravaEventBadge";
 import ImportStravaEventDialog from "@/components/events/ImportStravaEventDialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SkeletonEventCard } from "@/components/ui/skeleton";
+import { RouteListSkeleton } from "@/components/skeletons/PageSkeletons";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -778,11 +779,7 @@ const Events = () => {
                   {canCreateEvents && <CreateRouteDialog onRouteCreated={fetchFavoriteRoutes} />}
                 </div>
                 {loadingRoutes ? (
-                  <div className="space-y-2">
-                    {[1, 2, 3].map((i) => (
-                      <div key={i} className="h-16 rounded-lg bg-muted animate-pulse" />
-                    ))}
-                  </div>
+                  <RouteListSkeleton count={5} />
                 ) : favoriteRoutes.length === 0 ? (
                   <Card>
                     <CardContent className="py-12 text-center">

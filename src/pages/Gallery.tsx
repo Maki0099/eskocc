@@ -10,6 +10,7 @@ import PhotoUpload from "@/components/gallery/PhotoUpload";
 import MemberOnlyContent from "@/components/MemberOnlyContent";
 import { Card, CardContent } from "@/components/ui/card";
 import { SkeletonPhotoGrid } from "@/components/ui/skeleton";
+import { GalleryPageSkeleton } from "@/components/skeletons/PageSkeletons";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ExternalLink, ImageIcon } from "lucide-react";
 import mallorca2025 from "@/assets/albums/mallorca-2025.jpg";
