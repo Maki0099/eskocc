@@ -63,6 +63,9 @@ interface EventData {
   strava_event_id: string | null;
   strava_event_url: string | null;
   start_latlng: any;
+  sport_type: string | null;
+  organizing_athlete_name: string | null;
+  women_only: boolean | null;
 }
 
 interface Participant {
@@ -104,6 +107,13 @@ const TERRAIN_LABELS: Record<string, string> = {
   gravel: "Gravel",
   mtb: "MTB",
   mixed: "Mix",
+};
+
+const SPORT_TYPE_LABELS: Record<string, string> = {
+  Ride: "Silnice",
+  GravelRide: "Gravel",
+  MountainBikeRide: "MTB",
+  VirtualRide: "Virtuální",
 };
 
 const EventDetail = () => {
@@ -346,6 +356,16 @@ const EventDetail = () => {
                   Ze Strava
                 </Badge>
               )}
+              {event.sport_type && SPORT_TYPE_LABELS[event.sport_type] && (
+                <Badge variant="secondary">
+                  {SPORT_TYPE_LABELS[event.sport_type]}
+                </Badge>
+              )}
+              {event.women_only && (
+                <Badge className="bg-pink-500/10 text-pink-600 border-pink-500/20">
+                  Pouze ženy
+                </Badge>
+              )}
               {isPastEvent(event.event_date) && (
                 <Badge variant="outline" className="text-muted-foreground">
                   Proběhlo
@@ -451,6 +471,12 @@ const EventDetail = () => {
                   <MapPin className="w-4 h-4" />
                   <span>{event.location}</span>
                 </div>
+                {event.organizing_athlete_name && (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Users className="w-4 h-4" />
+                    <span>Organizuje: {event.organizing_athlete_name}</span>
+                  </div>
+                )}
               </div>
 
               <div className="flex flex-wrap items-center gap-3 pt-4 border-t">

@@ -54,6 +54,8 @@ interface Event {
   strava_event_id?: string;
   strava_event_url?: string | null;
   organizing_athlete_name?: string | null;
+  sport_type?: string | null;
+  women_only?: boolean | null;
 }
 
 interface StravaClubEvent {
@@ -463,6 +465,18 @@ const Events = () => {
                 {!isStravaEvent && event.strava_event_id && (
                   <Badge variant="outline" className="gap-1 text-[#FC4C02] border-[#FC4C02]/30">
                     Ze Strava
+                  </Badge>
+                )}
+                {event.sport_type && (
+                  <Badge variant="secondary" className="text-xs">
+                    {event.sport_type === 'Ride' ? 'Silnice' : 
+                     event.sport_type === 'GravelRide' ? 'Gravel' : 
+                     event.sport_type === 'MountainBikeRide' ? 'MTB' : event.sport_type}
+                  </Badge>
+                )}
+                {event.women_only && (
+                  <Badge className="bg-pink-500/10 text-pink-600 border-pink-500/20 text-xs">
+                    Pouze ženy
                   </Badge>
                 )}
                 {isPast && (
