@@ -202,6 +202,16 @@ interface StravaGroupEvent {
   } | null;
   athlete_count: number;
   women_only: boolean;
+  // Additional fields from Strava API
+  start_latlng?: [number, number] | null;
+  skill_levels?: number;
+  terrain?: number;
+  route?: {
+    id: number;
+    map?: {
+      summary_polyline?: string;
+    };
+  } | null;
 }
 
 serve(async (req) => {
@@ -381,6 +391,12 @@ serve(async (req) => {
         participant_count: event.athlete_count || 0,
         women_only: event.women_only || false,
         updated_at: new Date().toISOString(),
+        // Additional fields from Strava API
+        start_latlng: event.start_latlng || null,
+        skill_level: event.skill_levels || null,
+        terrain: event.terrain || null,
+        strava_route_id: event.route?.id ? String(event.route.id) : (event.route_id ? String(event.route_id) : null),
+        route_polyline: event.route?.map?.summary_polyline || null,
       }));
 
     // Also filter newEvents for the same reason

@@ -268,6 +268,9 @@ export type Database = {
           max_elevation: number | null
           min_elevation: number | null
           route_link: string | null
+          start_latlng: Json | null
+          strava_event_id: string | null
+          strava_event_url: string | null
           terrain_type: string | null
           title: string
           updated_at: string
@@ -287,6 +290,9 @@ export type Database = {
           max_elevation?: number | null
           min_elevation?: number | null
           route_link?: string | null
+          start_latlng?: Json | null
+          strava_event_id?: string | null
+          strava_event_url?: string | null
           terrain_type?: string | null
           title: string
           updated_at?: string
@@ -306,6 +312,9 @@ export type Database = {
           max_elevation?: number | null
           min_elevation?: number | null
           route_link?: string | null
+          start_latlng?: Json | null
+          strava_event_id?: string | null
+          strava_event_url?: string | null
           terrain_type?: string | null
           title?: string
           updated_at?: string
@@ -598,8 +607,13 @@ export type Database = {
           organizing_athlete_name: string | null
           participant_count: number | null
           route_id: string | null
+          route_polyline: string | null
+          skill_level: number | null
           sport_type: string | null
+          start_latlng: Json | null
           strava_event_id: string
+          strava_route_id: string | null
+          terrain: number | null
           title: string
           updated_at: string | null
           women_only: boolean | null
@@ -614,8 +628,13 @@ export type Database = {
           organizing_athlete_name?: string | null
           participant_count?: number | null
           route_id?: string | null
+          route_polyline?: string | null
+          skill_level?: number | null
           sport_type?: string | null
+          start_latlng?: Json | null
           strava_event_id: string
+          strava_route_id?: string | null
+          terrain?: number | null
           title: string
           updated_at?: string | null
           women_only?: boolean | null
@@ -630,8 +649,13 @@ export type Database = {
           organizing_athlete_name?: string | null
           participant_count?: number | null
           route_id?: string | null
+          route_polyline?: string | null
+          skill_level?: number | null
           sport_type?: string | null
+          start_latlng?: Json | null
           strava_event_id?: string
+          strava_route_id?: string | null
+          terrain?: number | null
           title?: string
           updated_at?: string | null
           women_only?: boolean | null

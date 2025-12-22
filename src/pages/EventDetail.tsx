@@ -60,6 +60,9 @@ interface EventData {
   elevation_m: number | null;
   difficulty: string | null;
   terrain_type: string | null;
+  strava_event_id: string | null;
+  strava_event_url: string | null;
+  start_latlng: any;
 }
 
 interface Participant {
@@ -337,6 +340,12 @@ const EventDetail = () => {
           <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
             <div className="flex flex-wrap items-center gap-3">
               <h1 className="text-3xl font-bold">{event.title}</h1>
+              {/* Badge for events imported from Strava */}
+              {event.strava_event_id && (
+                <Badge variant="outline" className="gap-1 text-[#FC4C02] border-[#FC4C02]/30">
+                  Ze Strava
+                </Badge>
+              )}
               {isPastEvent(event.event_date) && (
                 <Badge variant="outline" className="text-muted-foreground">
                   Proběhlo
@@ -445,6 +454,22 @@ const EventDetail = () => {
               </div>
 
               <div className="flex flex-wrap items-center gap-3 pt-4 border-t">
+                {/* Strava event link */}
+                {event.strava_event_url && (
+                  <Button variant="outline" className="gap-2 border-[#FC4C02]/30 text-[#FC4C02] hover:bg-[#FC4C02]/10" asChild>
+                    <a
+                      href={event.strava_event_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current" aria-hidden="true">
+                        <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.172" />
+                      </svg>
+                      Zobrazit na Stravě
+                    </a>
+                  </Button>
+                )}
+
                 {event.route_link && (
                   <Button variant="outline" asChild>
                     <a
