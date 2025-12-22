@@ -71,18 +71,23 @@ export const accountSteps: Step[] = [
 export const eventsSteps: Step[] = [
   {
     target: '[data-tour="events-header"]',
-    content: "Přehled všech plánovaných vyjížděk klubu ESKO.cc.",
+    content: "Přehled všech plánovaných vyjížděk klubu ESKO.cc. Zde najdeš informace o nadcházejících akcích.",
     disableBeacon: true,
     placement: "bottom",
   },
   {
     target: '[data-tour="events-tabs"]',
-    content: "Přepínej mezi nadcházejícími a proběhlými vyjížďkami.",
+    content: "Přepínej mezi nadcházejícími vyjížďkami, historií proběhlých akcí a oblíbenými trasami.",
     placement: "bottom",
   },
   {
     target: '[data-tour="event-card"]',
-    content: "Klikni na kartu vyjížďky pro zobrazení detailů a přihlášení.",
+    content: "Karta vyjížďky zobrazuje datum, místo, obtížnost a počet účastníků. Klikni pro zobrazení detailu.",
+    placement: "top",
+  },
+  {
+    target: '[data-tour="event-list"]',
+    content: "U každé vyjížďky se můžeš přihlásit tlačítkem 'Přihlásit'. Po přihlášení budeš dostávat notifikace o změnách.",
     placement: "top",
   },
 ];
