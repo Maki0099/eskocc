@@ -41,3 +41,6 @@ verify_jwt = true
 
 [functions.strava-club-events]
 verify_jwt = false
+
+[functions.delete-user]
+verify_jwt = true

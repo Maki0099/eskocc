@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useAuth } from "@/contexts/AuthContext";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import CafeAdmin from "@/components/admin/CafeAdmin";
@@ -15,7 +16,7 @@ import { AiSettingsAdmin } from "@/components/admin/AiSettingsAdmin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
@@ -32,7 +33,18 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Users, Shield, Loader2, Coffee, Target, Clock, KeyRound, Bell, Route, Sparkles } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Users, Shield, Loader2, Coffee, Target, Clock, KeyRound, Bell, Route, Sparkles, Trash2, Link2, Link2Off, Trophy } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
@@ -44,6 +56,9 @@ interface UserWithRole {
   id: string;
   email: string;
   full_name: string | null;
+  avatar_url: string | null;
+  strava_id: string | null;
+  is_strava_club_member: boolean;
   created_at: string;
   role: AppRole;
 }
@@ -51,10 +66,12 @@ interface UserWithRole {
 const Admin = () => {
   const navigate = useNavigate();
   const { isAdmin, loading: roleLoading } = useUserRole();
+  const { user: currentUser } = useAuth();
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
   const [resettingPasswordUserId, setResettingPasswordUserId] = useState<string | null>(null);
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!roleLoading && !isAdmin) {
@@ -65,26 +82,24 @@ const Admin = () => {
 
   const fetchUsers = async () => {
     try {
-      // Fetch all profiles
       const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
-        .select("id, email, full_name, created_at")
+        .select("id, email, full_name, avatar_url, strava_id, is_strava_club_member, created_at")
         .order("created_at", { ascending: false });
 
       if (profilesError) throw profilesError;
 
-      // Fetch all roles
       const { data: roles, error: rolesError } = await supabase
         .from("user_roles")
         .select("user_id, role");
 
       if (rolesError) throw rolesError;
 
-      // Combine profiles with roles
       const usersWithRoles: UserWithRole[] = (profiles || []).map((profile) => {
         const userRole = roles?.find((r) => r.user_id === profile.id);
         return {
           ...profile,
+          is_strava_club_member: profile.is_strava_club_member ?? false,
           role: (userRole?.role as AppRole) || "pending",
         };
       });
@@ -107,7 +122,6 @@ const Admin = () => {
   const handleRoleChange = async (userId: string, newRole: AppRole) => {
     setUpdatingUserId(userId);
     try {
-      // Check if user already has a role entry
       const { data: existingRole } = await supabase
         .from("user_roles")
         .select("id")
@@ -115,7 +129,6 @@ const Admin = () => {
         .maybeSingle();
 
       if (existingRole) {
-        // Update existing role
         const { error } = await supabase
           .from("user_roles")
           .update({ role: newRole })
@@ -123,7 +136,6 @@ const Admin = () => {
 
         if (error) throw error;
       } else {
-        // Insert new role
         const { error } = await supabase.from("user_roles").insert({
           user_id: userId,
           role: newRole,
@@ -160,9 +172,29 @@ const Admin = () => {
     }
   };
 
+  const handleDeleteUser = async (userId: string, userName: string) => {
+    setDeletingUserId(userId);
+    try {
+      const { data, error } = await supabase.functions.invoke('delete-user', {
+        body: { userId }
+      });
 
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      toast.success(`Uživatel ${userName} byl smazán`);
+      fetchUsers();
+    } catch (error: any) {
+      console.error("Error deleting user:", error);
+      toast.error(error.message || "Nepodařilo se smazat uživatele");
+    } finally {
+      setDeletingUserId(null);
+    }
+  };
 
   const pendingCount = users.filter((u) => u.role === "pending").length;
+  const stravaConnectedCount = users.filter((u) => u.strava_id).length;
+  const clubMemberCount = users.filter((u) => u.is_strava_club_member).length;
 
   if (roleLoading || !isAdmin) {
     return (
@@ -176,7 +208,7 @@ const Admin = () => {
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
       <main className="flex-1 container mx-auto px-4 pt-24 pb-12">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           <div className="flex items-center gap-3 mb-8">
             <Shield className="w-8 h-8 text-primary" />
             <div>
@@ -186,7 +218,7 @@ const Admin = () => {
           </div>
 
           <Tabs defaultValue="users" className="space-y-6">
-            <TabsList>
+            <TabsList className="flex-wrap">
               <TabsTrigger value="users" className="gap-2">
                 <Users className="w-4 h-4" />
                 Uživatelé
@@ -226,11 +258,11 @@ const Admin = () => {
             </TabsList>
 
             <TabsContent value="users" className="space-y-6">
-              <div className="grid gap-6 md:grid-cols-4">
+              <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
                 <Card>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium text-muted-foreground">
-                      Celkem uživatelů
+                      Celkem
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -271,6 +303,26 @@ const Admin = () => {
                     </div>
                   </CardContent>
                 </Card>
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">
+                      Strava propojeno
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-green-500">{stravaConnectedCount}</div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">
+                      Členové klubu
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-primary">{clubMemberCount}</div>
+                  </CardContent>
+                </Card>
               </div>
 
               <Card>
@@ -296,6 +348,8 @@ const Admin = () => {
                           <TableRow>
                             <TableHead>Uživatel</TableHead>
                             <TableHead>Email</TableHead>
+                            <TableHead className="text-center">Strava</TableHead>
+                            <TableHead className="text-center">Klub</TableHead>
                             <TableHead>Registrace</TableHead>
                             <TableHead>Role</TableHead>
                             <TableHead className="text-right">Akce</TableHead>
@@ -307,6 +361,9 @@ const Admin = () => {
                               <TableCell>
                                 <div className="flex items-center gap-3">
                                   <Avatar className="h-8 w-8">
+                                    {user.avatar_url && (
+                                      <AvatarImage src={user.avatar_url} alt={user.full_name || "Avatar"} />
+                                    )}
                                     <AvatarFallback className="text-xs">
                                       {getInitials(user.full_name, user.email)}
                                     </AvatarFallback>
@@ -318,6 +375,23 @@ const Admin = () => {
                               </TableCell>
                               <TableCell className="text-muted-foreground">
                                 {user.email}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                {user.strava_id ? (
+                                  <div className="flex items-center justify-center gap-1.5">
+                                    <Link2 className="w-4 h-4 text-green-500" />
+                                    <span className="text-xs text-muted-foreground">{user.strava_id}</span>
+                                  </div>
+                                ) : (
+                                  <Link2Off className="w-4 h-4 text-muted-foreground/50 mx-auto" />
+                                )}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                {user.is_strava_club_member ? (
+                                  <Trophy className="w-4 h-4 text-primary mx-auto" />
+                                ) : (
+                                  <span className="text-muted-foreground/50">—</span>
+                                )}
                               </TableCell>
                               <TableCell className="text-muted-foreground">
                                 {format(new Date(user.created_at), "d. M. yyyy", {
@@ -351,7 +425,7 @@ const Admin = () => {
                                     }
                                     disabled={updatingUserId === user.id}
                                   >
-                                    <SelectTrigger className="w-[180px]">
+                                    <SelectTrigger className="w-[140px]">
                                       {updatingUserId === user.id ? (
                                         <Loader2 className="w-4 h-4 animate-spin" />
                                       ) : (
@@ -373,6 +447,44 @@ const Admin = () => {
                                       </SelectItem>
                                     </SelectContent>
                                   </Select>
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                        disabled={user.id === currentUser?.id || deletingUserId === user.id}
+                                        title={user.id === currentUser?.id ? "Nemůžeš smazat sám sebe" : "Smazat uživatele"}
+                                      >
+                                        {deletingUserId === user.id ? (
+                                          <Loader2 className="w-4 h-4 animate-spin" />
+                                        ) : (
+                                          <Trash2 className="w-4 h-4" />
+                                        )}
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>Smazat uživatele?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                          Opravdu chceš smazat uživatele <strong>{user.full_name || user.email}</strong>?
+                                          <br />
+                                          <span className="text-muted-foreground">{user.email}</span>
+                                          <br /><br />
+                                          Tato akce je nevratná. Budou smazány všechny údaje uživatele včetně profilu, rolí a účasti na akcích.
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>Zrušit</AlertDialogCancel>
+                                        <AlertDialogAction
+                                          onClick={() => handleDeleteUser(user.id, user.full_name || user.email)}
+                                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                        >
+                                          Smazat
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
                                 </div>
                               </TableCell>
                             </TableRow>
