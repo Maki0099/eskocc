@@ -10,6 +10,8 @@ import ScrollToTop from "./components/ScrollToTop";
 import { ScrollProgressBar } from "./components/layout/ScrollProgressBar";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PageLoader from "./components/PageLoader";
+import NetworkStatus from "./components/pwa/NetworkStatus";
+import UpdatePrompt from "./components/pwa/UpdatePrompt";
 import { ROUTES, ROUTE_PATTERNS } from "@/lib/routes";
 
 // Lazy load all pages for code-splitting
@@ -41,6 +43,8 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
+        <NetworkStatus />
+        <UpdatePrompt />
         <BrowserRouter>
           <ScrollToTop />
           <ScrollProgressBar />
