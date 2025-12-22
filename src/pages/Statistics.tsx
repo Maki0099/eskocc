@@ -336,22 +336,22 @@ const Statistics = () => {
               <Target className="w-4 h-4" />
               <span className="text-sm font-medium">Výzva {currentYear}</span>
             </div>
-            <h1 className="text-display font-bold">Statistiky klubu</h1>
+            <div className="flex items-center justify-center gap-2">
+              <h1 className="text-display font-bold">Statistiky klubu</h1>
+              {isMember && !isTourCompleted("statistics") && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleStartTour}
+                  className="shrink-0"
+                >
+                  <HelpCircle className="w-5 h-5" />
+                </Button>
+              )}
+            </div>
             <p className="text-lg text-muted-foreground max-w-md mx-auto">
               Sleduj pokrok členů a celého klubu ve splnění ročního cíle
             </p>
-            {isMember && !isTourCompleted("statistics") && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleStartTour}
-                className="mt-2 gap-2"
-                data-tour="refresh-stats"
-              >
-                <HelpCircle className="w-4 h-4" />
-                Spustit průvodce
-              </Button>
-            )}
           </div>
 
           {!isMember && !roleLoading ? (

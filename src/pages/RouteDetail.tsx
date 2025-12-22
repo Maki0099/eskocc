@@ -248,13 +248,15 @@ const RouteDetail = () => {
 
           {/* Title and Actions */}
           <div className="flex flex-wrap items-start justify-between gap-4 mb-6" data-tour="route-title">
-            <h1 className="text-3xl font-bold">{route.title}</h1>
-            <div className="flex gap-2">
+            <div className="flex items-center gap-2">
+              <h1 className="text-3xl font-bold">{route.title}</h1>
               {isMember && !isTourCompleted("routeDetail") && (
                 <Button variant="ghost" size="icon" onClick={handleStartTour}>
-                  <HelpCircle className="w-4 h-4" />
+                  <HelpCircle className="w-5 h-5" />
                 </Button>
               )}
+            </div>
+            <div className="flex gap-2">
               {canEdit && (
                 <>
                   <EditRouteDialog route={route} onRouteUpdated={fetchRoute} />

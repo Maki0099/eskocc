@@ -176,15 +176,15 @@ const MemberProfile = () => {
             <span className="font-bold text-xl text-foreground">ESKO.cc</span>
           </Link>
           <div className="flex items-center gap-2">
-            {!isTourCompleted("memberProfile") && (
-              <Button variant="ghost" size="icon" onClick={handleStartTour}>
-                <HelpCircle className="w-4 h-4" />
-              </Button>
-            )}
             <Button onClick={() => navigate(-1)} variant="ghost" size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Zpět
             </Button>
+            {!isTourCompleted("memberProfile") && (
+              <Button variant="ghost" size="icon" onClick={handleStartTour}>
+                <HelpCircle className="w-5 h-5" />
+              </Button>
+            )}
           </div>
         </div>
       </header>
