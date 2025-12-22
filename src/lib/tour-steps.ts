@@ -105,3 +105,32 @@ export const gallerySteps: Step[] = [
     placement: "top",
   },
 ];
+
+export const eventDetailSteps: Step[] = [
+  {
+    target: '[data-tour="event-title"]',
+    content: "Detail vyjížďky obsahuje všechny důležité informace o akci.",
+    disableBeacon: true,
+    placement: "bottom",
+  },
+  {
+    target: '[data-tour="event-map"]',
+    content: "Mapa zobrazuje trasu vyjížďky nebo místo startu. Můžeš si trasu prohlédnout a stáhnout GPX soubor.",
+    placement: "top",
+  },
+  {
+    target: '[data-tour="event-info"]',
+    content: "Zde najdeš datum, čas, místo a popis vyjížďky. Můžeš se také přihlásit nebo stáhnout GPX.",
+    placement: "top",
+  },
+  {
+    target: '[data-tour="event-participants"]',
+    content: "Seznam přihlášených účastníků. Kliknutím na jméno zobrazíš profil člena.",
+    placement: "top",
+  },
+  {
+    target: '[data-tour="event-photos"]',
+    content: "Po vyjížďce zde můžeš nahrát fotky a prohlédnout si fotky od ostatních.",
+    placement: "top",
+  },
+];
