@@ -274,6 +274,23 @@ const EventDetail = () => {
 
     setAddingToFavorites(true);
     try {
+      // Check if a route from this event already exists
+      const { data: existingRoute } = await supabase
+        .from("favorite_routes")
+        .select("id")
+        .eq("source_event_id", event.id)
+        .maybeSingle();
+
+      if (existingRoute) {
+        toast.error("Tato trasa už je v oblíbených", {
+          action: {
+            label: "Zobrazit",
+            onClick: () => navigate(`/routes/${existingRoute.id}`),
+          },
+        });
+        return;
+      }
+
       const { error } = await supabase.from("favorite_routes").insert({
         title: event.title,
         description: event.description,
@@ -285,6 +302,7 @@ const EventDetail = () => {
         gpx_file_url: event.gpx_file_url,
         cover_image_url: event.cover_image_url,
         created_by: user.id,
+        source_event_id: event.id,
       });
 
       if (error) throw error;

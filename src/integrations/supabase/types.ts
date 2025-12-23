@@ -269,6 +269,7 @@ export type Database = {
           min_elevation: number | null
           organizing_athlete_name: string | null
           route_link: string | null
+          source_route_id: string | null
           sport_type: string | null
           start_latlng: Json | null
           strava_event_id: string | null
@@ -294,6 +295,7 @@ export type Database = {
           min_elevation?: number | null
           organizing_athlete_name?: string | null
           route_link?: string | null
+          source_route_id?: string | null
           sport_type?: string | null
           start_latlng?: Json | null
           strava_event_id?: string | null
@@ -319,6 +321,7 @@ export type Database = {
           min_elevation?: number | null
           organizing_athlete_name?: string | null
           route_link?: string | null
+          source_route_id?: string | null
           sport_type?: string | null
           start_latlng?: Json | null
           strava_event_id?: string | null
@@ -343,6 +346,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "events_source_route_id_fkey"
+            columns: ["source_route_id"]
+            isOneToOne: false
+            referencedRelation: "favorite_routes"
+            referencedColumns: ["id"]
+          },
         ]
       }
       favorite_routes: {
@@ -359,6 +369,7 @@ export type Database = {
           max_elevation: number | null
           min_elevation: number | null
           route_link: string | null
+          source_event_id: string | null
           terrain_type: string | null
           title: string
           updated_at: string
@@ -376,6 +387,7 @@ export type Database = {
           max_elevation?: number | null
           min_elevation?: number | null
           route_link?: string | null
+          source_event_id?: string | null
           terrain_type?: string | null
           title: string
           updated_at?: string
@@ -393,11 +405,20 @@ export type Database = {
           max_elevation?: number | null
           min_elevation?: number | null
           route_link?: string | null
+          source_event_id?: string | null
           terrain_type?: string | null
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "favorite_routes_source_event_id_fkey"
+            columns: ["source_event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       gallery_items: {
         Row: {

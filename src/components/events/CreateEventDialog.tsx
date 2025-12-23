@@ -59,6 +59,7 @@ const eventSchema = z.object({
 type EventFormData = z.infer<typeof eventSchema>;
 
 interface RouteInitialData {
+  id?: string;
   title?: string;
   description?: string | null;
   distance_km?: number | null;
@@ -220,6 +221,7 @@ const CreateEventDialog = ({ onEventCreated, initialData, customTrigger }: Creat
         elevation_m: data.elevation_m || null,
         difficulty: data.difficulty || null,
         terrain_type: data.terrain_type || null,
+        source_route_id: initialData?.id || null,
       }).select('id').single();
 
       if (error) throw error;
