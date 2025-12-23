@@ -297,6 +297,7 @@ export function RouteImportWizard() {
   const [photoCount, setPhotoCount] = useState(4);
   const [isGeneratingPhotos, setIsGeneratingPhotos] = useState(false);
   const [photoProgress, setPhotoProgress] = useState({ current: 0, total: 0 });
+  const [aiGenerationMode, setAiGenerationMode] = useState<"full" | "photos-only">("full");
   const [aiProviders, setAiProviders] = useState<{ text: string; image: string } | null>(null);
   const [brokenImages, setBrokenImages] = useState<Set<string>>(new Set());
   const [qrScannerOpen, setQrScannerOpen] = useState(false);
@@ -544,6 +545,7 @@ export function RouteImportWizard() {
     
     if (shouldGenerateAI) {
       setIsGeneratingAI(true);
+      setAiGenerationMode(mode === "auto" ? "full" : "photos-only");
       setAiProgress({ current: 0, total: newRoutes.length });
       
       try {
@@ -1387,6 +1389,7 @@ export function RouteImportWizard() {
                 </div>
                 <p className="text-sm text-muted-foreground mb-3">
                   Projít každou trasu jednotlivě a vyplnit vše ručně
+                  {photoMode === "ai" && ` (AI vygeneruje ${photoCount} fotografií)`}
                 </p>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <ClipboardCheck className="w-3 h-3 text-primary" />
@@ -1414,10 +1417,15 @@ export function RouteImportWizard() {
             <div className="text-center">
               <div className="flex items-center justify-center gap-2 mb-4">
                 <Sparkles className="w-6 h-6 text-primary animate-pulse" />
-                <h3 className="text-lg font-semibold">AI generování...</h3>
+                <h3 className="text-lg font-semibold">
+                  {aiGenerationMode === "photos-only" ? "Generování AI fotografií..." : "AI generování..."}
+                </h3>
               </div>
               <p className="text-sm text-muted-foreground">
-                Zpracování {aiProgress.current} z {aiProgress.total} tras
+                {aiGenerationMode === "photos-only" 
+                  ? `Generování fotografií pro ${aiProgress.total} tras`
+                  : `Zpracování ${aiProgress.current} z ${aiProgress.total} tras`
+                }
               </p>
             </div>
 
