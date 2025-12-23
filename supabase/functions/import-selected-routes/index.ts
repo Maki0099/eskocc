@@ -87,7 +87,8 @@ function base64ToArrayBuffer(base64: string): ArrayBuffer {
 async function uploadGeneratedImages(
   supabase: any,
   routeId: string,
-  images: GeneratedImage[]
+  images: GeneratedImage[],
+  userId: string
 ): Promise<number> {
   let uploadedCount = 0;
   
@@ -133,13 +134,11 @@ async function uploadGeneratedImages(
         .getPublicUrl(filePath);
       
       // Create gallery_items record
-      // Note: We use a system user ID for AI-generated images
-      // In production, you'd want to pass the actual user ID who initiated the import
       const { error: insertError } = await supabase
         .from('gallery_items')
         .insert({
           route_id: routeId,
-          user_id: '00000000-0000-0000-0000-000000000000', // System/AI user placeholder
+          user_id: userId,
           file_url: urlData.publicUrl,
           file_name: fileName,
           caption: image.caption
@@ -182,7 +181,14 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Importing ${routes.length} routes`);
+    if (!userId) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'User ID is required for importing routes with images' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log(`Importing ${routes.length} routes for user ${userId}`);
 
     const results: ImportResult[] = [];
     let imported = 0;
@@ -259,8 +265,47 @@ serve(async (req) => {
           }
         }
 
-        // Handle cover image
-        if (route.cover_url) {
+        // Handle cover image - prefer first AI generated image, then try URL download
+        if (!coverImageUrl && route.generated_images && route.generated_images.length > 0) {
+          console.log(`Using first AI-generated image as cover for ${route.title}`);
+          try {
+            const firstImage = route.generated_images[0];
+            const imageBuffer = base64ToArrayBuffer(firstImage.base64);
+            
+            let extension = 'png';
+            let contentType = 'image/png';
+            if (firstImage.base64.startsWith('data:image/jpeg') || firstImage.base64.startsWith('data:image/jpg')) {
+              extension = 'jpg';
+              contentType = 'image/jpeg';
+            } else if (firstImage.base64.startsWith('data:image/webp')) {
+              extension = 'webp';
+              contentType = 'image/webp';
+            }
+            
+            const coverFilename = `${route.title.replace(/[^a-z0-9]/gi, '-').toLowerCase()}-cover.${extension}`;
+            const coverPath = `covers/${Date.now()}-${coverFilename}`;
+
+            const { error: uploadError } = await supabase.storage
+              .from('routes')
+              .upload(coverPath, imageBuffer, {
+                contentType,
+                upsert: false
+              });
+
+            if (!uploadError) {
+              const { data: { publicUrl } } = supabase.storage.from('routes').getPublicUrl(coverPath);
+              coverImageUrl = publicUrl;
+              console.log(`AI cover uploaded: ${coverImageUrl}`);
+            } else {
+              console.error(`AI cover upload error for ${route.title}:`, uploadError);
+            }
+          } catch (err) {
+            console.error(`Error uploading AI cover for ${route.title}:`, err);
+          }
+        }
+        
+        // Fallback: try to download cover from URL (if provided and not a staticmap URL)
+        if (!coverImageUrl && route.cover_url && !route.cover_url.includes('staticmap')) {
           console.log(`Downloading cover image from ${route.cover_url}`);
           const coverFile = await downloadFile(route.cover_url);
           
@@ -320,7 +365,7 @@ serve(async (req) => {
           // Upload AI-generated images if present
           if (route.generated_images && route.generated_images.length > 0) {
             console.log(`Uploading ${route.generated_images.length} AI-generated images for route ${insertedRoute.id}`);
-            const aiImagesUploaded = await uploadGeneratedImages(supabase, insertedRoute.id, route.generated_images);
+            const aiImagesUploaded = await uploadGeneratedImages(supabase, insertedRoute.id, route.generated_images, userId);
             imagesUploaded += aiImagesUploaded;
             totalImagesUploaded += aiImagesUploaded;
             console.log(`Uploaded ${aiImagesUploaded} AI images for route ${route.title}`);
@@ -329,7 +374,7 @@ serve(async (req) => {
           // Upload manual images if present
           if (route.manual_images && route.manual_images.length > 0) {
             console.log(`Uploading ${route.manual_images.length} manual images for route ${insertedRoute.id}`);
-            const manualImagesUploaded = await uploadGeneratedImages(supabase, insertedRoute.id, route.manual_images);
+            const manualImagesUploaded = await uploadGeneratedImages(supabase, insertedRoute.id, route.manual_images, userId);
             imagesUploaded += manualImagesUploaded;
             totalImagesUploaded += manualImagesUploaded;
             console.log(`Uploaded ${manualImagesUploaded} manual images for route ${route.title}`);

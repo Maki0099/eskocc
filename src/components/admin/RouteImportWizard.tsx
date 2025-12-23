@@ -701,6 +701,12 @@ export function RouteImportWizard() {
     setIsImporting(true);
 
     try {
+      // Get current user ID
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error("Uživatel není přihlášen");
+      }
+
       const routesToImport = selectedRoutes.map((r) => ({
         title: r.title,
         description: r.description,
@@ -725,7 +731,7 @@ export function RouteImportWizard() {
       const { data, error } = await supabase.functions.invoke(
         "import-selected-routes",
         {
-          body: { routes: routesToImport },
+          body: { routes: routesToImport, userId: user.id },
         }
       );
 
