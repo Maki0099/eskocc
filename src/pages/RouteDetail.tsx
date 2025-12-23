@@ -27,7 +27,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Route, Mountain, Gauge, Download, ExternalLink, Trash2, MapIcon, CalendarPlus, Bike, Map, ImageIcon, HelpCircle } from "lucide-react";
+import { ArrowLeft, Route, Mountain, Gauge, Download, ExternalLink, Trash2, MapIcon, CalendarPlus, Bike, Map, ImageIcon, HelpCircle, Calendar } from "lucide-react";
 import { toast } from "sonner";
 import { ROUTES } from "@/lib/routes";
 import { getRouteSourceInfo } from "@/lib/route-source-utils";
@@ -60,6 +60,12 @@ interface FavoriteRoute {
   created_at: string;
 }
 
+interface LinkedEvent {
+  id: string;
+  title: string;
+  event_date: string;
+}
+
 const DIFFICULTY_LABELS: Record<string, string> = {
   easy: "Lehká",
   medium: "Střední",
@@ -88,6 +94,7 @@ const RouteDetail = () => {
   const [tourRunning, setTourRunning] = useState(false);
   const [route, setRoute] = useState<FavoriteRoute | null>(null);
   const [photos, setPhotos] = useState<Photo[]>([]);
+  const [linkedEvents, setLinkedEvents] = useState<LinkedEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -141,10 +148,28 @@ const RouteDetail = () => {
     }
   }, [id]);
 
+  const fetchLinkedEvents = useCallback(async () => {
+    if (!id) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("events")
+        .select("id, title, event_date")
+        .eq("source_route_id", id)
+        .order("event_date", { ascending: false });
+
+      if (error) throw error;
+      setLinkedEvents(data || []);
+    } catch (error) {
+      console.error("Error fetching linked events:", error);
+    }
+  }, [id]);
+
   useEffect(() => {
     fetchRoute();
     fetchPhotos();
-  }, [fetchRoute, fetchPhotos]);
+    fetchLinkedEvents();
+  }, [fetchRoute, fetchPhotos, fetchLinkedEvents]);
 
   const handleDelete = async () => {
     if (!route) return;
@@ -403,6 +428,28 @@ const RouteDetail = () => {
                   />
                 )}
               </div>
+
+              {/* Linked Events */}
+              {linkedEvents.length > 0 && (
+                <div className="pt-4 border-t">
+                  <p className="text-sm font-medium mb-2 flex items-center gap-2">
+                    <Calendar className="w-4 h-4" />
+                    Vyjížďky z této trasy ({linkedEvents.length})
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {linkedEvents.map((event) => (
+                      <Link key={event.id} to={`/events/${event.id}`}>
+                        <Badge variant="secondary" className="cursor-pointer hover:bg-secondary/80">
+                          {event.title}
+                          <span className="ml-1 text-muted-foreground">
+                            ({new Date(event.event_date).toLocaleDateString("cs-CZ")})
+                          </span>
+                        </Badge>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 

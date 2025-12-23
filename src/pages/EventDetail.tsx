@@ -68,6 +68,12 @@ interface EventData {
   sport_type: string | null;
   organizing_athlete_name: string | null;
   women_only: boolean | null;
+  source_route_id: string | null;
+}
+
+interface LinkedRoute {
+  id: string;
+  title: string;
 }
 
 interface Participant {
@@ -132,6 +138,7 @@ const EventDetail = () => {
   const [isParticipating, setIsParticipating] = useState(false);
   const [loading, setLoading] = useState(true);
   const [addingToFavorites, setAddingToFavorites] = useState(false);
+  const [linkedRoute, setLinkedRoute] = useState<LinkedRoute | null>(null);
 
   const isCreator = user && event?.created_by === user.id;
   const canEdit = isCreator || isAdmin;
@@ -153,6 +160,28 @@ const EventDetail = () => {
       }
 
       setEvent(eventData);
+
+      // Check if this event was created from a route (source_route_id)
+      if (eventData.source_route_id) {
+        const { data: sourceRoute } = await supabase
+          .from("favorite_routes")
+          .select("id, title")
+          .eq("id", eventData.source_route_id)
+          .maybeSingle();
+        if (sourceRoute) {
+          setLinkedRoute(sourceRoute);
+        }
+      } else {
+        // Check if a route was created from this event (source_event_id)
+        const { data: derivedRoute } = await supabase
+          .from("favorite_routes")
+          .select("id, title")
+          .eq("source_event_id", id)
+          .maybeSingle();
+        if (derivedRoute) {
+          setLinkedRoute(derivedRoute);
+        }
+      }
 
       // Fetch participants
       const { data: participantsData, error: participantsError } = await supabase
@@ -553,7 +582,7 @@ const EventDetail = () => {
                         Stáhnout GPX
                       </a>
                     </Button>
-                    {user && isMember && (
+                    {user && isMember && !linkedRoute && (
                       <Button
                         variant="outline"
                         onClick={handleAddToFavorites}
@@ -561,6 +590,14 @@ const EventDetail = () => {
                       >
                         <Heart className="w-4 h-4 mr-2" />
                         {addingToFavorites ? "Ukládám..." : "Do oblíbených"}
+                      </Button>
+                    )}
+                    {linkedRoute && (
+                      <Button variant="outline" asChild>
+                        <Link to={`/routes/${linkedRoute.id}`}>
+                          <Route className="w-4 h-4 mr-2" />
+                          Oblíbená trasa
+                        </Link>
                       </Button>
                     )}
                   </>
