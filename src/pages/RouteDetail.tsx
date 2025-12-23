@@ -383,6 +383,7 @@ const RouteDetail = () => {
                   <CreateEventDialog
                     onEventCreated={() => navigate(ROUTES.EVENTS)}
                     initialData={{
+                      id: route.id,
                       title: route.title,
                       description: route.description,
                       distance_km: route.distance_km,
