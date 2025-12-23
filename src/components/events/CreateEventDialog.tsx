@@ -226,6 +226,26 @@ const CreateEventDialog = ({ onEventCreated, initialData, customTrigger }: Creat
 
       if (error) throw error;
 
+      // Copy photos from source route to the new event
+      if (initialData?.id && newEvent?.id) {
+        const { data: routePhotos } = await supabase
+          .from("gallery_items")
+          .select("file_url, file_name, caption")
+          .eq("route_id", initialData.id);
+
+        if (routePhotos && routePhotos.length > 0) {
+          const photosToInsert = routePhotos.map(photo => ({
+            event_id: newEvent.id,
+            user_id: user.id,
+            file_url: photo.file_url,
+            file_name: photo.file_name,
+            caption: photo.caption,
+          }));
+
+          await supabase.from("gallery_items").insert(photosToInsert);
+        }
+      }
+
       // Send push notifications to all members
       supabase.functions.invoke('push-send', {
         body: { 
