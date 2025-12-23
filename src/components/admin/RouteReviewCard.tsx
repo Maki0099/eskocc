@@ -29,6 +29,7 @@ import {
   Info,
   ImagePlus,
   MapIcon,
+  Sparkles,
 } from "lucide-react";
 import { getRouteSourceInfo } from "@/lib/route-source-utils";
 import { GpxPreviewMap } from "@/components/map/GpxPreviewMap";
@@ -80,6 +81,7 @@ interface RouteReviewCardProps {
   onSkip: () => void;
   isFirst: boolean;
   isLast: boolean;
+  onRemoveGeneratedImage?: (routeId: string, imageIndex: number) => void;
 }
 
 export function RouteReviewCard({
@@ -92,6 +94,7 @@ export function RouteReviewCard({
   onSkip,
   isFirst,
   isLast,
+  onRemoveGeneratedImage,
 }: RouteReviewCardProps) {
   const [localRoute, setLocalRoute] = useState<EditableRoute>(route);
 
@@ -199,6 +202,17 @@ export function RouteReviewCard({
   const hasGpx = localRoute.gpx_accessible || localRoute.manualGpxBase64;
   const hasCover = !!(localRoute.cover_url || localRoute.manualCoverBase64);
   const displayCover = localRoute.manualCoverBase64 || localRoute.cover_url;
+  const hasGeneratedImages = localRoute.generated_images && localRoute.generated_images.length > 0;
+
+  const handleRemoveGeneratedImage = (imageIndex: number) => {
+    const newImages = localRoute.generated_images?.filter((_, i) => i !== imageIndex);
+    const updated = {
+      ...localRoute,
+      generated_images: newImages?.length ? newImages : undefined,
+    };
+    setLocalRoute(updated);
+    onUpdate(updated);
+  };
 
   return (
     <div className="space-y-6">
@@ -312,6 +326,48 @@ export function RouteReviewCard({
               </p>
               <div className="aspect-square rounded-lg overflow-hidden bg-muted">
                 <GpxPreviewMap gpxData={localRoute.manualGpxBase64} compact />
+              </div>
+            </div>
+          )}
+
+          {/* AI Generated Photos */}
+          {hasGeneratedImages && (
+            <div className="pt-3 border-t">
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles className="w-3 h-3 text-primary" />
+                <span className="text-xs font-medium text-muted-foreground">
+                  AI fotografie ({localRoute.generated_images!.length})
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {localRoute.generated_images!.map((img, imgIndex) => (
+                  <div
+                    key={imgIndex}
+                    className="relative aspect-square rounded-md overflow-hidden border bg-muted group"
+                    title={img.caption}
+                  >
+                    <img
+                      src={img.base64}
+                      alt={img.caption || `Foto ${imgIndex + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRemoveGeneratedImage(imgIndex);
+                        }}
+                        className="p-1.5 bg-destructive/80 hover:bg-destructive rounded-full transition-colors"
+                        title="Odstranit fotografii"
+                      >
+                        <XCircle className="w-4 h-4 text-white" />
+                      </button>
+                      <span className="text-[10px] text-white text-center px-1 line-clamp-2">
+                        {img.caption || `Foto ${imgIndex + 1}`}
+                      </span>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}

@@ -651,10 +651,11 @@ serve(async (req) => {
       );
     }
     
-    const { routes, generateImages = false, imageCount = 4 } = body as { 
+    const { routes, generateImages = false, imageCount = 4, skipMetadata = false } = body as { 
       routes: RouteData[]; 
       generateImages?: boolean;
       imageCount?: number;
+      skipMetadata?: boolean;
     };
     
     if (!routes || !Array.isArray(routes)) {
@@ -672,7 +673,7 @@ serve(async (req) => {
     // Get AI settings from database
     const aiSettings = await getAiSettings(supabase);
     console.log(`AI Settings - Text: ${aiSettings.text_provider}, Image: ${aiSettings.image_provider}`);
-    console.log(`Processing ${routes.length} routes (generateImages: ${generateImages}, count: ${imageCount})`);
+    console.log(`Processing ${routes.length} routes (generateImages: ${generateImages}, count: ${imageCount}, skipMetadata: ${skipMetadata})`);
     
     const results: (GeneratedMetadata & { images?: GeneratedImage[] })[] = [];
     
@@ -701,8 +702,14 @@ serve(async (req) => {
         }
       }
       
-      // Generate metadata with configured provider
-      const generated = await generateWithAI(route, startLocation, endLocation, aiSettings.text_provider);
+      // Generate metadata with configured provider (unless skipMetadata is true)
+      let generated: { name: string; description: string; terrainType: string };
+      if (skipMetadata) {
+        // Use fallback without AI when skipping metadata
+        generated = generateFallback(route, startLocation, endLocation);
+      } else {
+        generated = await generateWithAI(route, startLocation, endLocation, aiSettings.text_provider);
+      }
       
       // Optionally generate images with configured provider
       let images: GeneratedImage[] | undefined;

@@ -539,8 +539,10 @@ export function RouteImportWizard() {
       };
     });
     
-    if (mode === "auto") {
-      // Generate AI metadata
+    // Generate AI metadata/images if mode is "auto" OR if photoMode is "ai" (even in manual mode)
+    const shouldGenerateAI = mode === "auto" || photoMode === "ai";
+    
+    if (shouldGenerateAI) {
       setIsGeneratingAI(true);
       setAiProgress({ current: 0, total: newRoutes.length });
       
@@ -564,7 +566,9 @@ export function RouteImportWizard() {
             body: { 
               routes: routeDataForAI,
               generateImages: photoMode === "ai",
-              imageCount: photoCount
+              imageCount: photoCount,
+              // If manual mode, skip metadata generation, only generate images
+              skipMetadata: mode === "manual"
             } 
           }
         );
@@ -572,17 +576,20 @@ export function RouteImportWizard() {
         if (error) throw error;
         
         if (data.success && data.results) {
-          // Update routes with AI-generated metadata
+          // Update routes with AI-generated data
           data.results.forEach((result: any, index: number) => {
             if (newRoutes[index]) {
-              newRoutes[index].title = result.name || newRoutes[index].title;
-              newRoutes[index].description = result.description || "";
-              newRoutes[index].terrain_type = result.terrainType;
-              newRoutes[index].difficulty = calculateDifficulty(
-                newRoutes[index].distance_km || 0,
-                newRoutes[index].elevation_m || 0
-              );
-              // Store generated images if any
+              // Only update metadata if in auto mode
+              if (mode === "auto") {
+                newRoutes[index].title = result.name || newRoutes[index].title;
+                newRoutes[index].description = result.description || "";
+                newRoutes[index].terrain_type = result.terrainType;
+                newRoutes[index].difficulty = calculateDifficulty(
+                  newRoutes[index].distance_km || 0,
+                  newRoutes[index].elevation_m || 0
+                );
+              }
+              // Store generated images if any (for both modes)
               if (result.images && result.images.length > 0) {
                 newRoutes[index].generated_images = result.images;
               }
@@ -590,10 +597,14 @@ export function RouteImportWizard() {
             setAiProgress({ current: index + 1, total: newRoutes.length });
           });
           
-          const imageCount = newRoutes.reduce((acc, r) => acc + (r.generated_images?.length || 0), 0);
-          if (imageCount > 0) {
-            toast.success(`AI vygenerovala metadata a ${imageCount} fotografií`);
-          } else {
+          const generatedImageCount = newRoutes.reduce((acc, r) => acc + (r.generated_images?.length || 0), 0);
+          if (generatedImageCount > 0) {
+            if (mode === "auto") {
+              toast.success(`AI vygenerovala metadata a ${generatedImageCount} fotografií`);
+            } else {
+              toast.success(`AI vygenerovala ${generatedImageCount} fotografií pro trasy`);
+            }
+          } else if (mode === "auto") {
             toast.success("AI vygenerovala metadata pro trasy");
           }
         }
