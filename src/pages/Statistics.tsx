@@ -9,6 +9,7 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import MemberOnlyContent from "@/components/MemberOnlyContent";
 import StravaClubBanner from "@/components/strava/StravaClubBanner";
+import ClubSummaryStats from "@/components/statistics/ClubSummaryStats";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -468,6 +469,9 @@ const Statistics = () => {
                   </Card>
                 </div>
               )}
+
+              {/* Club Summary Stats */}
+              <ClubSummaryStats members={members} clubTotal={clubTotal} />
 
               {/* Leaderboard */}
               <Card className="animate-fade-up animation-delay-400" data-tour="leaderboard">
