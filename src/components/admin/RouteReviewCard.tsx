@@ -97,10 +97,12 @@ export function RouteReviewCard({
   onRemoveGeneratedImage,
 }: RouteReviewCardProps) {
   const [localRoute, setLocalRoute] = useState<EditableRoute>(route);
+  const [coverLoadError, setCoverLoadError] = useState(false);
 
   // Synchronize localRoute when the route prop changes (e.g., after GPX parsing)
   useEffect(() => {
     setLocalRoute(route);
+    setCoverLoadError(false); // Reset error when route changes
   }, [route]);
 
   const handleChange = <K extends keyof EditableRoute>(
@@ -200,9 +202,14 @@ export function RouteReviewCard({
   };
 
   const hasGpx = localRoute.gpx_accessible || localRoute.manualGpxBase64;
-  const hasCover = !!(localRoute.cover_url || localRoute.manualCoverBase64);
-  const displayCover = localRoute.manualCoverBase64 || localRoute.cover_url;
   const hasGeneratedImages = localRoute.generated_images && localRoute.generated_images.length > 0;
+  
+  // For cover, prefer: 1) manual upload, 2) first AI generated image, 3) static map URL
+  const displayCover = localRoute.manualCoverBase64 
+    || (hasGeneratedImages && !coverLoadError ? localRoute.generated_images![0].base64 : null)
+    || (!coverLoadError ? localRoute.cover_url : null);
+  
+  const hasCover = !!(localRoute.cover_url || localRoute.manualCoverBase64 || hasGeneratedImages);
 
   const handleRemoveGeneratedImage = (imageIndex: number) => {
     const newImages = localRoute.generated_images?.filter((_, i) => i !== imageIndex);
@@ -239,23 +246,19 @@ export function RouteReviewCard({
         {/* Cover preview */}
         <div className="space-y-3">
           <div className="aspect-[4/3] bg-muted rounded-lg overflow-hidden flex items-center justify-center relative group">
-            {displayCover ? (
+            {displayCover && !coverLoadError ? (
               <img
                 src={displayCover}
                 alt={localRoute.title}
                 className="w-full h-full object-cover"
-                onError={(e) => {
-                  e.currentTarget.style.display = "none";
-                  const parent = e.currentTarget.parentElement;
-                  if (parent) {
-                    parent.innerHTML = `<div class="text-center p-4"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto text-muted-foreground mb-2"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg><p class="text-xs text-muted-foreground">Náhled nedostupný</p></div>`;
-                  }
-                }}
+                onError={() => setCoverLoadError(true)}
               />
             ) : (
               <div className="text-center p-4">
                 <Image className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
-                <p className="text-xs text-muted-foreground">Bez náhledu</p>
+                <p className="text-xs text-muted-foreground">
+                  {coverLoadError ? "Náhled nedostupný" : "Bez náhledu"}
+                </p>
               </div>
             )}
             {/* Cover upload overlay */}
