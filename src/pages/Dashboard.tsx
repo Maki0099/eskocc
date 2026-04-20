@@ -1,31 +1,24 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { LogOut, User, Calendar, Image, Shield, Settings, Users, HelpCircle } from "lucide-react";
+import { LogOut, User, Calendar, Image, Shield, Settings, HelpCircle } from "lucide-react";
 import logoDark from "@/assets/logo-horizontal-dark.png";
 import logoWhite from "@/assets/logo-horizontal-white.png";
 import { StravaWidget } from "@/components/dashboard/StravaWidget";
 import { ChallengeWidget } from "@/components/dashboard/ChallengeWidget";
 import PendingMembershipWidget from "@/components/dashboard/PendingMembershipWidget";
-import StravaConnectPrompt from "@/components/dashboard/StravaConnectPrompt";
 import PushNotificationPrompt from "@/components/dashboard/PushNotificationPrompt";
 import UpcomingEventsWidget from "@/components/dashboard/UpcomingEventsWidget";
-import StravaClubBanner from "@/components/strava/StravaClubBanner";
-import { Badge } from "@/components/ui/badge";
-import { ROLE_LABELS, STRAVA_CLUB_URL } from "@/lib/constants";
+import { ROLE_LABELS } from "@/lib/constants";
 import { ROUTES } from "@/lib/routes";
 import { useUserStats } from "@/hooks/useUserStats";
-import { useToast } from "@/hooks/use-toast";
 import { useTour } from "@/hooks/useTour";
 import TourProvider from "@/components/tour/TourProvider";
 
 const Dashboard = () => {
   const { user, signOut } = useAuth();
-  const { profile, role, loading, refetch } = useUserStats();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const { toast } = useToast();
-  const clubMemberToastShown = useRef(false);
+  const { profile, role, loading } = useUserStats();
   const { startTour, endTour, shouldAutoStart, markTourCompleted } = useTour();
   const autoStartChecked = useRef(false);
   const [runTour, setRunTour] = useState(false);
@@ -40,12 +33,10 @@ const Dashboard = () => {
     endTour();
   };
 
-  // Auto-start tour for new users
   useEffect(() => {
     if (!loading && !autoStartChecked.current) {
       autoStartChecked.current = true;
       if (shouldAutoStart("dashboard")) {
-        // Small delay to let the page render
         setTimeout(() => {
           handleStartTour();
           markTourCompleted("dashboard");
@@ -53,38 +44,6 @@ const Dashboard = () => {
       }
     }
   }, [loading, shouldAutoStart, markTourCompleted]);
-
-  // Handle Strava connection callback
-  useEffect(() => {
-    if (searchParams.get('strava') === 'connected') {
-      refetch();
-      // Remove query param
-      searchParams.delete('strava');
-      setSearchParams(searchParams, { replace: true });
-      // Show success toast
-      toast({
-        title: "Strava propojena",
-        description: "Váš účet Strava byl úspěšně propojen.",
-      });
-    }
-  }, [searchParams, setSearchParams, refetch, toast]);
-
-  // Show toast when user becomes club member (first detection)
-  useEffect(() => {
-    if (profile?.is_strava_club_member && !clubMemberToastShown.current) {
-      const shownKey = `club_member_toast_${user?.id}`;
-      const alreadyShown = localStorage.getItem(shownKey);
-      if (!alreadyShown) {
-        toast({
-          title: "Vítej v klubu ESKO.cc!",
-          description: "Tvé členství ve Strava klubu bylo potvrzeno.",
-        });
-        localStorage.setItem(shownKey, 'true');
-      }
-      clubMemberToastShown.current = true;
-    }
-  }, [profile?.is_strava_club_member, user?.id, toast]);
-
 
   const handleSignOut = async () => {
     await signOut();
@@ -102,10 +61,8 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Tour Provider */}
       <TourProvider tourId="dashboard" run={runTour} onFinish={handleEndTour} />
-      
-      {/* Header */}
+
       <header className="border-b border-border/40 bg-background/80 backdrop-blur-xl">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <Link to={ROUTES.HOME}>
@@ -128,10 +85,8 @@ const Dashboard = () => {
         </div>
       </header>
 
-      {/* Main content */}
       <main className="container mx-auto px-6 py-12">
         <div className="max-w-2xl mx-auto">
-          {/* Welcome section */}
           <div className="mb-12" data-tour="welcome">
             <h1 className="text-3xl font-semibold mb-2">
               Ahoj, {displayName}!
@@ -143,39 +98,21 @@ const Dashboard = () => {
                   {ROLE_LABELS[role]}
                 </span>
               )}
-              {profile?.is_strava_club_member && (
-                <a href={STRAVA_CLUB_URL} target="_blank" rel="noopener noreferrer">
-                  <Badge variant="secondary" className="gap-1 text-xs bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20 hover:bg-green-500/20 transition-colors">
-                    <Users className="w-3 h-3" />
-                    Člen Strava klubu
-                  </Badge>
-                </a>
-              )}
             </div>
           </div>
 
-          {/* Strava connect prompt from registration */}
-          {user && profile && (
-            <div className="mb-6">
-              <StravaConnectPrompt userId={user.id} hasStrava={!!profile.strava_id} />
-            </div>
-          )}
-
-          {/* Push notification prompt */}
           {user && role !== "pending" && (
             <div className="mb-6">
               <PushNotificationPrompt userId={user.id} />
             </div>
           )}
 
-          {/* Pending membership widget */}
           {role === "pending" && (
             <div className="mb-8">
               <PendingMembershipWidget userEmail={user?.email} />
             </div>
           )}
 
-          {/* Quick actions */}
           <div className="grid gap-4 md:grid-cols-2" data-tour="quick-actions">
             <Link
               to={ROUTES.EVENTS}
@@ -210,7 +147,7 @@ const Dashboard = () => {
               </p>
             </Link>
 
-          {role === "admin" && (
+            {role === "admin" && (
               <Link
                 to={ROUTES.ADMIN}
                 className="group p-6 rounded-2xl border border-primary/20 hover:border-primary/40 bg-primary/5 transition-colors"
@@ -224,38 +161,24 @@ const Dashboard = () => {
             )}
           </div>
 
-          {/* Upcoming Events Widget */}
           {user && role !== "pending" && (
             <div className="mt-8" data-tour="events-widget">
               <UpcomingEventsWidget userId={user.id} />
             </div>
           )}
 
-          {/* Challenge Widget */}
           {user && role !== "pending" && (
             <div className="mt-4" data-tour="challenge-widget">
               <ChallengeWidget userId={user.id} />
             </div>
           )}
 
-          {/* Strava Widget */}
           {user && (
             <div className="mt-4" data-tour="strava-widget">
-              <StravaWidget userId={user.id} isClubMember={profile?.is_strava_club_member ?? false} />
+              <StravaWidget userId={user.id} />
             </div>
           )}
 
-          {/* Strava Club Banner */}
-          {profile && (
-            <div className="mt-4">
-              <StravaClubBanner 
-                hasStravaConnected={!!profile.strava_id} 
-                isClubMember={profile.is_strava_club_member ?? false}
-              />
-            </div>
-          )}
-
-          {/* Profile info */}
           <div className="mt-12 p-6 rounded-2xl border border-border/40" data-tour="profile">
             <Link to={ROUTES.ACCOUNT} className="flex items-center gap-4 group">
               <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center overflow-hidden">

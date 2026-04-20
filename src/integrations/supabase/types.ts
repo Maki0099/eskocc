@@ -177,6 +177,93 @@ export type Database = {
         }
         Relationships: []
       }
+      club_activities: {
+        Row: {
+          activity_date: string
+          athlete_firstname: string
+          athlete_full: string
+          athlete_lastname_initial: string | null
+          created_at: string
+          distance_m: number
+          elevation_gain: number
+          fingerprint: string
+          id: string
+          matched_user_id: string | null
+          moving_time: number
+          sport_type: string | null
+        }
+        Insert: {
+          activity_date: string
+          athlete_firstname: string
+          athlete_full: string
+          athlete_lastname_initial?: string | null
+          created_at?: string
+          distance_m?: number
+          elevation_gain?: number
+          fingerprint: string
+          id?: string
+          matched_user_id?: string | null
+          moving_time?: number
+          sport_type?: string | null
+        }
+        Update: {
+          activity_date?: string
+          athlete_firstname?: string
+          athlete_full?: string
+          athlete_lastname_initial?: string | null
+          created_at?: string
+          distance_m?: number
+          elevation_gain?: number
+          fingerprint?: string
+          id?: string
+          matched_user_id?: string | null
+          moving_time?: number
+          sport_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_activities_matched_user_id_fkey"
+            columns: ["matched_user_id"]
+            isOneToOne: false
+            referencedRelation: "member_profiles_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_activities_matched_user_id_fkey"
+            columns: ["matched_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      club_api_credentials: {
+        Row: {
+          access_token: string
+          athlete_id: string | null
+          expires_at: string
+          id: string
+          refresh_token: string
+          updated_at: string
+        }
+        Insert: {
+          access_token: string
+          athlete_id?: string | null
+          expires_at: string
+          id?: string
+          refresh_token: string
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string
+          athlete_id?: string | null
+          expires_at?: string
+          id?: string
+          refresh_token?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       event_participants: {
         Row: {
           created_at: string
@@ -519,20 +606,15 @@ export type Database = {
         Row: {
           avatar_url: string | null
           birth_date: string | null
+          club_match_name: string | null
           created_at: string
           email: string
           full_name: string | null
           id: string
-          is_strava_club_member: boolean | null
           nickname: string | null
           phone: string | null
           push_notifications_enabled: boolean | null
-          strava_access_token: string | null
-          strava_id: string | null
-          strava_monthly_stats: Json | null
-          strava_refresh_token: string | null
           strava_stats_cached_at: string | null
-          strava_token_expires_at: string | null
           strava_ytd_count: number | null
           strava_ytd_distance: number | null
           updated_at: string
@@ -540,20 +622,15 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           birth_date?: string | null
+          club_match_name?: string | null
           created_at?: string
           email: string
           full_name?: string | null
           id: string
-          is_strava_club_member?: boolean | null
           nickname?: string | null
           phone?: string | null
           push_notifications_enabled?: boolean | null
-          strava_access_token?: string | null
-          strava_id?: string | null
-          strava_monthly_stats?: Json | null
-          strava_refresh_token?: string | null
           strava_stats_cached_at?: string | null
-          strava_token_expires_at?: string | null
           strava_ytd_count?: number | null
           strava_ytd_distance?: number | null
           updated_at?: string
@@ -561,20 +638,15 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           birth_date?: string | null
+          club_match_name?: string | null
           created_at?: string
           email?: string
           full_name?: string | null
           id?: string
-          is_strava_club_member?: boolean | null
           nickname?: string | null
           phone?: string | null
           push_notifications_enabled?: boolean | null
-          strava_access_token?: string | null
-          strava_id?: string | null
-          strava_monthly_stats?: Json | null
-          strava_refresh_token?: string | null
           strava_stats_cached_at?: string | null
-          strava_token_expires_at?: string | null
           strava_ytd_count?: number | null
           strava_ytd_distance?: number | null
           updated_at?: string
@@ -775,11 +847,27 @@ export type Database = {
           created_at: string | null
           full_name: string | null
           id: string | null
-          is_strava_club_member: boolean | null
           nickname: string | null
-          strava_id: string | null
           strava_ytd_count: number | null
           strava_ytd_distance: number | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          full_name?: string | null
+          id?: string | null
+          nickname?: string | null
+          strava_ytd_count?: number | null
+          strava_ytd_distance?: number | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          full_name?: string | null
+          id?: string | null
+          nickname?: string | null
+          strava_ytd_count?: number | null
+          strava_ytd_distance?: number | null
         }
         Relationships: []
       }
@@ -808,9 +896,7 @@ export type Database = {
           created_at: string
           full_name: string
           id: string
-          is_strava_club_member: boolean
           nickname: string
-          strava_id: string
           strava_ytd_count: number
           strava_ytd_distance: number
         }[]

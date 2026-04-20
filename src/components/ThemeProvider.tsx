@@ -115,7 +115,7 @@ export function ThemeProvider({
     updateTheme();
 
     // Check every minute for auto mode
-    let interval: NodeJS.Timeout | null = null;
+    let interval: ReturnType<typeof setInterval> | null = null;
     if (theme === "auto") {
       interval = setInterval(updateTheme, 60000); // Check every minute
     }

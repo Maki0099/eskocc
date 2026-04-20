@@ -4,14 +4,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTour } from "@/hooks/useTour";
 import TourProvider from "@/components/tour/TourProvider";
-import { ArrowLeft, Calendar, MapPin, ExternalLink, Check, HelpCircle } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, HelpCircle, Bike, TrendingUp } from "lucide-react";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { StravaStats } from "@/components/strava/StravaStats";
 import logoRound from "@/assets/logo-round-dark.png";
 import type { AppRole } from "@/lib/types";
 import { ROLE_LABELS } from "@/lib/constants";
@@ -22,9 +21,9 @@ interface MemberData {
   full_name: string | null;
   nickname: string | null;
   avatar_url: string | null;
-  strava_id: string | null;
   created_at: string;
-  is_strava_club_member: boolean | null;
+  strava_ytd_distance: number | null;
+  strava_ytd_count: number | null;
 }
 
 interface EventParticipation {
@@ -67,10 +66,9 @@ const MemberProfile = () => {
       if (!userId) return;
 
       try {
-        // Fetch profile from secure public view - excludes sensitive data
         const { data: profileData, error: profileError } = await supabase
           .from("member_profiles_public")
-          .select("full_name, nickname, avatar_url, strava_id, created_at, is_strava_club_member")
+          .select("full_name, nickname, avatar_url, created_at, strava_ytd_distance, strava_ytd_count")
           .eq("id", userId)
           .maybeSingle();
 
@@ -82,9 +80,8 @@ const MemberProfile = () => {
           return;
         }
 
-        setMember(profileData);
+        setMember(profileData as MemberData);
 
-        // Fetch role
         const { data: roleData } = await supabase
           .from("user_roles")
           .select("role")
@@ -95,7 +92,6 @@ const MemberProfile = () => {
           setRole(roleData.role as AppRole);
         }
 
-        // Fetch event participations
         const { data: participationData } = await supabase
           .from("event_participants")
           .select(`
@@ -165,10 +161,11 @@ const MemberProfile = () => {
 
   const memberSince = format(new Date(member.created_at), "LLLL yyyy", { locale: cs });
   const isOwnProfile = user?.id === userId;
+  const ytdDistance = member.strava_ytd_distance ?? 0;
+  const ytdCount = member.strava_ytd_count ?? 0;
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="border-b border-border bg-card">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
@@ -190,7 +187,6 @@ const MemberProfile = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8 max-w-2xl">
-        {/* Profile Card */}
         <Card className="mb-8" data-tour="member-info">
           <CardContent className="pt-8 pb-6 flex flex-col items-center text-center">
             <Avatar className="h-24 w-24 mb-4 ring-4 ring-primary/20">
@@ -220,42 +216,37 @@ const MemberProfile = () => {
             <p className="text-sm text-muted-foreground">
               Členem od {memberSince}
             </p>
-
-            {member.strava_id && (
-              <div className="flex flex-col items-center gap-2 mt-3" data-tour="member-strava">
-                <a
-                  href={`https://www.strava.com/athletes/${member.strava_id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#FC4C02]/10 text-[#FC4C02] hover:bg-[#FC4C02]/20 transition-colors text-sm font-medium"
-                >
-                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7.015 13.828h4.169" />
-                  </svg>
-                  Strava profil
-                  <ExternalLink className="w-3.5 h-3.5" />
-                </a>
-                {member.is_strava_club_member && (
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
-                    <Check className="w-3.5 h-3.5" />
-                    Člen klubu ESKO.cc
-                  </div>
-                )}
-              </div>
-            )}
           </CardContent>
         </Card>
 
-        {/* Strava Stats */}
-        {member.strava_id && userId && (
-          <Card className="mb-8">
-            <CardContent className="pt-6">
-              <StravaStats userId={userId} isConnected={!!member.strava_id} />
-            </CardContent>
-          </Card>
-        )}
+        {/* YTD Stats from club */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="text-lg">Statistiky tohoto roku</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="text-center">
+                <div className="flex items-center justify-center mb-2">
+                  <TrendingUp className="w-5 h-5 text-primary" />
+                </div>
+                <p className="text-3xl font-bold">{ytdDistance.toLocaleString()}</p>
+                <p className="text-sm text-muted-foreground">km najeto</p>
+              </div>
+              <div className="text-center">
+                <div className="flex items-center justify-center mb-2">
+                  <Bike className="w-5 h-5 text-primary" />
+                </div>
+                <p className="text-3xl font-bold">{ytdCount}</p>
+                <p className="text-sm text-muted-foreground">jízd</p>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground text-center mt-4">
+              Data jsou počítána z aktivit v klubu ESKO.cc na Stravě
+            </p>
+          </CardContent>
+        </Card>
 
-        {/* Statistics */}
         <div className="grid grid-cols-2 gap-4 mb-8" data-tour="member-stats">
           <Card>
             <CardContent className="pt-6 text-center">
@@ -277,8 +268,7 @@ const MemberProfile = () => {
           </Card>
         </div>
 
-        {/* Event Participations */}
-        {participations.length > 0 && (
+        {participations.length > 0 ? (
           <Card data-tour="member-events">
             <CardHeader>
               <CardTitle className="text-lg">Účasti na vyjížďkách</CardTitle>
@@ -307,9 +297,7 @@ const MemberProfile = () => {
               ))}
             </CardContent>
           </Card>
-        )}
-
-        {participations.length === 0 && (
+        ) : (
           <Card data-tour="member-events">
             <CardContent className="py-8 text-center text-muted-foreground">
               Tento člen se zatím nezúčastnil žádné vyjížďky.

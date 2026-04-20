@@ -24,7 +24,6 @@ export const ChallengeWidget = ({ userId }: ChallengeWidgetProps) => {
   const [ytdDistance, setYtdDistance] = useState<number>(0);
   const [target, setTarget] = useState<number>(0);
   const [userAge, setUserAge] = useState<number | null>(null);
-  const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const notificationShownRef = useRef(false);
 
@@ -33,19 +32,14 @@ export const ChallengeWidget = ({ userId }: ChallengeWidgetProps) => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch user profile to check Strava connection and get birth date
         const { data: profile, error: profileError } = await supabase
           .from("profiles")
-          .select("birth_date, strava_id")
+          .select("birth_date, strava_ytd_distance")
           .eq("id", userId)
           .maybeSingle();
 
         if (profileError) throw profileError;
 
-        const hasStrava = !!profile?.strava_id;
-        setIsConnected(hasStrava);
-
-        // Calculate age from birth_date
         if (profile?.birth_date) {
           const birthDate = new Date(profile.birth_date);
           const today = new Date();
@@ -57,7 +51,10 @@ export const ChallengeWidget = ({ userId }: ChallengeWidgetProps) => {
           setUserAge(age);
         }
 
-        // Fetch challenge settings for current year
+        // YTD distance is now stored on profile (km), populated by club sync.
+        // Strava stores meters in club_activities; profiles.strava_ytd_distance is in km after sync.
+        setYtdDistance(profile?.strava_ytd_distance ?? 0);
+
         const { data: settings, error: settingsError } = await supabase
           .from("yearly_challenge_settings")
           .select("*")
@@ -67,37 +64,16 @@ export const ChallengeWidget = ({ userId }: ChallengeWidgetProps) => {
         if (settingsError) throw settingsError;
 
         if (settings) {
-          // Cast settings since types might not be updated yet
           const typedSettings = settings as ChallengeSettings;
-          
-          // Determine target based on age
-          let userTarget = typedSettings.target_under_40; // default
+          let userTarget = typedSettings.target_under_40;
           if (userAge !== null) {
             if (userAge >= 60) {
               userTarget = typedSettings.target_over_60;
             } else if (userAge >= 40) {
               userTarget = typedSettings.target_under_60;
-            } else {
-              userTarget = typedSettings.target_under_40;
             }
           }
           setTarget(userTarget);
-        }
-
-        // Fetch YTD distance from Strava
-        if (hasStrava) {
-          const { data: statsData, error: statsError } = await supabase.functions.invoke(
-            "strava-stats",
-            { body: { userId } }
-          );
-
-          if (statsError) {
-            console.error("Error fetching Strava stats:", statsError);
-            setError("Nepodařilo se načíst data ze Stravy");
-          } else if (statsData?.ytd_ride_totals) {
-            // Convert meters to km
-            setYtdDistance(Math.round(statsData.ytd_ride_totals.distance / 1000));
-          }
         }
       } catch (err) {
         console.error("Error in ChallengeWidget:", err);
@@ -110,7 +86,6 @@ export const ChallengeWidget = ({ userId }: ChallengeWidgetProps) => {
     fetchData();
   }, [userId, currentYear, userAge]);
 
-  // Update target when userAge changes
   useEffect(() => {
     const updateTarget = async () => {
       if (userAge === null) return;
@@ -140,13 +115,11 @@ export const ChallengeWidget = ({ userId }: ChallengeWidgetProps) => {
   const remaining = Math.max(target - ytdDistance, 0);
   const isCompleted = ytdDistance >= target && target > 0;
 
-  // Show celebration notification when goal is completed
-  // This hook must be called before any conditional returns
   useEffect(() => {
-    if (isCompleted && !notificationShownRef.current && !loading && isConnected) {
+    if (isCompleted && !notificationShownRef.current && !loading) {
       const storageKey = `challenge_completed_${currentYear}_${userId}`;
       const alreadyNotified = localStorage.getItem(storageKey);
-      
+
       if (!alreadyNotified) {
         localStorage.setItem(storageKey, "true");
         toast({
@@ -156,14 +129,10 @@ export const ChallengeWidget = ({ userId }: ChallengeWidgetProps) => {
       }
       notificationShownRef.current = true;
     }
-  }, [isCompleted, loading, currentYear, userId, target, isConnected]);
+  }, [isCompleted, loading, currentYear, userId, target]);
 
   if (loading) {
     return <ChallengeWidgetSkeleton />;
-  }
-
-  if (!isConnected) {
-    return null; // Don't show widget if Strava is not connected
   }
 
   return (
@@ -187,8 +156,8 @@ export const ChallengeWidget = ({ userId }: ChallengeWidgetProps) => {
                 <span className="text-muted-foreground">Tvůj cíl:</span>
                 <span className="font-medium">{target.toLocaleString()} km</span>
               </div>
-              <Progress 
-                value={progress} 
+              <Progress
+                value={progress}
                 className={`h-2 ${isCompleted ? '[&>div]:bg-green-500' : ''}`}
               />
               <div className="flex justify-between text-sm">
@@ -196,16 +165,16 @@ export const ChallengeWidget = ({ userId }: ChallengeWidgetProps) => {
                   {isCompleted ? "✓ Splněno!" : `Najeto: ${ytdDistance.toLocaleString()} km`}
                 </span>
                 <span className="text-muted-foreground">
-                  {isCompleted 
-                    ? `${Math.round(progress)}%` 
+                  {isCompleted
+                    ? `${Math.round(progress)}%`
                     : `Zbývá: ${remaining.toLocaleString()} km`
                   }
                 </span>
               </div>
             </div>
 
-            <Link 
-              to={ROUTES.STATISTICS} 
+            <Link
+              to={ROUTES.STATISTICS}
               className="flex items-center justify-between text-sm text-primary hover:underline"
             >
               <span>Zobrazit celkové statistiky</span>

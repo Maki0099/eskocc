@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -8,15 +8,13 @@ import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Camera, CalendarIcon, Loader2, Link as LinkIcon, Check, X, Bell, RotateCcw, HelpCircle } from "lucide-react";
+import { ArrowLeft, Camera, CalendarIcon, Loader2, Bell, RotateCcw, HelpCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ROUTES } from "@/lib/routes";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import logoDark from "@/assets/logo-horizontal-dark.png";
-import { StravaStats } from "@/components/strava/StravaStats";
-import StravaClubBanner from "@/components/strava/StravaClubBanner";
 import { PushNotificationToggle } from "@/components/notifications/PushNotificationToggle";
 import { useTour } from "@/hooks/useTour";
 import TourProvider from "@/components/tour/TourProvider";
@@ -27,23 +25,20 @@ interface Profile {
   nickname: string | null;
   birth_date: string | null;
   avatar_url: string | null;
-  strava_id: string | null;
   email: string;
-  is_strava_club_member: boolean | null;
+  club_match_name: string | null;
 }
 
 const Account = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
-  const [connectingStrava, setConnectingStrava] = useState(false);
   const { startTour, endTour, resetAllTours } = useTour();
   const [runTour, setRunTour] = useState(false);
 
@@ -67,57 +62,24 @@ const Account = () => {
 
   const [fullName, setFullName] = useState("");
   const [nickname, setNickname] = useState("");
-  const [stravaId, setStravaId] = useState("");
+  const [clubMatchName, setClubMatchName] = useState("");
   const [birthDate, setBirthDate] = useState<Date | undefined>();
-
-  // Handle Strava OAuth callback
-  useEffect(() => {
-    const stravaStatus = searchParams.get('strava');
-    if (stravaStatus === 'success') {
-      toast({
-        title: "Strava propojena",
-        description: "Tvůj Strava účet byl úspěšně propojen",
-      });
-      // Refresh profile to get new strava_id
-      if (user) {
-        supabase
-          .from("profiles")
-          .select("strava_id")
-          .eq("id", user.id)
-          .maybeSingle()
-          .then(({ data }) => {
-            if (data?.strava_id) {
-              setStravaId(data.strava_id);
-              setProfile(prev => prev ? { ...prev, strava_id: data.strava_id } : null);
-            }
-          });
-      }
-      setSearchParams({});
-    } else if (stravaStatus === 'error') {
-      toast({
-        variant: "destructive",
-        title: "Chyba propojení",
-        description: "Nepodařilo se propojit Strava účet",
-      });
-      setSearchParams({});
-    }
-  }, [searchParams, toast, setSearchParams, user]);
 
   useEffect(() => {
     const fetchProfile = async () => {
       if (!user) return;
 
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("profiles")
-        .select("full_name, nickname, birth_date, avatar_url, strava_id, email, is_strava_club_member")
+        .select("full_name, nickname, birth_date, avatar_url, email, club_match_name")
         .eq("id", user.id)
         .maybeSingle();
 
       if (data) {
-        setProfile(data);
+        setProfile(data as Profile);
         setFullName(data.full_name || "");
         setNickname(data.nickname || "");
-        setStravaId(data.strava_id || "");
+        setClubMatchName(data.club_match_name || "");
         if (data.birth_date) {
           setBirthDate(new Date(data.birth_date));
         }
@@ -132,19 +94,12 @@ const Account = () => {
     if (!user) return;
     setSaving(true);
 
-    // Extract Strava ID from URL or use as-is
-    let parsedStravaId = stravaId.trim();
-    const stravaUrlMatch = parsedStravaId.match(/strava\.com\/athletes\/(\d+)/);
-    if (stravaUrlMatch) {
-      parsedStravaId = stravaUrlMatch[1];
-    }
-
     const { error } = await supabase
       .from("profiles")
       .update({
         full_name: fullName.trim() || null,
         nickname: nickname.trim() || null,
-        strava_id: parsedStravaId || null,
+        club_match_name: clubMatchName.trim() || null,
         birth_date: birthDate ? format(birthDate, "yyyy-MM-dd") : null,
       })
       .eq("id", user.id);
@@ -160,18 +115,11 @@ const Account = () => {
         title: "Uloženo",
         description: "Tvoje údaje byly aktualizovány",
       });
-      // Extract Strava ID for state update
-      let parsedStravaIdForState = stravaId.trim();
-      const stravaUrlMatchForState = parsedStravaIdForState.match(/strava\.com\/athletes\/(\d+)/);
-      if (stravaUrlMatchForState) {
-        parsedStravaIdForState = stravaUrlMatchForState[1];
-        setStravaId(parsedStravaIdForState);
-      }
       setProfile((prev) => prev ? {
         ...prev,
         full_name: fullName.trim() || null,
         nickname: nickname.trim() || null,
-        strava_id: parsedStravaIdForState || null,
+        club_match_name: clubMatchName.trim() || null,
         birth_date: birthDate ? format(birthDate, "yyyy-MM-dd") : null,
       } : null);
     }
@@ -183,7 +131,6 @@ const Account = () => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
 
-    // Validate file type
     const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
     if (!allowedTypes.includes(file.type)) {
       toast({
@@ -194,7 +141,6 @@ const Account = () => {
       return;
     }
 
-    // Validate file size (5MB)
     if (file.size > 5 * 1024 * 1024) {
       toast({
         variant: "destructive",
@@ -209,7 +155,6 @@ const Account = () => {
     const fileExt = file.name.split(".").pop();
     const fileName = `${user.id}/avatar.${fileExt}`;
 
-    // Upload to storage
     const { error: uploadError } = await supabase.storage
       .from("avatars")
       .upload(fileName, file, { upsert: true });
@@ -224,12 +169,10 @@ const Account = () => {
       return;
     }
 
-    // Get public URL
     const { data: urlData } = supabase.storage
       .from("avatars")
       .getPublicUrl(fileName);
 
-    // Update profile
     const { error: updateError } = await supabase
       .from("profiles")
       .update({ avatar_url: urlData.publicUrl })
@@ -291,10 +234,8 @@ const Account = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Tour Provider */}
       <TourProvider tourId="account" run={runTour} onFinish={handleEndTour} />
-      
-      {/* Header */}
+
       <header className="border-b border-border/40 bg-background/80 backdrop-blur-xl" data-tour="account-header">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <Link to="/">
@@ -318,12 +259,10 @@ const Account = () => {
         </div>
       </header>
 
-      {/* Main content */}
       <main className="container mx-auto px-6 py-12">
         <div className="max-w-md mx-auto">
           <h1 className="text-2xl font-semibold mb-8">Můj účet</h1>
 
-          {/* Avatar section */}
           <div className="flex flex-col items-center mb-8">
             <div className="relative">
               <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center overflow-hidden">
@@ -363,7 +302,6 @@ const Account = () => {
             </p>
           </div>
 
-          {/* Profile form */}
           <div className="space-y-4" data-tour="personal-info">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
@@ -431,130 +369,20 @@ const Account = () => {
               </Popover>
             </div>
 
-            {/* Strava connection */}
-            <div className="space-y-2" data-tour="strava-section">
-              <Label>Strava propojení</Label>
-              {stravaId ? (
-                <div className="flex items-center gap-3 p-3 rounded-xl bg-green-500/10 border border-green-500/20">
-                  <Check className="w-5 h-5 text-green-500" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-green-700 dark:text-green-400">Propojeno</p>
-                    <a 
-                      href={`https://www.strava.com/athletes/${stravaId}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-muted-foreground hover:text-primary transition-colors"
-                    >
-                      strava.com/athletes/{stravaId}
-                    </a>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={async () => {
-                      if (!user) return;
-                      setStravaId("");
-                      // Clear strava_id and all OAuth tokens from database
-                      const { error } = await supabase
-                        .from("profiles")
-                        .update({ 
-                          strava_id: null,
-                          strava_access_token: null,
-                          strava_refresh_token: null,
-                          strava_token_expires_at: null
-                        })
-                        .eq("id", user.id);
-                      
-                      if (error) {
-                        toast({
-                          variant: "destructive",
-                          title: "Chyba",
-                          description: "Nepodařilo se odpojit Strava účet",
-                        });
-                      } else {
-                        setProfile(prev => prev ? { ...prev, strava_id: null } : null);
-                        toast({
-                          title: "Odpojeno",
-                          description: "Strava účet byl úspěšně odpojen",
-                        });
-                      }
-                    }}
-                    className="text-muted-foreground hover:text-destructive"
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-              ) : (
-              <Button
-                  variant="outline"
-                  onClick={async () => {
-                    if (!user) return;
-                    setConnectingStrava(true);
-                    
-                    const redirectUrl = `${window.location.origin}/account`;
-                    
-                    try {
-                      const { data, error } = await supabase.functions.invoke('strava-auth', {
-                        body: { userId: user.id, redirectUrl }
-                      });
-                      
-                      if (error) throw error;
-                      
-                      if (data?.authUrl) {
-                        window.location.href = data.authUrl;
-                      } else {
-                        toast({
-                          variant: "destructive",
-                          title: "Chyba",
-                          description: "Nepodařilo se získat přihlašovací odkaz ze Stravy.",
-                        });
-                        setConnectingStrava(false);
-                      }
-                    } catch (err: any) {
-                      toast({
-                        variant: "destructive",
-                        title: "Chyba",
-                        description: err?.message || "Nepodařilo se spustit propojení se Stravou.",
-                      });
-                      setConnectingStrava(false);
-                    }
-                  }}
-                  disabled={connectingStrava}
-                  className="w-full h-12 rounded-xl"
-                >
-                  {connectingStrava ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Přesměrovávám...
-                    </>
-                  ) : (
-                    <>
-                      <LinkIcon className="w-4 h-4 mr-2" />
-                      Propojit se Stravou
-                    </>
-                  )}
-                </Button>
-              )}
+            {/* Strava club name match */}
+            <div className="space-y-2">
+              <Label htmlFor="clubMatchName">Mé jméno na Stravě v klubu</Label>
+              <Input
+                id="clubMatchName"
+                type="text"
+                placeholder="např. Jan N."
+                value={clubMatchName}
+                onChange={(e) => setClubMatchName(e.target.value)}
+                className="h-12 rounded-xl"
+              />
               <p className="text-xs text-muted-foreground">
-                Propoj svůj Strava účet pro automatické načítání aktivit
+                Vyplň pouze pokud se tvé jméno na Stravě liší od jména v profilu. Slouží pro automatické párování aktivit z klubu ESKO.cc.
               </p>
-              
-              {/* Strava Stats */}
-              {user && <StravaStats userId={user.id} isConnected={!!stravaId} />}
-              
-              {/* Strava Club Membership Status */}
-              {stravaId && (
-                <div className="mt-4">
-                  {profile?.is_strava_club_member ? (
-                    <div className="flex items-center gap-2 p-3 rounded-xl bg-primary/10 border border-primary/20">
-                      <Check className="w-5 h-5 text-primary" />
-                      <span className="text-sm font-medium text-primary">Člen klubu ESKO.cc na Stravě</span>
-                    </div>
-                  ) : (
-                    <StravaClubBanner hasStravaConnected={true} isClubMember={false} />
-                  )}
-                </div>
-              )}
             </div>
 
             <Button
@@ -567,7 +395,6 @@ const Account = () => {
             </Button>
           </div>
 
-          {/* Notifications section */}
           <div className="mt-12 pt-8 border-t border-border/40" data-tour="notifications-section">
             <h2 className="font-medium mb-4">Notifikace</h2>
             <div className="space-y-4">
@@ -581,7 +408,6 @@ const Account = () => {
             </div>
           </div>
 
-          {/* Tour restart section */}
           <div className="mt-8 pt-8 border-t border-border/40" data-tour="tour-restart">
             <h2 className="font-medium mb-4">Nápověda</h2>
             <Button
@@ -597,7 +423,6 @@ const Account = () => {
             </p>
           </div>
 
-          {/* Password section */}
           <div className="mt-8 pt-8 border-t border-border/40">
             <h2 className="font-medium mb-4">Změna hesla</h2>
             <Button

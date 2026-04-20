@@ -8,29 +8,24 @@ import TourProvider from "@/components/tour/TourProvider";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import MemberOnlyContent from "@/components/MemberOnlyContent";
-import StravaClubBanner from "@/components/strava/StravaClubBanner";
 import ClubSummaryStats from "@/components/statistics/ClubSummaryStats";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { StatisticsPageSkeleton } from "@/components/statistics/StatisticsSkeletons";
-import { 
-  Target, 
-  Trophy, 
-  Medal, 
+import {
+  Target,
+  Trophy,
+  Medal,
   Award,
   Users,
   Bike,
   AlertCircle,
   CheckCircle2,
-  Check,
-  RefreshCw,
-  Clock,
-  HelpCircle
+  HelpCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { toast } from "@/hooks/use-toast";
 import type { AppRole } from "@/lib/types";
 import type { ChallengeSettings } from "@/lib/types";
 import { getInitials } from "@/lib/user-utils";
@@ -40,12 +35,10 @@ interface MemberStats {
   full_name: string | null;
   nickname: string | null;
   avatar_url: string | null;
-  strava_id: string | null;
   role: AppRole;
   ytd_distance: number;
   target: number;
   age_category: string;
-  is_strava_club_member: boolean;
 }
 
 const Statistics = () => {
@@ -58,9 +51,6 @@ const Statistics = () => {
   const [members, setMembers] = useState<MemberStats[]>([]);
   const [clubTotal, setClubTotal] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [userStravaId, setUserStravaId] = useState<string | null>(null);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   const handleStartTour = () => {
     setTourRunning(true);
@@ -76,82 +66,15 @@ const Statistics = () => {
 
   const currentYear = new Date().getFullYear();
 
-  const formatTimeAgo = (date: Date): string => {
-    const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
-    if (seconds < 60) return "právě teď";
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `před ${minutes} min`;
-    const hours = Math.floor(minutes / 60);
-    return `před ${hours} hod`;
-  };
-
-  const handleRefreshStats = async () => {
-    if (isRefreshing || members.length === 0) return;
-    setIsRefreshing(true);
-
-    try {
-      const userIds = members.map(m => m.id);
-      const { data, error: refreshError } = await supabase.functions.invoke(
-        "strava-stats-batch",
-        { body: { userIds, forceRefresh: true } }
-      );
-
-      if (refreshError) {
-        throw refreshError;
-      }
-
-      if (data?.stats) {
-        const updatedMembers = members.map(member => ({
-          ...member,
-          ytd_distance: data.stats[member.id]?.ytd_distance ?? member.ytd_distance,
-        })).sort((a, b) => b.ytd_distance - a.ytd_distance);
-
-        setMembers(updatedMembers);
-        setClubTotal(updatedMembers.reduce((sum, m) => sum + m.ytd_distance, 0));
-        setLastUpdated(new Date());
-        toast({
-          title: "Statistiky aktualizovány",
-          description: "Data byla úspěšně načtena ze Strava.",
-        });
-      }
-    } catch (err) {
-      console.error("Refresh error:", err);
-      toast({
-        title: "Chyba",
-        description: "Nepodařilo se aktualizovat statistiky.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
-
   const getTargetForAgeCategory = (ageCategory: string, settings: ChallengeSettings): number => {
     if (ageCategory === 'over_60') return settings.target_over_60;
     if (ageCategory === 'under_60') return settings.target_under_60;
     return settings.target_under_40;
   };
 
-  // Fetch current user's strava_id
-  useEffect(() => {
-    const fetchUserStrava = async () => {
-      if (!user) return;
-      const { data } = await supabase
-        .from("profiles")
-        .select("strava_id")
-        .eq("id", user.id)
-        .maybeSingle();
-      if (data?.strava_id) {
-        setUserStravaId(data.strava_id);
-      }
-    };
-    fetchUserStrava();
-  }, [user]);
-
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch challenge settings for current year
         const { data: settingsData, error: settingsError } = await supabase
           .from("yearly_challenge_settings")
           .select("*")
@@ -163,65 +86,36 @@ const Statistics = () => {
         const typedSettings = settingsData as ChallengeSettings | null;
         setSettings(typedSettings);
 
-        // Fetch member statistics using secure RPC function (no birth_date exposed)
         const { data: memberData, error: memberError } = await supabase
           .rpc("get_member_statistics");
 
         if (memberError) throw memberError;
 
-        // Fetch roles for members
         const { data: roles, error: rolesError } = await supabase
           .from("user_roles")
           .select("user_id, role");
 
         if (rolesError) throw rolesError;
 
-        // Get all user IDs for batch Strava stats request
-        const userIds = (memberData || []).map((p: any) => p.id);
-
-        // Fetch Strava stats in one batch request
-        let statsMap: Record<string, { ytd_distance: number; ytd_count: number }> = {};
-        
-        if (userIds.length > 0) {
-          try {
-            const { data: batchData, error: batchError } = await supabase.functions.invoke(
-              "strava-stats-batch",
-              { body: { userIds } }
-            );
-            
-            if (batchError) {
-              console.error("Batch stats error:", batchError);
-            } else if (batchData?.stats) {
-              statsMap = batchData.stats;
-            }
-          } catch (err) {
-            console.error("Error fetching batch stats:", err);
-          }
-        }
-
-        // Build member stats with the batch results
         const memberStats: MemberStats[] = (memberData || []).map((profile: any) => {
           const role = roles?.find((r) => r.user_id === profile.id);
           const target = typedSettings ? getTargetForAgeCategory(profile.age_category, typedSettings) : 0;
-          const ytd_distance = statsMap[profile.id]?.ytd_distance || profile.strava_ytd_distance || 0;
+          const ytd_distance = profile.strava_ytd_distance || 0;
 
           return {
             id: profile.id,
             full_name: profile.full_name,
             nickname: profile.nickname,
             avatar_url: profile.avatar_url,
-            strava_id: profile.strava_id,
             role: (role?.role as AppRole) || "member",
             ytd_distance,
             target,
             age_category: profile.age_category,
-            is_strava_club_member: profile.is_strava_club_member || false,
           };
         });
 
-        // Sort by distance (descending)
         memberStats.sort((a, b) => b.ytd_distance - a.ytd_distance);
-        
+
         setMembers(memberStats);
         setClubTotal(memberStats.reduce((sum, m) => sum + m.ytd_distance, 0));
       } catch (err) {
@@ -234,7 +128,6 @@ const Statistics = () => {
 
     fetchData();
   }, [currentYear]);
-
 
   const getRankIcon = (index: number) => {
     switch (index) {
@@ -277,39 +170,16 @@ const Statistics = () => {
         <Header />
         <main className="flex-1 container mx-auto px-4 pt-24 pb-12">
           <div className="max-w-4xl mx-auto space-y-8">
-            {/* Header */}
             <div className="text-center space-y-2">
               <div className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary mb-4">
                 <Target className="w-4 h-4" />
                 <span className="text-sm font-medium">Výzva {currentYear}</span>
               </div>
-            <h1 className="text-display font-bold">Statistiky klubu</h1>
-            <p className="text-lg text-muted-foreground max-w-md mx-auto">
-              Sleduj pokrok členů a celého klubu ve splnění ročního cíle
-            </p>
-            
-            {/* Refresh button and last updated */}
-            {isMember && !error && (
-              <div className="flex items-center justify-center gap-3 pt-4">
-                {lastUpdated && (
-                  <span className="text-xs text-muted-foreground flex items-center gap-1">
-                    <Clock className="w-3 h-3" />
-                    Aktualizováno {formatTimeAgo(lastUpdated)}
-                  </span>
-                )}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleRefreshStats}
-                  disabled={isRefreshing}
-                  className="gap-2"
-                >
-                  <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-                  {isRefreshing ? 'Aktualizuji...' : 'Aktualizovat'}
-                </Button>
-              </div>
-            )}
-          </div>
+              <h1 className="text-display font-bold">Statistiky klubu</h1>
+              <p className="text-lg text-muted-foreground max-w-md mx-auto">
+                Sleduj pokrok členů a celého klubu ve splnění ročního cíle
+              </p>
+            </div>
             <StatisticsPageSkeleton />
           </div>
         </main>
@@ -318,11 +188,11 @@ const Statistics = () => {
     );
   }
 
-  const clubProgress = settings?.club_total_target 
-    ? Math.min((clubTotal / settings.club_total_target) * 100, 100) 
+  const clubProgress = settings?.club_total_target
+    ? Math.min((clubTotal / settings.club_total_target) * 100, 100)
     : 0;
-  const clubRemaining = settings?.club_total_target 
-    ? Math.max(settings.club_total_target - clubTotal, 0) 
+  const clubRemaining = settings?.club_total_target
+    ? Math.max(settings.club_total_target - clubTotal, 0)
     : 0;
   const clubCompleted = clubProgress >= 100;
 
@@ -331,7 +201,6 @@ const Statistics = () => {
       <Header />
       <main className="flex-1 container mx-auto px-4 pt-24 pb-12">
         <div className="max-w-4xl mx-auto space-y-8">
-          {/* Header */}
           <div className="text-center space-y-2" data-tour="statistics-header">
             <div className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary mb-4">
               <Target className="w-4 h-4" />
@@ -340,23 +209,18 @@ const Statistics = () => {
             <div className="flex items-center justify-center gap-2">
               <h1 className="text-display font-bold">Statistiky klubu</h1>
               {isMember && !isTourCompleted("statistics") && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleStartTour}
-                  className="shrink-0"
-                >
+                <Button variant="ghost" size="icon" onClick={handleStartTour} className="shrink-0">
                   <HelpCircle className="w-5 h-5" />
                 </Button>
               )}
             </div>
             <p className="text-lg text-muted-foreground max-w-md mx-auto">
-              Sleduj pokrok členů a celého klubu ve splnění ročního cíle
+              Data jsou počítána z aktivit v klubu ESKO.cc na Stravě
             </p>
           </div>
 
           {!isMember && !roleLoading ? (
-            <MemberOnlyContent 
+            <MemberOnlyContent
               title="Statistiky pro členy"
               description="Pro zobrazení statistik a žebříčku členů se staň členem klubu."
             />
@@ -369,9 +233,6 @@ const Statistics = () => {
             </Card>
           ) : (
             <div className="space-y-6">
-              {/* Strava Club Banner */}
-              <StravaClubBanner hasStravaConnected={!!userStravaId} isClubMember={members.some(m => m.id === user?.id && m.is_strava_club_member)} />
-              {/* Club Goal Card */}
               {settings && (
                 <Card className="overflow-hidden border-0 shadow-lg animate-fade-up" data-tour="club-goal">
                   <div className="bg-gradient-to-br from-accent to-secondary p-6 md:p-8 text-accent-foreground">
@@ -384,7 +245,7 @@ const Statistics = () => {
                         <p className="text-accent-foreground/80 text-sm">Společně za {settings.club_total_target.toLocaleString()} km</p>
                       </div>
                     </div>
-                    
+
                     <div className="space-y-4">
                       <div className="flex items-baseline justify-between">
                         <span className="text-4xl md:text-5xl font-bold tracking-tight">
@@ -395,18 +256,16 @@ const Statistics = () => {
                           z {settings.club_total_target.toLocaleString()} km
                         </span>
                       </div>
-                      
+
                       <div className="h-3 bg-accent-foreground/20 rounded-full overflow-hidden">
-                        <div 
+                        <div
                           className={`h-full rounded-full transition-all duration-500 ${
-                            clubCompleted 
-                              ? 'bg-green-400' 
-                              : 'bg-accent-foreground'
+                            clubCompleted ? 'bg-green-400' : 'bg-accent-foreground'
                           }`}
                           style={{ width: `${clubProgress}%` }}
                         />
                       </div>
-                      
+
                       <div className="flex justify-between text-sm">
                         <span className="flex items-center gap-1.5">
                           {clubCompleted ? (
@@ -427,19 +286,8 @@ const Statistics = () => {
                 </Card>
               )}
 
-              {/* Stats Cards */}
               {settings && (
-                <div className="grid gap-4 md:grid-cols-4" data-tour="age-categories">
-                  {/* Strava Club Members Count */}
-                  <Card className="text-center animate-fade-up">
-                    <CardContent className="pt-6 pb-5">
-                      <div className="w-10 h-10 rounded-full bg-[#FC4C02]/10 flex items-center justify-center mx-auto mb-3">
-                        <Check className="w-5 h-5 text-[#FC4C02]" />
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-1">Členů Strava klubu</p>
-                      <p className="text-2xl font-bold">{members.filter(m => m.is_strava_club_member).length}</p>
-                    </CardContent>
-                  </Card>
+                <div className="grid gap-4 md:grid-cols-3" data-tour="age-categories">
                   <Card className="text-center animate-fade-up animation-delay-100">
                     <CardContent className="pt-6 pb-5">
                       <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
@@ -470,10 +318,8 @@ const Statistics = () => {
                 </div>
               )}
 
-              {/* Club Summary Stats */}
               <ClubSummaryStats members={members} clubTotal={clubTotal} />
 
-              {/* Leaderboard */}
               <Card className="animate-fade-up animation-delay-400" data-tour="leaderboard">
                 <CardHeader className="pb-4">
                   <CardTitle className="flex items-center gap-2 text-lg">
@@ -489,30 +335,24 @@ const Statistics = () => {
                   ) : (
                     <div className="space-y-2">
                       {members.map((member, index) => {
-                        const progress = member.target > 0 
-                          ? Math.min((member.ytd_distance / member.target) * 100, 100) 
+                        const progress = member.target > 0
+                          ? Math.min((member.ytd_distance / member.target) * 100, 100)
                           : 0;
                         const isCompleted = member.ytd_distance >= member.target && member.target > 0;
                         const isCurrentUser = user?.id === member.id;
 
                         return (
-                          <div 
+                          <div
                             key={member.id}
                             className={`p-3 md:p-4 rounded-xl transition-all animate-fade-up ${
-                              isCurrentUser 
-                                ? "bg-primary/10 ring-1 ring-primary/20" 
-                                : "bg-card hover:bg-muted/50"
+                              isCurrentUser ? "bg-primary/10 ring-1 ring-primary/20" : "bg-card hover:bg-muted/50"
                             }`}
                             style={{ animationDelay: `${(index + 5) * 50}ms` }}
                           >
                             <div className="flex items-center gap-3 md:gap-4">
-                              {/* Rank */}
-                              <div className="flex-shrink-0">
-                                {getRankIcon(index)}
-                              </div>
+                              <div className="flex-shrink-0">{getRankIcon(index)}</div>
 
-                              {/* Avatar & Name */}
-                              <Link 
+                              <Link
                                 to={`/member/${member.id}`}
                                 className="flex items-center gap-3 min-w-0 flex-shrink-0 hover:opacity-80 transition-opacity"
                               >
@@ -531,22 +371,10 @@ const Statistics = () => {
                                   </p>
                                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                     <span>{getAgeCategoryLabel(member.age_category)}</span>
-                                    {member.is_strava_club_member && (
-                                      <span className="inline-flex items-center gap-0.5 text-primary">
-                                        <Check className="w-3 h-3" />
-                                        <span className="text-[10px]">Klub</span>
-                                      </span>
-                                    )}
-                                    {!member.strava_id && (
-                                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4">
-                                        Bez Stravy
-                                      </Badge>
-                                    )}
                                   </div>
                                 </div>
                               </Link>
 
-                              {/* Progress - Desktop */}
                               <div className="flex-1 hidden md:block ml-4">
                                 <div className="flex justify-between text-sm mb-1.5">
                                   <span className="font-semibold">
@@ -556,13 +384,12 @@ const Statistics = () => {
                                     / {member.target.toLocaleString()} km
                                   </span>
                                 </div>
-                                <Progress 
-                                  value={progress} 
+                                <Progress
+                                  value={progress}
                                   className={`h-2 ${isCompleted ? '[&>div]:bg-green-500' : ''}`}
                                 />
                               </div>
 
-                              {/* Status */}
                               <div className="flex-shrink-0 text-right ml-auto">
                                 {isCompleted ? (
                                   <Badge className="bg-green-500/15 text-green-600 dark:text-green-400 hover:bg-green-500/20 border-0">
@@ -580,10 +407,9 @@ const Statistics = () => {
                               </div>
                             </div>
 
-                            {/* Progress - Mobile */}
                             <div className="mt-3 md:hidden">
-                              <Progress 
-                                value={progress} 
+                              <Progress
+                                value={progress}
                                 className={`h-1.5 ${isCompleted ? '[&>div]:bg-green-500' : ''}`}
                               />
                             </div>
@@ -599,11 +425,7 @@ const Statistics = () => {
         </div>
       </main>
       <Footer />
-      <TourProvider
-        tourId="statistics"
-        run={tourRunning}
-        onFinish={() => setTourRunning(false)}
-      />
+      <TourProvider tourId="statistics" run={tourRunning} onFinish={() => setTourRunning(false)} />
     </div>
   );
 };
