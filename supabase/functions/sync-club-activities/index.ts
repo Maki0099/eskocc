@@ -14,6 +14,13 @@ interface StravaToken {
   expires_at: string;
 }
 
+class ReauthRequiredError extends Error {
+  constructor(msg: string) {
+    super(msg);
+    this.name = "ReauthRequiredError";
+  }
+}
+
 async function refreshIfNeeded(
   supabase: any,
   token: StravaToken,
@@ -35,7 +42,22 @@ async function refreshIfNeeded(
   });
 
   if (!res.ok) {
-    throw new Error(`Token refresh failed: ${res.status} ${await res.text()}`);
+    const body = await res.text();
+    // 400/401 from Strava on refresh = token revoked / invalid_grant → mark for re-auth.
+    if (res.status === 400 || res.status === 401) {
+      await supabase
+        .from("club_api_credentials")
+        .update({
+          needs_reauth: true,
+          last_error: `Refresh failed (${res.status}): ${body.slice(0, 300)}`,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", credId);
+      throw new ReauthRequiredError(
+        "Strava token byl odvolán nebo vypršel. Klikni 'Přepojit' v adminu."
+      );
+    }
+    throw new Error(`Token refresh failed: ${res.status} ${body}`);
   }
 
   const data = await res.json();
@@ -47,6 +69,8 @@ async function refreshIfNeeded(
       access_token: data.access_token,
       refresh_token: data.refresh_token,
       expires_at: newExpires,
+      needs_reauth: false,
+      last_error: null,
       updated_at: new Date().toISOString(),
     })
     .eq("id", credId);
@@ -58,9 +82,6 @@ function buildAthleteKey(firstname: string, lastInit: string): string {
   return `${firstname.trim().toLowerCase()}|${(lastInit || "").trim().toLowerCase()}`;
 }
 
-// Stable fingerprint without date. Strava Club API doesn't provide activity IDs,
-// so combo (athlete + distance + moving_time + elevation) is the most stable identifier.
-// Two truly identical activities by the same athlete are extremely rare and harmless to dedup.
 function buildFingerprint(
   firstname: string,
   lastInit: string,
@@ -79,41 +100,33 @@ function buildFingerprint(
   ].join("|");
 }
 
-// Authorize request: must come either from an authenticated admin user, or
-// from the cron / service role (Authorization: Bearer <service-role-key>).
-async function authorize(req: Request): Promise<{ ok: boolean; reason?: string }> {
+async function authorize(
+  req: Request
+): Promise<{ ok: boolean; reason?: string; triggeredBy: string }> {
   const authHeader = req.headers.get("Authorization") || "";
   const token = authHeader.replace(/^Bearer\s+/i, "");
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
 
-  if (!token) return { ok: false, reason: "missing_auth" };
+  if (!token) return { ok: false, reason: "missing_auth", triggeredBy: "unknown" };
+  if (token === serviceKey) return { ok: true, triggeredBy: "cron" };
 
-  // Cron / server-to-server: service-role key.
-  if (token === serviceKey) return { ok: true };
-
-  // Otherwise treat as user JWT and require admin role.
-  if (!anonKey) return { ok: false, reason: "server_misconfig" };
-  const userClient = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    anonKey,
-    { global: { headers: { Authorization: authHeader } } }
-  );
+  if (!anonKey) return { ok: false, reason: "server_misconfig", triggeredBy: "unknown" };
+  const userClient = createClient(Deno.env.get("SUPABASE_URL")!, anonKey, {
+    global: { headers: { Authorization: authHeader } },
+  });
   const { data: { user } } = await userClient.auth.getUser();
-  if (!user) return { ok: false, reason: "invalid_token" };
+  if (!user) return { ok: false, reason: "invalid_token", triggeredBy: "unknown" };
 
-  const adminSupa = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    serviceKey
-  );
+  const adminSupa = createClient(Deno.env.get("SUPABASE_URL")!, serviceKey);
   const { data: role } = await adminSupa
     .from("user_roles")
     .select("role")
     .eq("user_id", user.id)
     .eq("role", "admin")
     .maybeSingle();
-  if (!role) return { ok: false, reason: "not_admin" };
-  return { ok: true };
+  if (!role) return { ok: false, reason: "not_admin", triggeredBy: user.id };
+  return { ok: true, triggeredBy: `admin:${user.id}` };
 }
 
 Deno.serve(async (req) => {
@@ -121,21 +134,36 @@ Deno.serve(async (req) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
-  try {
-    const auth = await authorize(req);
-    if (!auth.ok) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized", reason: auth.reason }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+  const auth = await authorize(req);
+  if (!auth.ok) {
+    return new Response(
+      JSON.stringify({ error: "Unauthorized", reason: auth.reason }),
+      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
+  }
 
-    // 1. Get credentials
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+  );
+
+  // Create sync log row first so we always have an audit record, even on failure.
+  const { data: logRow } = await supabase
+    .from("club_sync_log")
+    .insert({ status: "running", triggered_by: auth.triggeredBy })
+    .select("id")
+    .single();
+  const logId: string | null = logRow?.id ?? null;
+
+  const finalize = async (patch: Record<string, unknown>) => {
+    if (!logId) return;
+    await supabase
+      .from("club_sync_log")
+      .update({ ...patch, finished_at: new Date().toISOString() })
+      .eq("id", logId);
+  };
+
+  try {
     const { data: creds, error: credsErr } = await supabase
       .from("club_api_credentials")
       .select("*")
@@ -144,16 +172,31 @@ Deno.serve(async (req) => {
 
     if (credsErr) throw credsErr;
     if (!creds) {
+      await finalize({ status: "error", error_message: "no_credentials" });
       return new Response(
         JSON.stringify({ error: "No club credentials configured. Connect admin Strava account first." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
+    if (creds.needs_reauth) {
+      await finalize({ status: "error", error_message: "needs_reauth" });
+      return new Response(
+        JSON.stringify({
+          error: "Strava token byl odvolán. Otevři admin → Strava klub a klikni 'Přepojit'.",
+          needs_reauth: true,
+        }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const accessToken = await refreshIfNeeded(supabase, creds, creds.id);
 
-    // 2. Fetch club activities with retry on transient network errors
-    const fetchWithRetry = async (url: string, init: RequestInit, maxAttempts = 4): Promise<Response> => {
+    const fetchWithRetry = async (
+      url: string,
+      init: RequestInit,
+      maxAttempts = 4
+    ): Promise<Response> => {
       let lastErr: unknown;
       for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         try {
@@ -168,8 +211,6 @@ Deno.serve(async (req) => {
       throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
     };
 
-    // Strava Club Activities endpoint returns at most ~200 latest activities total.
-    // One page (per_page=200) suffices and avoids extra round-trips.
     const r = await fetchWithRetry(
       `https://www.strava.com/api/v3/clubs/${CLUB_ID}/activities?per_page=200&page=1`,
       { headers: { Authorization: `Bearer ${accessToken}` } }
@@ -179,12 +220,9 @@ Deno.serve(async (req) => {
       throw new Error(`Strava API error ${r.status}: ${t}`);
     }
     const allActs: any[] = await r.json();
-    if (!Array.isArray(allActs)) {
-      throw new Error("Unexpected Strava response shape");
-    }
+    if (!Array.isArray(allActs)) throw new Error("Unexpected Strava response shape");
     console.log(`Fetched ${allActs.length} club activities`);
 
-    // 3. Load existing mappings
     const { data: mappings } = await supabase
       .from("club_athlete_mappings")
       .select("athlete_key, matched_user_id, ignored");
@@ -194,7 +232,6 @@ Deno.serve(async (req) => {
       mappingByKey.set(m.athlete_key, { matched_user_id: m.matched_user_id, ignored: m.ignored });
     }
 
-    // 4. Build batch rows + collect new athletes
     const syncedAt = new Date().toISOString();
     const newMappings = new Map<string, { firstname: string; lastInit: string }>();
     const seenFp = new Set<string>();
@@ -212,7 +249,6 @@ Deno.serve(async (req) => {
       const sportType = a.sport_type || a.type || "";
       const fp = buildFingerprint(firstname, lastInit, distance, movingTime, elevation, sportType);
 
-      // Dedup within the same payload (Strava sometimes returns duplicates)
       if (seenFp.has(fp)) continue;
       seenFp.add(fp);
 
@@ -234,8 +270,6 @@ Deno.serve(async (req) => {
         athlete_lastname_initial: lastInit,
         athlete_full: fullName,
         matched_user_id: matchedUserId,
-        // Strava Club API doesn't expose start_date — store sync time as best-effort.
-        // This is intentional: YTD now resets correctly each Jan 1 (rows older than year_start are excluded).
         activity_date: syncedAt,
         distance_m: distance,
         moving_time: movingTime,
@@ -244,7 +278,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 5. Single batch upsert (avoids N+1)
     let upserted = 0;
     if (rows.length > 0) {
       const { error: upErr, count } = await supabase
@@ -254,7 +287,6 @@ Deno.serve(async (req) => {
       upserted = count ?? rows.length;
     }
 
-    // 6. Insert new athlete mappings
     if (newMappings.size > 0) {
       const mappingRows = Array.from(newMappings.entries()).map(([athlete_key, v]) => ({
         athlete_key,
@@ -268,10 +300,18 @@ Deno.serve(async (req) => {
       console.log(`Created ${mappingRows.length} new athlete mappings`);
     }
 
-    // 7. Single-call YTD recalc (atomic, also zeroes members without activities)
     const { data: recalc, error: recalcErr } = await supabase.rpc("recalc_club_ytd");
     if (recalcErr) throw recalcErr;
     const recalcRow = Array.isArray(recalc) ? recalc[0] : recalc;
+
+    await finalize({
+      status: "success",
+      fetched_count: allActs.length,
+      new_activities: upserted,
+      new_athletes: newMappings.size,
+      ytd_users_updated: recalcRow?.users_updated ?? 0,
+      ytd_users_zeroed: recalcRow?.users_zeroed ?? 0,
+    });
 
     return new Response(
       JSON.stringify({
@@ -287,9 +327,17 @@ Deno.serve(async (req) => {
     );
   } catch (err) {
     console.error("sync-club-activities error:", err);
+    const isReauth = err instanceof ReauthRequiredError;
+    await finalize({
+      status: isReauth ? "needs_reauth" : "error",
+      error_message: (err as Error).message?.slice(0, 1000) ?? "unknown",
+    });
     return new Response(
-      JSON.stringify({ error: (err as Error).message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ error: (err as Error).message, needs_reauth: isReauth }),
+      {
+        status: isReauth ? 401 : 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }
     );
   }
 });

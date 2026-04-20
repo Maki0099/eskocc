@@ -243,6 +243,8 @@ export type Database = {
           athlete_id: string | null
           expires_at: string
           id: string
+          last_error: string | null
+          needs_reauth: boolean
           refresh_token: string
           updated_at: string
         }
@@ -251,6 +253,8 @@ export type Database = {
           athlete_id?: string | null
           expires_at: string
           id?: string
+          last_error?: string | null
+          needs_reauth?: boolean
           refresh_token: string
           updated_at?: string
         }
@@ -259,6 +263,8 @@ export type Database = {
           athlete_id?: string | null
           expires_at?: string
           id?: string
+          last_error?: string | null
+          needs_reauth?: boolean
           refresh_token?: string
           updated_at?: string
         }
@@ -311,6 +317,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      club_sync_log: {
+        Row: {
+          error_message: string | null
+          fetched_count: number
+          finished_at: string | null
+          id: string
+          new_activities: number
+          new_athletes: number
+          started_at: string
+          status: string
+          triggered_by: string | null
+          ytd_users_updated: number
+          ytd_users_zeroed: number
+        }
+        Insert: {
+          error_message?: string | null
+          fetched_count?: number
+          finished_at?: string | null
+          id?: string
+          new_activities?: number
+          new_athletes?: number
+          started_at?: string
+          status?: string
+          triggered_by?: string | null
+          ytd_users_updated?: number
+          ytd_users_zeroed?: number
+        }
+        Update: {
+          error_message?: string | null
+          fetched_count?: number
+          finished_at?: string | null
+          id?: string
+          new_activities?: number
+          new_athletes?: number
+          started_at?: string
+          status?: string
+          triggered_by?: string | null
+          ytd_users_updated?: number
+          ytd_users_zeroed?: number
+        }
+        Relationships: []
       }
       event_participants: {
         Row: {

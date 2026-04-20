@@ -59,6 +59,22 @@ interface Credentials {
   athlete_id: string | null;
   expires_at: string;
   updated_at: string;
+  needs_reauth: boolean | null;
+  last_error: string | null;
+}
+
+interface SyncLogRow {
+  id: string;
+  started_at: string;
+  finished_at: string | null;
+  fetched_count: number;
+  new_activities: number;
+  new_athletes: number;
+  ytd_users_updated: number;
+  ytd_users_zeroed: number;
+  status: string;
+  error_message: string | null;
+  triggered_by: string | null;
 }
 
 const IGNORE_VALUE = "__ignore__";
@@ -81,12 +97,16 @@ export const ClubStravaAdmin = ({ preselectedAthleteKey, onAthleteSelected }: Cl
   const [highlightedAthleteKey, setHighlightedAthleteKey] = useState<string | null>(null);
 
   const [lastSyncAt, setLastSyncAt] = useState<string | null>(null);
+  const [syncLogs, setSyncLogs] = useState<SyncLogRow[]>([]);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [credsRes, actsRes, mapRes, profilesRes, lastSyncRes] = await Promise.all([
-        supabase.from("club_api_credentials").select("athlete_id, expires_at, updated_at").maybeSingle(),
+      const [credsRes, actsRes, mapRes, profilesRes, lastSyncRes, logsRes] = await Promise.all([
+        supabase
+          .from("club_api_credentials")
+          .select("athlete_id, expires_at, updated_at, needs_reauth, last_error")
+          .maybeSingle(),
         supabase
           .from("club_activities")
           .select("*")
@@ -100,6 +120,11 @@ export const ClubStravaAdmin = ({ preselectedAthleteKey, onAthleteSelected }: Cl
           .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle(),
+        supabase
+          .from("club_sync_log")
+          .select("*")
+          .order("started_at", { ascending: false })
+          .limit(10),
       ]);
 
       setCreds(credsRes.data);
@@ -107,6 +132,7 @@ export const ClubStravaAdmin = ({ preselectedAthleteKey, onAthleteSelected }: Cl
       setActivities(acts);
       setMembers(profilesRes.data || []);
       setLastSyncAt(lastSyncRes.data?.created_at || null);
+      setSyncLogs((logsRes.data || []) as SyncLogRow[]);
 
       // Aggregate per-athlete stats from activities
       const stats = new Map<string, { count: number; distM: number }>();
@@ -169,10 +195,11 @@ export const ClubStravaAdmin = ({ preselectedAthleteKey, onAthleteSelected }: Cl
     try {
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
       const redirectUri = `https://${projectId}.supabase.co/functions/v1/club-strava-callback`;
+      const returnTo = window.location.origin;
 
       const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/club-strava-auth?redirect_uri=${encodeURIComponent(redirectUri)}`,
+        `https://${projectId}.supabase.co/functions/v1/club-strava-auth?redirect_uri=${encodeURIComponent(redirectUri)}&return_to=${encodeURIComponent(returnTo)}`,
         { headers: { Authorization: `Bearer ${session?.access_token}` } }
       );
       const json = await res.json();
@@ -231,6 +258,7 @@ export const ClubStravaAdmin = ({ preselectedAthleteKey, onAthleteSelected }: Cl
   };
 
   const isConnected = !!creds;
+  const needsReauth = !!creds?.needs_reauth;
   const unassigned = athletes.filter((a) => !a.matched_user_id && !a.ignored).length;
 
   const hoursSinceSync = lastSyncAt
@@ -238,7 +266,7 @@ export const ClubStravaAdmin = ({ preselectedAthleteKey, onAthleteSelected }: Cl
     : null;
   const tokenExpired = creds ? new Date(creds.expires_at).getTime() < Date.now() : false;
   const syncStale = hoursSinceSync === null || hoursSinceSync > 24;
-  const showStaleAlert = !loading && (syncStale || tokenExpired);
+  const showStaleAlert = !loading && !needsReauth && (syncStale || tokenExpired);
 
   const selectValue = (a: AthleteRow): string => {
     if (a.ignored) return IGNORE_VALUE;
@@ -248,6 +276,27 @@ export const ClubStravaAdmin = ({ preselectedAthleteKey, onAthleteSelected }: Cl
 
   return (
     <div className="space-y-6">
+      {needsReauth && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Strava token byl odvolán</AlertTitle>
+          <AlertDescription className="space-y-2">
+            <p>
+              Strava odmítla obnovit token (uživatel pravděpodobně odpojil aplikaci, nebo
+              vypršel refresh token). Sync je zastaven, dokud nebudeš autorizovat znovu.
+            </p>
+            {creds?.last_error && (
+              <p className="text-xs font-mono opacity-80 break-all">
+                Detail: {creds.last_error}
+              </p>
+            )}
+            <Button size="sm" onClick={handleConnect} disabled={connecting}>
+              {connecting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Link2 className="w-4 h-4 mr-2" />}
+              Přepojit
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
       {showStaleAlert && (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
@@ -479,6 +528,76 @@ export const ClubStravaAdmin = ({ preselectedAthleteKey, onAthleteSelected }: Cl
                           ) : (
                             <span className="text-xs text-muted-foreground">—</span>
                           )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Historie syncu</CardTitle>
+          <CardDescription>
+            Posledních 10 běhů (manuální i automatické). Pomáhá poznat, kdy a proč sync selhal.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : syncLogs.length === 0 ? (
+            <p className="text-center text-muted-foreground py-8">Zatím žádné záznamy.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Spuštěno</TableHead>
+                    <TableHead>Stav</TableHead>
+                    <TableHead className="text-right">Načteno</TableHead>
+                    <TableHead className="text-right">Nové akt.</TableHead>
+                    <TableHead className="text-right">Nový atleti</TableHead>
+                    <TableHead className="text-right">YTD upd/zero</TableHead>
+                    <TableHead>Spustil</TableHead>
+                    <TableHead>Chyba</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {syncLogs.map((log) => {
+                    const statusVariant: "default" | "secondary" | "destructive" | "outline" =
+                      log.status === "success"
+                        ? "outline"
+                        : log.status === "running"
+                        ? "secondary"
+                        : "destructive";
+                    return (
+                      <TableRow key={log.id}>
+                        <TableCell className="text-xs whitespace-nowrap">
+                          {format(new Date(log.started_at), "d. M. HH:mm:ss", { locale: cs })}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={statusVariant}>{log.status}</Badge>
+                        </TableCell>
+                        <TableCell className="text-right">{log.fetched_count}</TableCell>
+                        <TableCell className="text-right">{log.new_activities}</TableCell>
+                        <TableCell className="text-right">{log.new_athletes}</TableCell>
+                        <TableCell className="text-right text-xs">
+                          {log.ytd_users_updated} / {log.ytd_users_zeroed}
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {log.triggered_by || "—"}
+                        </TableCell>
+                        <TableCell
+                          className="text-xs text-destructive max-w-[280px] truncate"
+                          title={log.error_message || ""}
+                        >
+                          {log.error_message || "—"}
                         </TableCell>
                       </TableRow>
                     );
