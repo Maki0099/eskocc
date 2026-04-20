@@ -45,6 +45,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Users, Shield, Loader2, Coffee, Target, Clock, KeyRound, Bell, Route, Sparkles, Trash2, Activity } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ClubStravaAdmin } from "@/components/admin/ClubStravaAdmin";
 import { toast } from "sonner";
 import { format } from "date-fns";
