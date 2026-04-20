@@ -361,6 +361,7 @@ const Admin = () => {
                             <TableHead>Email</TableHead>
                             <TableHead>Registrace</TableHead>
                             <TableHead>Role</TableHead>
+                            <TableHead className="hidden md:table-cell">Strava klub</TableHead>
                             <TableHead className="text-right">Akce</TableHead>
                           </TableRow>
                         </TableHeader>
