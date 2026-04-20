@@ -54,6 +54,10 @@ async function refreshIfNeeded(
   return data.access_token;
 }
 
+function buildAthleteKey(firstname: string, lastInit: string): string {
+  return `${firstname.trim().toLowerCase()}|${(lastInit || "").trim().toLowerCase()}`;
+}
+
 function buildFingerprint(
   firstname: string,
   lastInit: string,
@@ -61,39 +65,6 @@ function buildFingerprint(
   distance: number
 ): string {
   return `${firstname.toLowerCase()}|${lastInit.toLowerCase()}|${date.slice(0, 10)}|${Math.round(distance)}`;
-}
-
-function normalize(s: string): string {
-  return s
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .trim();
-}
-
-function tryMatch(
-  firstname: string,
-  lastInit: string,
-  profiles: Array<{ id: string; full_name: string | null; nickname: string | null; club_match_name: string | null }>
-): string | null {
-  const f = normalize(firstname);
-  const li = normalize(lastInit);
-
-  for (const p of profiles) {
-    const candidates = [p.full_name, p.nickname, p.club_match_name]
-      .filter(Boolean)
-      .map((s) => normalize(s as string));
-
-    for (const c of candidates) {
-      if (c === f) return p.id;
-      if (c.startsWith(f + " ") && (li === "" || c.includes(" " + li))) return p.id;
-      const parts = c.split(/\s+/);
-      if (parts[0] === f && (li === "" || (parts[1] && parts[1].startsWith(li)))) {
-        return p.id;
-      }
-    }
-  }
-  return null;
 }
 
 Deno.serve(async (req) => {
@@ -124,7 +95,7 @@ Deno.serve(async (req) => {
 
     const accessToken = await refreshIfNeeded(supabase, creds, creds.id);
 
-    // 2. Fetch club activities (paginate up to 200)
+    // 2. Fetch club activities
     const allActs: any[] = [];
     for (let page = 1; page <= 1; page++) {
       const r = await fetch(
@@ -142,15 +113,21 @@ Deno.serve(async (req) => {
 
     console.log(`Fetched ${allActs.length} club activities`);
 
-    // 3. Get profiles for matching
-    const { data: profiles } = await supabase
-      .from("profiles")
-      .select("id, full_name, nickname, club_match_name");
+    // 3. Load existing mappings
+    const { data: mappings } = await supabase
+      .from("club_athlete_mappings")
+      .select("athlete_key, matched_user_id, ignored");
 
-    // 4. Upsert activities (dedup by fingerprint)
+    const mappingByKey = new Map<string, { matched_user_id: string | null; ignored: boolean }>();
+    for (const m of mappings || []) {
+      mappingByKey.set(m.athlete_key, { matched_user_id: m.matched_user_id, ignored: m.ignored });
+    }
+
+    // 4. Upsert activities + auto-create mappings for new athletes
     let inserted = 0;
     let matched = 0;
     const today = new Date().toISOString();
+    const newMappings = new Map<string, { firstname: string; lastInit: string }>();
 
     for (const a of allActs) {
       const firstname = a.athlete?.firstname || "";
@@ -158,8 +135,16 @@ Deno.serve(async (req) => {
       const fullName = `${firstname} ${lastInit}`.trim();
       const distance = Math.round(a.distance || 0);
       const fp = buildFingerprint(firstname, lastInit, today, distance);
+      const key = buildAthleteKey(firstname, lastInit);
 
-      const matchedUserId = profiles ? tryMatch(firstname, lastInit, profiles) : null;
+      let matchedUserId: string | null = null;
+      const existing = mappingByKey.get(key);
+      if (existing && !existing.ignored) {
+        matchedUserId = existing.matched_user_id;
+      } else if (!existing) {
+        newMappings.set(key, { firstname, lastInit });
+      }
+
       if (matchedUserId) matched++;
 
       const { error: upErr } = await supabase
@@ -183,7 +168,19 @@ Deno.serve(async (req) => {
       if (!upErr) inserted++;
     }
 
-    // 5. Recalculate YTD per matched user
+    // 5. Insert new athlete mappings (matched_user_id = null, admin will assign)
+    if (newMappings.size > 0) {
+      const rows = Array.from(newMappings.entries()).map(([athlete_key, v]) => ({
+        athlete_key,
+        athlete_firstname: v.firstname,
+        athlete_lastname_initial: v.lastInit,
+        matched_user_id: null,
+      }));
+      await supabase.from("club_athlete_mappings").upsert(rows, { onConflict: "athlete_key", ignoreDuplicates: true });
+      console.log(`Created ${rows.length} new athlete mappings`);
+    }
+
+    // 6. Recalculate YTD per matched user
     const year = new Date().getFullYear();
     const yearStart = new Date(year, 0, 1).toISOString();
 
@@ -220,6 +217,7 @@ Deno.serve(async (req) => {
         fetched: allActs.length,
         upserted: inserted,
         matched,
+        new_athletes: newMappings.size,
         users_updated: totals.size,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }

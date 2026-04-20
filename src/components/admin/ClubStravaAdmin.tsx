@@ -35,6 +35,19 @@ interface ClubActivity {
   sport_type: string | null;
 }
 
+interface AthleteMapping {
+  athlete_key: string;
+  athlete_firstname: string;
+  athlete_lastname_initial: string | null;
+  matched_user_id: string | null;
+  ignored: boolean;
+}
+
+interface AthleteRow extends AthleteMapping {
+  activity_count: number;
+  total_km: number;
+}
+
 interface Member {
   id: string;
   full_name: string | null;
@@ -47,30 +60,58 @@ interface Credentials {
   updated_at: string;
 }
 
+const IGNORE_VALUE = "__ignore__";
+const NONE_VALUE = "__none__";
+
 export const ClubStravaAdmin = () => {
   const [creds, setCreds] = useState<Credentials | null>(null);
   const [activities, setActivities] = useState<ClubActivity[]>([]);
+  const [athletes, setAthletes] = useState<AthleteRow[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [connecting, setConnecting] = useState(false);
+  const [savingKey, setSavingKey] = useState<string | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [credsRes, actsRes, profilesRes] = await Promise.all([
+      const [credsRes, actsRes, mapRes, profilesRes] = await Promise.all([
         supabase.from("club_api_credentials").select("athlete_id, expires_at, updated_at").maybeSingle(),
         supabase
           .from("club_activities")
           .select("*")
           .order("created_at", { ascending: false })
           .limit(100),
+        supabase.from("club_athlete_mappings").select("*"),
         supabase.from("profiles").select("id, full_name, nickname"),
       ]);
 
       setCreds(credsRes.data);
-      setActivities(actsRes.data || []);
+      const acts = (actsRes.data || []) as ClubActivity[];
+      setActivities(acts);
       setMembers(profilesRes.data || []);
+
+      // Aggregate per-athlete stats from activities
+      const stats = new Map<string, { count: number; distM: number }>();
+      for (const a of acts) {
+        const key = `${a.athlete_firstname.trim().toLowerCase()}|${(a.athlete_lastname_initial || "").trim().toLowerCase()}`;
+        const cur = stats.get(key) || { count: 0, distM: 0 };
+        cur.count += 1;
+        cur.distM += a.distance_m || 0;
+        stats.set(key, cur);
+      }
+
+      const rows: AthleteRow[] = (mapRes.data || []).map((m: AthleteMapping) => {
+        const s = stats.get(m.athlete_key) || { count: 0, distM: 0 };
+        return {
+          ...m,
+          activity_count: s.count,
+          total_km: Math.round(s.distM / 1000),
+        };
+      });
+      rows.sort((a, b) => b.activity_count - a.activity_count);
+      setAthletes(rows);
     } catch (err: any) {
       toast.error(err.message || "Nepodařilo se načíst data");
     } finally {
@@ -81,7 +122,6 @@ export const ClubStravaAdmin = () => {
   useEffect(() => {
     fetchData();
 
-    // Handle OAuth callback
     const params = new URLSearchParams(window.location.search);
     const status = params.get("club_strava");
     if (status === "connected") {
@@ -100,7 +140,6 @@ export const ClubStravaAdmin = () => {
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
       const redirectUri = `https://${projectId}.supabase.co/functions/v1/club-strava-callback`;
 
-      // Function reads redirect_uri from query params, so call directly via fetch
       const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch(
         `https://${projectId}.supabase.co/functions/v1/club-strava-auth?redirect_uri=${encodeURIComponent(redirectUri)}`,
@@ -126,7 +165,7 @@ export const ClubStravaAdmin = () => {
       if (data?.error) throw new Error(data.error);
 
       toast.success(
-        `Sync hotov: ${data.fetched} aktivit, ${data.matched} spárováno, ${data.users_updated} uživatelů aktualizováno`
+        `Sync hotov: ${data.fetched} aktivit, ${data.matched} spárováno, ${data.new_athletes ?? 0} nových atletů, ${data.users_updated} členů aktualizováno`
       );
       fetchData();
     } catch (err: any) {
@@ -136,23 +175,39 @@ export const ClubStravaAdmin = () => {
     }
   };
 
-  const handleMatch = async (activityId: string, userId: string | null) => {
+  const handleSelect = async (athleteKey: string, value: string) => {
+    setSavingKey(athleteKey);
     try {
-      const { data, error } = await supabase.functions.invoke("match-club-activity", {
-        body: { activity_id: activityId, user_id: userId },
-      });
+      let body: Record<string, unknown>;
+      if (value === IGNORE_VALUE) {
+        body = { athlete_key: athleteKey, ignored: true, user_id: null };
+      } else if (value === NONE_VALUE) {
+        body = { athlete_key: athleteKey, ignored: false, user_id: null };
+      } else {
+        body = { athlete_key: athleteKey, ignored: false, user_id: value };
+      }
+
+      const { data, error } = await supabase.functions.invoke("match-club-athlete", { body });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
-      toast.success("Aktivita přiřazena");
+      toast.success("Propojení uloženo. Všechny aktivity atleta byly přepárovány.");
       fetchData();
     } catch (err: any) {
-      toast.error(err.message || "Přiřazení selhalo");
+      toast.error(err.message || "Uložení selhalo");
+    } finally {
+      setSavingKey(null);
     }
   };
 
   const isConnected = !!creds;
-  const unmatched = activities.filter((a) => !a.matched_user_id);
+  const unassigned = athletes.filter((a) => !a.matched_user_id && !a.ignored).length;
+
+  const selectValue = (a: AthleteRow): string => {
+    if (a.ignored) return IGNORE_VALUE;
+    if (a.matched_user_id) return a.matched_user_id;
+    return NONE_VALUE;
+  };
 
   return (
     <div className="space-y-6">
@@ -230,13 +285,14 @@ export const ClubStravaAdmin = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
-            <span>Klubové aktivity</span>
+            <span>Atleti klubu</span>
             <Badge variant="secondary">
-              {activities.length} celkem · {unmatched.length} nepárovaných
+              {athletes.length} celkem · {unassigned} nepřiřazených
             </Badge>
           </CardTitle>
           <CardDescription>
-            Posledních 100 aktivit. U nepárovaných můžeš ručně přiřadit uživatele.
+            Jedno propojení Strava atleta ↔ člen klubu pokryje všechny jeho minulé i budoucí
+            aktivity. „Ignorovat" vyřadí atleta z napárování (např. host).
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -244,45 +300,41 @@ export const ClubStravaAdmin = () => {
             <div className="flex justify-center py-8">
               <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
             </div>
-          ) : activities.length === 0 ? (
+          ) : athletes.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">
-              Žádné aktivity. Spusť sync.
+              Žádní atleti. Spusť sync.
             </p>
           ) : (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Atlet</TableHead>
-                    <TableHead>Sport</TableHead>
-                    <TableHead className="text-right">Vzdálenost</TableHead>
-                    <TableHead className="text-right">Převýšení</TableHead>
-                    <TableHead>Datum syncu</TableHead>
-                    <TableHead>Spárovaný uživatel</TableHead>
+                    <TableHead>Atlet (Strava)</TableHead>
+                    <TableHead className="text-right">Aktivit</TableHead>
+                    <TableHead className="text-right">Σ km</TableHead>
+                    <TableHead>Spárovaný člen</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {activities.map((a) => (
-                    <TableRow key={a.id}>
-                      <TableCell className="font-medium">{a.athlete_full}</TableCell>
-                      <TableCell className="text-muted-foreground">{a.sport_type || "—"}</TableCell>
-                      <TableCell className="text-right">
-                        {(a.distance_m / 1000).toFixed(1)} km
+                  {athletes.map((a) => (
+                    <TableRow key={a.athlete_key}>
+                      <TableCell className="font-medium">
+                        {a.athlete_firstname} {a.athlete_lastname_initial}
                       </TableCell>
-                      <TableCell className="text-right">{a.elevation_gain} m</TableCell>
-                      <TableCell className="text-muted-foreground text-xs">
-                        {format(new Date(a.activity_date), "d. M. yyyy", { locale: cs })}
-                      </TableCell>
+                      <TableCell className="text-right">{a.activity_count}</TableCell>
+                      <TableCell className="text-right">{a.total_km}</TableCell>
                       <TableCell>
                         <Select
-                          value={a.matched_user_id || "none"}
-                          onValueChange={(v) => handleMatch(a.id, v === "none" ? null : v)}
+                          value={selectValue(a)}
+                          onValueChange={(v) => handleSelect(a.athlete_key, v)}
+                          disabled={savingKey === a.athlete_key}
                         >
-                          <SelectTrigger className="w-[200px]">
+                          <SelectTrigger className="w-[240px]">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="none">— nepřiřazeno —</SelectItem>
+                            <SelectItem value={NONE_VALUE}>— nepřiřazeno —</SelectItem>
+                            <SelectItem value={IGNORE_VALUE}>🚫 Ignorovat (host)</SelectItem>
                             {members.map((m) => (
                               <SelectItem key={m.id} value={m.id}>
                                 {m.full_name || m.nickname || m.id.slice(0, 8)}
@@ -293,6 +345,69 @@ export const ClubStravaAdmin = () => {
                       </TableCell>
                     </TableRow>
                   ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <span>Poslední aktivity</span>
+            <Badge variant="secondary">{activities.length}</Badge>
+          </CardTitle>
+          <CardDescription>
+            Jen pro přehled — párování se řídí výše uvedenou tabulkou atletů.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : activities.length === 0 ? (
+            <p className="text-center text-muted-foreground py-8">Žádné aktivity.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Atlet</TableHead>
+                    <TableHead>Sport</TableHead>
+                    <TableHead className="text-right">Vzdálenost</TableHead>
+                    <TableHead className="text-right">Převýšení</TableHead>
+                    <TableHead>Datum syncu</TableHead>
+                    <TableHead>Stav</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {activities.map((a) => {
+                    const member = members.find((m) => m.id === a.matched_user_id);
+                    return (
+                      <TableRow key={a.id}>
+                        <TableCell className="font-medium">{a.athlete_full}</TableCell>
+                        <TableCell className="text-muted-foreground">{a.sport_type || "—"}</TableCell>
+                        <TableCell className="text-right">
+                          {(a.distance_m / 1000).toFixed(1)} km
+                        </TableCell>
+                        <TableCell className="text-right">{a.elevation_gain} m</TableCell>
+                        <TableCell className="text-muted-foreground text-xs">
+                          {format(new Date(a.activity_date), "d. M. yyyy", { locale: cs })}
+                        </TableCell>
+                        <TableCell>
+                          {member ? (
+                            <Badge variant="outline">
+                              {member.full_name || member.nickname}
+                            </Badge>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>

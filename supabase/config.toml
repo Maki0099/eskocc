@@ -42,5 +42,5 @@ verify_jwt = false
 [functions.sync-club-activities]
 verify_jwt = false
 
-[functions.match-club-activity]
+[functions.match-club-athlete]
 verify_jwt = true
