@@ -213,6 +213,13 @@ export const ClubStravaAdmin = () => {
   const isConnected = !!creds;
   const unassigned = athletes.filter((a) => !a.matched_user_id && !a.ignored).length;
 
+  const hoursSinceSync = lastSyncAt
+    ? (Date.now() - new Date(lastSyncAt).getTime()) / 3_600_000
+    : null;
+  const tokenExpired = creds ? new Date(creds.expires_at).getTime() < Date.now() : false;
+  const syncStale = hoursSinceSync === null || hoursSinceSync > 24;
+  const showStaleAlert = !loading && (syncStale || tokenExpired);
+
   const selectValue = (a: AthleteRow): string => {
     if (a.ignored) return IGNORE_VALUE;
     if (a.matched_user_id) return a.matched_user_id;
@@ -221,6 +228,40 @@ export const ClubStravaAdmin = () => {
 
   return (
     <div className="space-y-6">
+      {showStaleAlert && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>
+            {tokenExpired
+              ? "Strava token vypršel"
+              : hoursSinceSync === null
+              ? "Sync ještě neproběhl"
+              : "Sync neproběhl déle než 24 hodin"}
+          </AlertTitle>
+          <AlertDescription>
+            {tokenExpired ? (
+              <>
+                Token vypršel{" "}
+                {formatDistanceToNow(new Date(creds!.expires_at), { addSuffix: true, locale: cs })}.
+                Refresh by měl proběhnout automaticky při nejbližším syncu — pokud chyba přetrvává,
+                klikni na <strong>Přepojit</strong> a obnov OAuth autorizaci.
+              </>
+            ) : hoursSinceSync === null ? (
+              <>
+                V databázi nejsou žádné synchronizované aktivity. Spusť ručně „Sync teď" a zkontroluj
+                logy. Pokud sync selže, zkontroluj propojení Strava účtu níže.
+              </>
+            ) : (
+              <>
+                Poslední úspěšný sync proběhl{" "}
+                {formatDistanceToNow(new Date(lastSyncAt!), { addSuffix: true, locale: cs })}. Cron
+                má běžet každé 4 hodiny — možná problém s tokenem nebo Strava API. Zkus „Sync teď"
+                a sleduj výsledek.
+              </>
+            )}
+          </AlertDescription>
+        </Alert>
+      )}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
