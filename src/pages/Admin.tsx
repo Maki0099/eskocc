@@ -98,7 +98,7 @@ const Admin = () => {
 
       const { data: mappings, error: mappingsError } = await supabase
         .from("club_athlete_mappings")
-        .select("matched_user_id, athlete_firstname, athlete_lastname_initial, ignored")
+        .select("matched_user_id, athlete_key, athlete_firstname, athlete_lastname_initial, ignored")
         .not("matched_user_id", "is", null)
         .eq("ignored", false);
 
@@ -107,7 +107,7 @@ const Admin = () => {
       const mappingByUser = new Map(
         (mappings || []).map((m) => [
           m.matched_user_id as string,
-          { firstname: m.athlete_firstname, lastnameInitial: m.athlete_lastname_initial },
+          { athleteKey: m.athlete_key, firstname: m.athlete_firstname, lastnameInitial: m.athlete_lastname_initial },
         ])
       );
 
