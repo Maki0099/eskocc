@@ -96,17 +96,23 @@ Deno.serve(async (req) => {
     const accessToken = await refreshIfNeeded(supabase, creds, creds.id);
 
     // 2. Fetch club activities
+    // Strava Club API vrací max ~200 nejnovějších aktivit a hluboké stránkování
+    // do historie typicky nefunguje (vrací prázdno). Pokusíme se o víc stránek
+    // pro případ, že by Strava někdy vrátila víc — break až když přijde prázdná.
     const allActs: any[] = [];
-    for (let page = 1; page <= 1; page++) {
+    const MAX_PAGES = 5;
+    for (let page = 1; page <= MAX_PAGES; page++) {
       const r = await fetch(
         `https://www.strava.com/api/v3/clubs/${CLUB_ID}/activities?per_page=200&page=${page}`,
         { headers: { Authorization: `Bearer ${accessToken}` } }
       );
       if (!r.ok) {
         const t = await r.text();
-        throw new Error(`Strava API error ${r.status}: ${t}`);
+        throw new Error(`Strava API error ${r.status} (page ${page}): ${t}`);
       }
       const acts = await r.json();
+      console.log(`Page ${page}: got ${acts.length} activities`);
+      if (!Array.isArray(acts) || acts.length === 0) break;
       allActs.push(...acts);
       if (acts.length < 200) break;
     }
