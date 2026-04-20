@@ -100,12 +100,7 @@ export const ClubStravaAdmin = () => {
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
       const redirectUri = `https://${projectId}.supabase.co/functions/v1/club-strava-callback`;
 
-      const { data, error } = await supabase.functions.invoke("club-strava-auth", {
-        body: { redirect_uri: redirectUri },
-        method: "POST",
-      });
-
-      // The function uses query params, so call directly
+      // Function reads redirect_uri from query params, so call directly via fetch
       const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch(
         `https://${projectId}.supabase.co/functions/v1/club-strava-auth?redirect_uri=${encodeURIComponent(redirectUri)}`,
