@@ -59,24 +59,13 @@ const CronJobsAdmin = () => {
   const handleForceRefresh = async () => {
     setRefreshingStats(true);
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/strava-stats-batch`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({ refreshAll: true }),
-        }
+      const { data, error } = await supabase.functions.invoke("sync-club-activities");
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      toast.success(
+        `Klubový sync: ${data.fetched} aktivit, ${data.matched} spárováno, ${data.users_updated} uživatelů aktualizováno`
       );
-
-      if (!response.ok) {
-        throw new Error("Failed to refresh stats");
-      }
-
-      const result = await response.json();
-      toast.success(`Statistiky aktualizovány pro ${Object.keys(result.stats || {}).length} uživatelů`);
     } catch (error) {
       console.error("Error refreshing stats:", error);
       toast.error("Nepodařilo se aktualizovat statistiky");
