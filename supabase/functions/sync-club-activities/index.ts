@@ -95,14 +95,27 @@ Deno.serve(async (req) => {
 
     const accessToken = await refreshIfNeeded(supabase, creds, creds.id);
 
-    // 2. Fetch club activities
-    // Strava Club API vrací max ~200 nejnovějších aktivit a hluboké stránkování
-    // do historie typicky nefunguje (vrací prázdno). Pokusíme se o víc stránek
-    // pro případ, že by Strava někdy vrátila víc — break až když přijde prázdná.
+    // 2. Fetch club activities with retry on transient network errors
+    // Strava občas resetuje spojení (ECONNRESET / os error 104) — retry s backoffem.
+    const fetchWithRetry = async (url: string, init: RequestInit, maxAttempts = 4): Promise<Response> => {
+      let lastErr: unknown;
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        try {
+          return await fetch(url, init);
+        } catch (e) {
+          lastErr = e;
+          const delay = 500 * Math.pow(2, attempt - 1); // 500, 1000, 2000, 4000 ms
+          console.warn(`fetch attempt ${attempt}/${maxAttempts} failed: ${(e as Error).message}. Retrying in ${delay}ms`);
+          await new Promise((res) => setTimeout(res, delay));
+        }
+      }
+      throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
+    };
+
     const allActs: any[] = [];
     const MAX_PAGES = 5;
     for (let page = 1; page <= MAX_PAGES; page++) {
-      const r = await fetch(
+      const r = await fetchWithRetry(
         `https://www.strava.com/api/v3/clubs/${CLUB_ID}/activities?per_page=200&page=${page}`,
         { headers: { Authorization: `Bearer ${accessToken}` } }
       );
