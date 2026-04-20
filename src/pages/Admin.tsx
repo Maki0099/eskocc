@@ -45,6 +45,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Users, Shield, Loader2, Coffee, Target, Clock, KeyRound, Bell, Route, Sparkles, Trash2, Activity } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ClubStravaAdmin } from "@/components/admin/ClubStravaAdmin";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -60,6 +61,7 @@ interface UserWithRole {
   avatar_url: string | null;
   created_at: string;
   role: AppRole;
+  clubAthlete: { firstname: string; lastnameInitial: string | null } | null;
 }
 
 const Admin = () => {
@@ -94,11 +96,27 @@ const Admin = () => {
 
       if (rolesError) throw rolesError;
 
+      const { data: mappings, error: mappingsError } = await supabase
+        .from("club_athlete_mappings")
+        .select("matched_user_id, athlete_firstname, athlete_lastname_initial, ignored")
+        .not("matched_user_id", "is", null)
+        .eq("ignored", false);
+
+      if (mappingsError) throw mappingsError;
+
+      const mappingByUser = new Map(
+        (mappings || []).map((m) => [
+          m.matched_user_id as string,
+          { firstname: m.athlete_firstname, lastnameInitial: m.athlete_lastname_initial },
+        ])
+      );
+
       const usersWithRoles: UserWithRole[] = (profiles || []).map((profile) => {
         const userRole = roles?.find((r) => r.user_id === profile.id);
         return {
           ...profile,
           role: (userRole?.role as AppRole) || "pending",
+          clubAthlete: mappingByUser.get(profile.id) || null,
         };
       });
 
@@ -258,7 +276,7 @@ const Admin = () => {
             </TabsList>
 
             <TabsContent value="users" className="space-y-6">
-              <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
+              <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
                 <Card>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -303,6 +321,19 @@ const Admin = () => {
                     </div>
                   </CardContent>
                 </Card>
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
+                      <Activity className="w-3.5 h-3.5" />
+                      Propojeno se Stravou
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {users.filter((u) => u.clubAthlete).length}
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
 
               <Card>
@@ -330,6 +361,7 @@ const Admin = () => {
                             <TableHead>Email</TableHead>
                             <TableHead>Registrace</TableHead>
                             <TableHead>Role</TableHead>
+                            <TableHead className="hidden md:table-cell">Strava klub</TableHead>
                             <TableHead className="text-right">Akce</TableHead>
                           </TableRow>
                         </TableHeader>
@@ -363,6 +395,30 @@ const Admin = () => {
                                 <Badge variant={ROLE_BADGE_VARIANTS[user.role]}>
                                   {ROLE_LABELS[user.role]}
                                 </Badge>
+                              </TableCell>
+                              <TableCell className="hidden md:table-cell">
+                                <TooltipProvider delayDuration={200}>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      {user.clubAthlete ? (
+                                        <Badge variant="secondary" className="gap-1 bg-primary/10 text-primary hover:bg-primary/20 border-primary/20">
+                                          <Activity className="w-3 h-3" />
+                                          {user.clubAthlete.firstname}
+                                          {user.clubAthlete.lastnameInitial ? ` ${user.clubAthlete.lastnameInitial}.` : ""}
+                                        </Badge>
+                                      ) : (
+                                        <Badge variant="outline" className="text-muted-foreground">
+                                          Nepropojeno
+                                        </Badge>
+                                      )}
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      {user.clubAthlete
+                                        ? "Propojeno se Strava klub atletem"
+                                        : "Uživatel není napárovaný na žádného atleta v klubu"}
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
                               </TableCell>
                               <TableCell className="text-right">
                                 <div className="flex items-center justify-end gap-2">
