@@ -388,7 +388,11 @@ export const ClubStravaAdmin = ({ preselectedAthleteKey, onAthleteSelected }: Cl
                 </TableHeader>
                 <TableBody>
                   {athletes.map((a) => (
-                    <TableRow key={a.athlete_key}>
+                    <TableRow 
+                      key={a.athlete_key} 
+                      id={`athlete-row-${a.athlete_key}`}
+                      className={highlightedAthleteKey === a.athlete_key ? "bg-primary/10 ring-1 ring-primary/30" : ""}
+                    >
                       <TableCell className="font-medium">
                         {a.athlete_firstname} {a.athlete_lastname_initial}
                       </TableCell>
