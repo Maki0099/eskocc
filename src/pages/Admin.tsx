@@ -61,7 +61,7 @@ interface UserWithRole {
   avatar_url: string | null;
   created_at: string;
   role: AppRole;
-  clubAthlete: { firstname: string; lastnameInitial: string | null } | null;
+  clubAthlete: { firstname: string; lastnameInitial: string | null; athleteKey?: string } | null;
 }
 
 const Admin = () => {
