@@ -321,6 +321,19 @@ const Admin = () => {
                     </div>
                   </CardContent>
                 </Card>
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
+                      <Activity className="w-3.5 h-3.5" />
+                      Propojeno se Stravou
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {users.filter((u) => u.clubAthlete).length}
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
 
               <Card>
