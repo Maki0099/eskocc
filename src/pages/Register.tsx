@@ -8,7 +8,6 @@ import { z } from "zod";
 import logoDark from "@/assets/logo-horizontal-dark.png";
 import RegistrationSteps from "@/components/register/RegistrationSteps";
 import PersonalDetailsStep from "@/components/register/PersonalDetailsStep";
-import StravaConnectStep from "@/components/register/StravaConnectStep";
 import TermsAndConditions from "@/components/register/TermsAndConditions";
 
 const registerSchema = z.object({
@@ -46,28 +45,18 @@ const Register = () => {
     }
   }, [user, navigate]);
 
-  const handleStravaConnect = () => {
-    localStorage.setItem("stravaConnectPending", "true");
-    setStep(3);
-  };
-
-  const handleStravaSkip = () => {
-    localStorage.removeItem("stravaConnectPending");
-    setStep(3);
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const validation = registerSchema.safeParse({ 
-      fullName, 
-      email, 
-      password, 
-      confirmPassword, 
+
+    const validation = registerSchema.safeParse({
+      fullName,
+      email,
+      password,
+      confirmPassword,
       nickname,
-      termsAccepted 
+      termsAccepted,
     });
-    
+
     if (!validation.success) {
       toast({
         variant: "destructive",
@@ -78,9 +67,9 @@ const Register = () => {
     }
 
     setLoading(true);
-    
+
     const { error } = await signUp(email, password, fullName, nickname || undefined, birthDate, phone || undefined);
-    
+
     if (error) {
       let message = "Nepodařilo se vytvořit účet";
       if (error.message.includes("User already registered")) {
@@ -88,7 +77,7 @@ const Register = () => {
       } else if (error.message.includes("Password should be")) {
         message = "Heslo musí mít alespoň 6 znaků";
       }
-      
+
       toast({
         variant: "destructive",
         title: "Chyba registrace",
@@ -101,7 +90,7 @@ const Register = () => {
       });
       navigate("/dashboard");
     }
-    
+
     setLoading(false);
   };
 
@@ -121,7 +110,7 @@ const Register = () => {
               Zpět
             </Link>
           ) : (
-            <button 
+            <button
               onClick={handleBack}
               className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
@@ -133,16 +122,14 @@ const Register = () => {
 
         <div className="mb-6">
           <img src={logoDark} alt="ESKO.cc" className="h-6 mb-6" />
-          <RegistrationSteps currentStep={step} totalSteps={3} />
+          <RegistrationSteps currentStep={step} totalSteps={2} />
           <h1 className="text-2xl font-semibold mb-2">
             {step === 1 && "Registrace"}
-            {step === 2 && "Strava"}
-            {step === 3 && "Podmínky"}
+            {step === 2 && "Podmínky"}
           </h1>
           <p className="text-sm text-muted-foreground">
             {step === 1 && "Staň se členem ESKO.cc"}
-            {step === 2 && "Propoj svůj sportovní profil"}
-            {step === 3 && "Poslední krok před odesláním"}
+            {step === 2 && "Poslední krok před odesláním"}
           </p>
         </div>
 
@@ -168,22 +155,15 @@ const Register = () => {
           )}
 
           {step === 2 && (
-            <StravaConnectStep
-              onConnect={handleStravaConnect}
-              onSkip={handleStravaSkip}
-            />
-          )}
-
-          {step === 3 && (
             <div className="space-y-6">
               <TermsAndConditions
                 accepted={termsAccepted}
                 onAcceptedChange={setTermsAccepted}
               />
-              <Button 
-                type="submit" 
-                variant="apple" 
-                className="w-full h-12" 
+              <Button
+                type="submit"
+                variant="apple"
+                className="w-full h-12"
                 disabled={loading || !termsAccepted}
               >
                 {loading ? "Registrace..." : "Zaregistrovat se"}
