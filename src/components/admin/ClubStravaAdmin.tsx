@@ -64,7 +64,12 @@ interface Credentials {
 const IGNORE_VALUE = "__ignore__";
 const NONE_VALUE = "__none__";
 
-export const ClubStravaAdmin = () => {
+interface ClubStravaAdminProps {
+  preselectedAthleteKey?: string | null;
+  onAthleteSelected?: () => void;
+}
+
+export const ClubStravaAdmin = ({ preselectedAthleteKey, onAthleteSelected }: ClubStravaAdminProps) => {
   const [creds, setCreds] = useState<Credentials | null>(null);
   const [activities, setActivities] = useState<ClubActivity[]>([]);
   const [athletes, setAthletes] = useState<AthleteRow[]>([]);
