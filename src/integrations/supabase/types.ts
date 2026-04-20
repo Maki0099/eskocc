@@ -930,6 +930,9 @@ export type Database = {
           database: string
           jobid: number
           jobname: string
+          last_run_at: string
+          last_run_duration_ms: number
+          last_run_status: string
           nodename: string
           nodeport: number
           schedule: string
