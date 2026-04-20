@@ -8,7 +8,7 @@ import { useParallax } from "@/hooks/useParallax";
 import { useAuth } from "@/contexts/AuthContext";
 import { ROUTES } from "@/lib/routes";
 import { useCountUp } from "@/hooks/useCountUp";
-import { useUserStats } from "@/hooks/useUserStats";
+import { useClubStats, formatStatNumber } from "@/hooks/useClubStats";
 const HeroSection = () => {
   const {
     ref: parallaxRef,
@@ -19,12 +19,11 @@ const HeroSection = () => {
   const {
     user
   } = useAuth();
-  const {
-    ytdDistance
-  } = useUserStats();
+  const { stats } = useClubStats();
+  const clubYtdKm = stats?.ytd_km ?? 0;
   const {
     count: animatedDistance
-  } = useCountUp(ytdDistance, {
+  } = useCountUp(clubYtdKm, {
     duration: 2500
   });
   return <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
@@ -57,8 +56,8 @@ const HeroSection = () => {
             — Eddy Merckx
           </p>
 
-          {user && ytdDistance !== null && <p className="text-3xl font-bold mb-6 opacity-0 animate-fade-up animation-delay-300 text-muted-foreground">
-              <span className="tabular-nums">{animatedDistance.toLocaleString('cs-CZ')}</span> km letos
+          {stats && stats.ytd_km > 0 && <p className="text-3xl font-bold mb-6 opacity-0 animate-fade-up animation-delay-300 text-muted-foreground">
+              <span className="tabular-nums">{formatStatNumber(animatedDistance)}</span> km najezdil klub letos
             </p>}
 
           <p className="text-lg text-muted-foreground mb-10 max-w-xl mx-auto opacity-0 animate-fade-up animation-delay-300">
