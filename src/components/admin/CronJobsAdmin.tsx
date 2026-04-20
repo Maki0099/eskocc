@@ -24,7 +24,53 @@ interface CronJob {
   username: string;
   active: boolean;
   jobname: string | null;
+  last_run_at: string | null;
+  last_run_status: string | null;
+  last_run_duration_ms: number | null;
 }
+
+const formatRelativeTime = (iso: string | null): string => {
+  if (!iso) return "—";
+  const diff = Date.now() - new Date(iso).getTime();
+  const min = Math.floor(diff / 60000);
+  if (min < 1) return "před chvílí";
+  if (min < 60) return `před ${min} min`;
+  const h = Math.floor(min / 60);
+  if (h < 24) return `před ${h} h`;
+  const d = Math.floor(h / 24);
+  return `před ${d} dny`;
+};
+
+const formatDateTime = (iso: string | null): string => {
+  if (!iso) return "";
+  return new Date(iso).toLocaleString("cs-CZ", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+const statusVariant = (status: string | null): "default" | "secondary" | "destructive" | "outline" => {
+  if (!status) return "outline";
+  const s = status.toLowerCase();
+  if (s === "succeeded") return "default";
+  if (s === "failed") return "destructive";
+  if (s === "running" || s === "starting") return "secondary";
+  return "outline";
+};
+
+const statusLabel = (status: string | null): string => {
+  if (!status) return "Nespuštěno";
+  const map: Record<string, string> = {
+    succeeded: "Úspěch",
+    failed: "Chyba",
+    running: "Běží",
+    starting: "Startuje",
+  };
+  return map[status.toLowerCase()] || status;
+};
 
 const CronJobsAdmin = () => {
   const [jobs, setJobs] = useState<CronJob[]>([]);
@@ -131,7 +177,8 @@ const CronJobsAdmin = () => {
                     <TableHead>Název</TableHead>
                     <TableHead>Plán</TableHead>
                     <TableHead>Stav</TableHead>
-                    <TableHead>Příkaz</TableHead>
+                    <TableHead>Poslední spuštění</TableHead>
+                    <TableHead>Výsledek</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -144,19 +191,32 @@ const CronJobsAdmin = () => {
                         <code className="text-xs bg-muted px-2 py-1 rounded">
                           {job.schedule}
                         </code>
-                        <span className="text-muted-foreground text-sm ml-2">
-                          ({formatSchedule(job.schedule)})
-                        </span>
+                        <div className="text-muted-foreground text-xs mt-1">
+                          {formatSchedule(job.schedule)}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Badge variant={job.active ? "default" : "secondary"}>
                           {job.active ? "Aktivní" : "Neaktivní"}
                         </Badge>
                       </TableCell>
-                      <TableCell className="max-w-xs">
-                        <code className="text-xs text-muted-foreground truncate block">
-                          {job.command.substring(0, 100)}...
-                        </code>
+                      <TableCell>
+                        {job.last_run_at ? (
+                          <div>
+                            <div className="text-sm">{formatRelativeTime(job.last_run_at)}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {formatDateTime(job.last_run_at)}
+                              {job.last_run_duration_ms != null && ` · ${job.last_run_duration_ms} ms`}
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={statusVariant(job.last_run_status)}>
+                          {statusLabel(job.last_run_status)}
+                        </Badge>
                       </TableCell>
                     </TableRow>
                   ))}
