@@ -45,9 +45,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { activity_id, user_id } = await req.json();
-    if (!activity_id) {
-      return new Response(JSON.stringify({ error: "activity_id required" }), {
+    const { athlete_key, user_id, ignored } = await req.json();
+    if (!athlete_key) {
+      return new Response(JSON.stringify({ error: "athlete_key required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -58,17 +58,49 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Update activity match
-    const { error: upErr } = await adminSupa
+    // 1. Load mapping (need firstname + lastname_initial for activity update)
+    const { data: mapping, error: mapErr } = await adminSupa
+      .from("club_athlete_mappings")
+      .select("*")
+      .eq("athlete_key", athlete_key)
+      .maybeSingle();
+
+    if (mapErr) throw mapErr;
+    if (!mapping) {
+      return new Response(JSON.stringify({ error: "Athlete mapping not found" }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const previousUserId = mapping.matched_user_id as string | null;
+    const newUserId: string | null = ignored ? null : (user_id || null);
+
+    // 2. Update mapping
+    const { error: updMapErr } = await adminSupa
+      .from("club_athlete_mappings")
+      .update({
+        matched_user_id: newUserId,
+        ignored: !!ignored,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("athlete_key", athlete_key);
+
+    if (updMapErr) throw updMapErr;
+
+    // 3. Bulk update all club_activities for this athlete
+    const { error: bulkErr } = await adminSupa
       .from("club_activities")
-      .update({ matched_user_id: user_id || null })
-      .eq("id", activity_id);
+      .update({ matched_user_id: newUserId })
+      .eq("athlete_firstname", mapping.athlete_firstname)
+      .eq("athlete_lastname_initial", mapping.athlete_lastname_initial || "");
 
-    if (upErr) throw upErr;
+    if (bulkErr) throw bulkErr;
 
-    // Recalc YTD for affected user(s)
+    // 4. Recalc YTD for both old and new user
     const usersToRecalc = new Set<string>();
-    if (user_id) usersToRecalc.add(user_id);
+    if (previousUserId) usersToRecalc.add(previousUserId);
+    if (newUserId) usersToRecalc.add(newUserId);
 
     const year = new Date().getFullYear();
     const yearStart = new Date(year, 0, 1).toISOString();
@@ -81,22 +113,23 @@ Deno.serve(async (req) => {
         .eq("matched_user_id", uid)
         .gte("activity_date", yearStart);
 
-      const dist = (rows || []).reduce((s, r) => s + (r.distance_m || 0), 0);
+      const distM = (rows || []).reduce((s, r) => s + (r.distance_m || 0), 0);
       const count = (rows || []).length;
 
       await adminSupa
         .from("profiles")
         .update({
-          strava_ytd_distance: Math.round(dist),
+          strava_ytd_distance: Math.round(distM / 1000),
           strava_ytd_count: count,
           strava_stats_cached_at: cachedAt,
         })
         .eq("id", uid);
     }
 
-    return new Response(JSON.stringify({ success: true }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ success: true, recalculated_users: usersToRecalc.size }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   } catch (err) {
     return new Response(JSON.stringify({ error: (err as Error).message }), {
       status: 500,
