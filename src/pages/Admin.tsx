@@ -233,7 +233,7 @@ const Admin = () => {
             </div>
           </div>
 
-          <Tabs defaultValue="users" className="space-y-6">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             <TabsList className="flex-wrap">
               <TabsTrigger value="users" className="gap-2">
                 <Users className="w-4 h-4" />
