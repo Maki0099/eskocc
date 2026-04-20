@@ -5,6 +5,11 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Base64URL (no padding) so it survives URL params.
+function b64urlEncode(s: string): string {
+  return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -33,7 +38,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Verify admin role
     const { data: roleCheck } = await supabase
       .from("user_roles")
       .select("role")
@@ -50,6 +54,7 @@ Deno.serve(async (req) => {
 
     const url = new URL(req.url);
     const redirectUri = url.searchParams.get("redirect_uri");
+    const returnTo = url.searchParams.get("return_to") || "";
     if (!redirectUri) {
       return new Response(JSON.stringify({ error: "redirect_uri required" }), {
         status: 400,
@@ -58,7 +63,8 @@ Deno.serve(async (req) => {
     }
 
     const clientId = Deno.env.get("STRAVA_CLIENT_ID");
-    const state = `club_admin:${user.id}`;
+    // State: club_admin:<userId>:<base64url(returnTo)>
+    const state = `club_admin:${user.id}:${returnTo ? b64urlEncode(returnTo) : ""}`;
     const authUrl = `https://www.strava.com/oauth/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&scope=read,activity:read,profile:read_all&state=${encodeURIComponent(state)}&approval_prompt=force`;
 
     return new Response(JSON.stringify({ url: authUrl }), {
