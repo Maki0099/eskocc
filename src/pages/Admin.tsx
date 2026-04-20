@@ -403,7 +403,16 @@ const Admin = () => {
                                   <Tooltip>
                                     <TooltipTrigger asChild>
                                       {user.clubAthlete ? (
-                                        <Badge variant="secondary" className="gap-1 bg-primary/10 text-primary hover:bg-primary/20 border-primary/20">
+                                        <Badge 
+                                          variant="secondary" 
+                                          className="gap-1 bg-primary/10 text-primary hover:bg-primary/20 border-primary/20 cursor-pointer"
+                                          onClick={() => {
+                                            if (user.clubAthlete?.athleteKey) {
+                                              setPreselectedAthleteKey(user.clubAthlete.athleteKey);
+                                              setActiveTab("club-strava");
+                                            }
+                                          }}
+                                        >
                                           <Activity className="w-3 h-3" />
                                           {user.clubAthlete.firstname}
                                           {user.clubAthlete.lastnameInitial ? ` ${user.clubAthlete.lastnameInitial}.` : ""}
@@ -416,7 +425,7 @@ const Admin = () => {
                                     </TooltipTrigger>
                                     <TooltipContent>
                                       {user.clubAthlete
-                                        ? "Propojeno se Strava klub atletem"
+                                        ? "Kliknutím přejdi na Strava klub se předvybraným atletem"
                                         : "Uživatel není napárovaný na žádného atleta v klubu"}
                                     </TooltipContent>
                                   </Tooltip>
