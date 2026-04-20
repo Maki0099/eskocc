@@ -264,6 +264,54 @@ export type Database = {
         }
         Relationships: []
       }
+      club_athlete_mappings: {
+        Row: {
+          athlete_firstname: string
+          athlete_key: string
+          athlete_lastname_initial: string | null
+          created_at: string
+          id: string
+          ignored: boolean
+          matched_user_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          athlete_firstname: string
+          athlete_key: string
+          athlete_lastname_initial?: string | null
+          created_at?: string
+          id?: string
+          ignored?: boolean
+          matched_user_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          athlete_firstname?: string
+          athlete_key?: string
+          athlete_lastname_initial?: string | null
+          created_at?: string
+          id?: string
+          ignored?: boolean
+          matched_user_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_athlete_mappings_matched_user_id_fkey"
+            columns: ["matched_user_id"]
+            isOneToOne: false
+            referencedRelation: "member_profiles_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_athlete_mappings_matched_user_id_fkey"
+            columns: ["matched_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_participants: {
         Row: {
           created_at: string
