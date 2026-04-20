@@ -538,6 +538,76 @@ export const ClubStravaAdmin = ({ preselectedAthleteKey, onAthleteSelected }: Cl
           )}
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Historie syncu</CardTitle>
+          <CardDescription>
+            Posledních 10 běhů (manuální i automatické). Pomáhá poznat, kdy a proč sync selhal.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : syncLogs.length === 0 ? (
+            <p className="text-center text-muted-foreground py-8">Zatím žádné záznamy.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Spuštěno</TableHead>
+                    <TableHead>Stav</TableHead>
+                    <TableHead className="text-right">Načteno</TableHead>
+                    <TableHead className="text-right">Nové akt.</TableHead>
+                    <TableHead className="text-right">Nový atleti</TableHead>
+                    <TableHead className="text-right">YTD upd/zero</TableHead>
+                    <TableHead>Spustil</TableHead>
+                    <TableHead>Chyba</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {syncLogs.map((log) => {
+                    const statusVariant: "default" | "secondary" | "destructive" | "outline" =
+                      log.status === "success"
+                        ? "outline"
+                        : log.status === "running"
+                        ? "secondary"
+                        : "destructive";
+                    return (
+                      <TableRow key={log.id}>
+                        <TableCell className="text-xs whitespace-nowrap">
+                          {format(new Date(log.started_at), "d. M. HH:mm:ss", { locale: cs })}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={statusVariant}>{log.status}</Badge>
+                        </TableCell>
+                        <TableCell className="text-right">{log.fetched_count}</TableCell>
+                        <TableCell className="text-right">{log.new_activities}</TableCell>
+                        <TableCell className="text-right">{log.new_athletes}</TableCell>
+                        <TableCell className="text-right text-xs">
+                          {log.ytd_users_updated} / {log.ytd_users_zeroed}
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {log.triggered_by || "—"}
+                        </TableCell>
+                        <TableCell
+                          className="text-xs text-destructive max-w-[280px] truncate"
+                          title={log.error_message || ""}
+                        >
+                          {log.error_message || "—"}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };
