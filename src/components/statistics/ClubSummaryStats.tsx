@@ -1,19 +1,10 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { 
-  Users, 
-  UserCheck, 
-  Link2, 
-  TrendingUp, 
-  Trophy,
-  Activity
-} from "lucide-react";
+import { Users, TrendingUp, Trophy, Activity } from "lucide-react";
 
 interface MemberStats {
   id: string;
-  strava_id: string | null;
   ytd_distance: number;
   target: number;
-  is_strava_club_member: boolean;
 }
 
 interface ClubSummaryStatsProps {
@@ -23,14 +14,11 @@ interface ClubSummaryStatsProps {
 
 const ClubSummaryStats = ({ members, clubTotal }: ClubSummaryStatsProps) => {
   const totalMembers = members.length;
-  const membersWithStrava = members.filter(m => m.strava_id).length;
-  const stravaClubMembers = members.filter(m => m.is_strava_club_member).length;
   const membersWithDistance = members.filter(m => m.ytd_distance > 0);
-  const averageDistance = membersWithDistance.length > 0 
-    ? Math.round(clubTotal / membersWithDistance.length) 
+  const averageDistance = membersWithDistance.length > 0
+    ? Math.round(clubTotal / membersWithDistance.length)
     : 0;
   const membersCompletedGoal = members.filter(m => m.target > 0 && m.ytd_distance >= m.target).length;
-  const totalRides = members.reduce((sum, m) => sum + (m.ytd_distance > 0 ? 1 : 0), 0);
 
   const stats = [
     {
@@ -39,22 +27,6 @@ const ClubSummaryStats = ({ members, clubTotal }: ClubSummaryStatsProps) => {
       value: totalMembers,
       color: "text-primary",
       bgColor: "bg-primary/10"
-    },
-    {
-      icon: Link2,
-      label: "Propojených Strava účtů",
-      value: `${membersWithStrava} / ${totalMembers}`,
-      subtext: `${totalMembers > 0 ? Math.round((membersWithStrava / totalMembers) * 100) : 0}%`,
-      color: "text-[#FC4C02]",
-      bgColor: "bg-[#FC4C02]/10"
-    },
-    {
-      icon: UserCheck,
-      label: "Členů Strava klubu",
-      value: `${stravaClubMembers} / ${totalMembers}`,
-      subtext: `${totalMembers > 0 ? Math.round((stravaClubMembers / totalMembers) * 100) : 0}%`,
-      color: "text-[#FC4C02]",
-      bgColor: "bg-[#FC4C02]/10"
     },
     {
       icon: TrendingUp,
@@ -89,10 +61,10 @@ const ClubSummaryStats = ({ members, clubTotal }: ClubSummaryStatsProps) => {
           <Users className="w-5 h-5 text-primary" />
           Souhrnné statistiky klubu
         </h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {stats.map((stat, index) => (
-            <div 
-              key={stat.label} 
+            <div
+              key={stat.label}
               className="text-center p-4 rounded-xl bg-muted/50 animate-fade-up"
               style={{ animationDelay: `${index * 50}ms` }}
             >
