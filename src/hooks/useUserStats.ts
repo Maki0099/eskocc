@@ -7,8 +7,7 @@ interface UserProfile {
   full_name: string | null;
   nickname: string | null;
   avatar_url: string | null;
-  strava_id: string | null;
-  is_strava_club_member: boolean | null;
+  club_match_name: string | null;
 }
 
 interface UserStats {
@@ -40,10 +39,9 @@ export const useUserStats = (): UserStats => {
       setRefreshing(true);
     }
 
-    // Fetch profile with stats
     const { data: profileData } = await supabase
       .from('profiles')
-      .select('full_name, nickname, avatar_url, strava_id, is_strava_club_member, strava_ytd_distance, strava_ytd_count')
+      .select('full_name, nickname, avatar_url, club_match_name, strava_ytd_distance, strava_ytd_count')
       .eq('id', user.id)
       .maybeSingle();
 
@@ -54,12 +52,10 @@ export const useUserStats = (): UserStats => {
         full_name: profileData.full_name,
         nickname: profileData.nickname,
         avatar_url: profileData.avatar_url,
-        strava_id: profileData.strava_id,
-        is_strava_club_member: profileData.is_strava_club_member,
+        club_match_name: profileData.club_match_name,
       });
     }
 
-    // Fetch role
     const { data: roleData } = await supabase
       .from("user_roles")
       .select("role")
