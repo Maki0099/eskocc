@@ -1,0 +1,1 @@
+UPDATE public.profiles SET strava_ytd_distance = ROUND(strava_ytd_distance / 1000.0)::int WHERE strava_ytd_distance > 0;

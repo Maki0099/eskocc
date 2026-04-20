@@ -207,7 +207,7 @@ Deno.serve(async (req) => {
       await supabase
         .from("profiles")
         .update({
-          strava_ytd_distance: Math.round(t.dist),
+          strava_ytd_distance: Math.round(t.dist / 1000),
           strava_ytd_count: t.count,
           strava_stats_cached_at: cachedAt,
         })
