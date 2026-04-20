@@ -1,13 +1,9 @@
 import { Link } from "react-router-dom";
-import { useTheme } from "next-themes";
 import logoRoundDark from "@/assets/logo-round-dark.png";
 import logoRound from "@/assets/logo-round.png";
 import { ROUTES } from "@/lib/routes";
 
 const Footer = () => {
-  const { resolvedTheme } = useTheme();
-  const stravaWidgetUrl = `https://www.strava.com/clubs/1860524/latest-rides/66a685c4f0e28a76273a2be113608f98a113075b?show_rides=false${resolvedTheme === 'dark' ? '&style=dark' : ''}`;
-  
   return (
     <footer className="border-t border-border/50 bg-card">
       <div className="container mx-auto py-8 md:py-12 px-4">
@@ -68,26 +64,13 @@ const Footer = () => {
           {/* Social */}
           <div className="col-span-2 md:col-span-1 text-center md:text-left mt-4 md:mt-0">
             <h4 className="text-sm font-medium mb-3 md:mb-4">Sledujte nás</h4>
-            <div className="flex gap-4 mb-4 justify-center md:justify-start">
+            <div className="flex gap-4 justify-center md:justify-start">
               <a href="https://www.facebook.com/eskokafe" target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Facebook
               </a>
               <a href="https://www.strava.com/clubs/1860524" target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Strava
               </a>
-            </div>
-            <div className="flex justify-center md:justify-start">
-              <iframe 
-                key={resolvedTheme}
-                allowTransparency={true}
-                frameBorder="0" 
-                height="160" 
-                scrolling="no" 
-                src={stravaWidgetUrl}
-                width="300"
-                className="rounded-lg max-w-full"
-                title="Strava Club Widget"
-              />
             </div>
           </div>
         </div>
