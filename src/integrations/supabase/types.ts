@@ -952,6 +952,7 @@ export type Database = {
           strava_ytd_distance: number
         }[]
       }
+      get_public_club_stats: { Args: never; Returns: Json }
       get_top_members: { Args: { limit_count?: number }; Returns: Json }
       has_role: {
         Args: {
