@@ -61,7 +61,7 @@ interface UserWithRole {
   avatar_url: string | null;
   created_at: string;
   role: AppRole;
-  clubAthlete: { firstname: string; lastnameInitial: string | null } | null;
+  clubAthlete: { firstname: string; lastnameInitial: string | null; athleteKey?: string } | null;
 }
 
 const Admin = () => {
@@ -73,6 +73,8 @@ const Admin = () => {
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
   const [resettingPasswordUserId, setResettingPasswordUserId] = useState<string | null>(null);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("users");
+  const [preselectedAthleteKey, setPreselectedAthleteKey] = useState<string | null>(null);
 
   useEffect(() => {
     if (!roleLoading && !isAdmin) {
@@ -98,7 +100,7 @@ const Admin = () => {
 
       const { data: mappings, error: mappingsError } = await supabase
         .from("club_athlete_mappings")
-        .select("matched_user_id, athlete_firstname, athlete_lastname_initial, ignored")
+        .select("matched_user_id, athlete_key, athlete_firstname, athlete_lastname_initial, ignored")
         .not("matched_user_id", "is", null)
         .eq("ignored", false);
 
@@ -107,7 +109,7 @@ const Admin = () => {
       const mappingByUser = new Map(
         (mappings || []).map((m) => [
           m.matched_user_id as string,
-          { firstname: m.athlete_firstname, lastnameInitial: m.athlete_lastname_initial },
+          { athleteKey: m.athlete_key, firstname: m.athlete_firstname, lastnameInitial: m.athlete_lastname_initial },
         ])
       );
 
@@ -231,7 +233,7 @@ const Admin = () => {
             </div>
           </div>
 
-          <Tabs defaultValue="users" className="space-y-6">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             <TabsList className="flex-wrap">
               <TabsTrigger value="users" className="gap-2">
                 <Users className="w-4 h-4" />
@@ -401,7 +403,16 @@ const Admin = () => {
                                   <Tooltip>
                                     <TooltipTrigger asChild>
                                       {user.clubAthlete ? (
-                                        <Badge variant="secondary" className="gap-1 bg-primary/10 text-primary hover:bg-primary/20 border-primary/20">
+                                        <Badge 
+                                          variant="secondary" 
+                                          className="gap-1 bg-primary/10 text-primary hover:bg-primary/20 border-primary/20 cursor-pointer"
+                                          onClick={() => {
+                                            if (user.clubAthlete?.athleteKey) {
+                                              setPreselectedAthleteKey(user.clubAthlete.athleteKey);
+                                              setActiveTab("club-strava");
+                                            }
+                                          }}
+                                        >
                                           <Activity className="w-3 h-3" />
                                           {user.clubAthlete.firstname}
                                           {user.clubAthlete.lastnameInitial ? ` ${user.clubAthlete.lastnameInitial}.` : ""}
@@ -414,7 +425,7 @@ const Admin = () => {
                                     </TooltipTrigger>
                                     <TooltipContent>
                                       {user.clubAthlete
-                                        ? "Propojeno se Strava klub atletem"
+                                        ? "Kliknutím přejdi na Strava klub se předvybraným atletem"
                                         : "Uživatel není napárovaný na žádného atleta v klubu"}
                                     </TooltipContent>
                                   </Tooltip>
@@ -541,7 +552,7 @@ const Admin = () => {
             </TabsContent>
 
             <TabsContent value="club-strava">
-              <ClubStravaAdmin />
+              <ClubStravaAdmin preselectedAthleteKey={preselectedAthleteKey} onAthleteSelected={() => setPreselectedAthleteKey(null)} />
             </TabsContent>
           </Tabs>
         </div>

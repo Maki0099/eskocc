@@ -64,7 +64,12 @@ interface Credentials {
 const IGNORE_VALUE = "__ignore__";
 const NONE_VALUE = "__none__";
 
-export const ClubStravaAdmin = () => {
+interface ClubStravaAdminProps {
+  preselectedAthleteKey?: string | null;
+  onAthleteSelected?: () => void;
+}
+
+export const ClubStravaAdmin = ({ preselectedAthleteKey, onAthleteSelected }: ClubStravaAdminProps) => {
   const [creds, setCreds] = useState<Credentials | null>(null);
   const [activities, setActivities] = useState<ClubActivity[]>([]);
   const [athletes, setAthletes] = useState<AthleteRow[]>([]);
@@ -73,6 +78,7 @@ export const ClubStravaAdmin = () => {
   const [syncing, setSyncing] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [savingKey, setSavingKey] = useState<string | null>(null);
+  const [highlightedAthleteKey, setHighlightedAthleteKey] = useState<string | null>(null);
 
   const [lastSyncAt, setLastSyncAt] = useState<string | null>(null);
 
@@ -143,6 +149,20 @@ export const ClubStravaAdmin = () => {
       window.history.replaceState({}, "", "/admin");
     }
   }, []);
+
+  useEffect(() => {
+    if (preselectedAthleteKey) {
+      setHighlightedAthleteKey(preselectedAthleteKey);
+      // Scroll to the highlighted row after a short delay to allow rendering
+      setTimeout(() => {
+        const element = document.getElementById(`athlete-row-${preselectedAthleteKey}`);
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+        onAthleteSelected?.();
+      }, 100);
+    }
+  }, [preselectedAthleteKey, onAthleteSelected]);
 
   const handleConnect = async () => {
     setConnecting(true);
@@ -368,7 +388,11 @@ export const ClubStravaAdmin = () => {
                 </TableHeader>
                 <TableBody>
                   {athletes.map((a) => (
-                    <TableRow key={a.athlete_key}>
+                    <TableRow 
+                      key={a.athlete_key} 
+                      id={`athlete-row-${a.athlete_key}`}
+                      className={highlightedAthleteKey === a.athlete_key ? "bg-primary/10 ring-1 ring-primary/30" : ""}
+                    >
                       <TableCell className="font-medium">
                         {a.athlete_firstname} {a.athlete_lastname_initial}
                       </TableCell>
