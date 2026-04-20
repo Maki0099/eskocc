@@ -150,6 +150,20 @@ export const ClubStravaAdmin = ({ preselectedAthleteKey, onAthleteSelected }: Cl
     }
   }, []);
 
+  useEffect(() => {
+    if (preselectedAthleteKey) {
+      setHighlightedAthleteKey(preselectedAthleteKey);
+      // Scroll to the highlighted row after a short delay to allow rendering
+      setTimeout(() => {
+        const element = document.getElementById(`athlete-row-${preselectedAthleteKey}`);
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+        onAthleteSelected?.();
+      }, 100);
+    }
+  }, [preselectedAthleteKey, onAthleteSelected]);
+
   const handleConnect = async () => {
     setConnecting(true);
     try {
