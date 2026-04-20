@@ -960,6 +960,13 @@ export type Database = {
         }
         Returns: boolean
       }
+      recalc_club_ytd: {
+        Args: never
+        Returns: {
+          users_updated: number
+          users_zeroed: number
+        }[]
+      }
     }
     Enums: {
       app_role: "pending" | "member" | "active_member" | "admin"
