@@ -59,6 +59,22 @@ interface Credentials {
   athlete_id: string | null;
   expires_at: string;
   updated_at: string;
+  needs_reauth: boolean | null;
+  last_error: string | null;
+}
+
+interface SyncLogRow {
+  id: string;
+  started_at: string;
+  finished_at: string | null;
+  fetched_count: number;
+  new_activities: number;
+  new_athletes: number;
+  ytd_users_updated: number;
+  ytd_users_zeroed: number;
+  status: string;
+  error_message: string | null;
+  triggered_by: string | null;
 }
 
 const IGNORE_VALUE = "__ignore__";
