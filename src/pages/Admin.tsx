@@ -350,23 +350,6 @@ const Admin = () => {
                               <TableCell className="text-muted-foreground">
                                 {user.email}
                               </TableCell>
-                              <TableCell className="text-center">
-                                {user.strava_id ? (
-                                  <div className="flex items-center justify-center gap-1.5">
-                                    <Link2 className="w-4 h-4 text-green-500" />
-                                    <span className="text-xs text-muted-foreground">{user.strava_id}</span>
-                                  </div>
-                                ) : (
-                                  <Link2Off className="w-4 h-4 text-muted-foreground/50 mx-auto" />
-                                )}
-                              </TableCell>
-                              <TableCell className="text-center">
-                                {user.is_strava_club_member ? (
-                                  <Trophy className="w-4 h-4 text-primary mx-auto" />
-                                ) : (
-                                  <span className="text-muted-foreground/50">—</span>
-                                )}
-                              </TableCell>
                               <TableCell className="text-muted-foreground">
                                 {format(new Date(user.created_at), "d. M. yyyy", {
                                   locale: cs,
