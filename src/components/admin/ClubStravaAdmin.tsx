@@ -97,12 +97,16 @@ export const ClubStravaAdmin = ({ preselectedAthleteKey, onAthleteSelected }: Cl
   const [highlightedAthleteKey, setHighlightedAthleteKey] = useState<string | null>(null);
 
   const [lastSyncAt, setLastSyncAt] = useState<string | null>(null);
+  const [syncLogs, setSyncLogs] = useState<SyncLogRow[]>([]);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [credsRes, actsRes, mapRes, profilesRes, lastSyncRes] = await Promise.all([
-        supabase.from("club_api_credentials").select("athlete_id, expires_at, updated_at").maybeSingle(),
+      const [credsRes, actsRes, mapRes, profilesRes, lastSyncRes, logsRes] = await Promise.all([
+        supabase
+          .from("club_api_credentials")
+          .select("athlete_id, expires_at, updated_at, needs_reauth, last_error")
+          .maybeSingle(),
         supabase
           .from("club_activities")
           .select("*")
@@ -116,6 +120,11 @@ export const ClubStravaAdmin = ({ preselectedAthleteKey, onAthleteSelected }: Cl
           .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle(),
+        supabase
+          .from("club_sync_log")
+          .select("*")
+          .order("started_at", { ascending: false })
+          .limit(10),
       ]);
 
       setCreds(credsRes.data);
@@ -123,6 +132,7 @@ export const ClubStravaAdmin = ({ preselectedAthleteKey, onAthleteSelected }: Cl
       setActivities(acts);
       setMembers(profilesRes.data || []);
       setLastSyncAt(lastSyncRes.data?.created_at || null);
+      setSyncLogs((logsRes.data || []) as SyncLogRow[]);
 
       // Aggregate per-athlete stats from activities
       const stats = new Map<string, { count: number; distM: number }>();
@@ -185,10 +195,11 @@ export const ClubStravaAdmin = ({ preselectedAthleteKey, onAthleteSelected }: Cl
     try {
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
       const redirectUri = `https://${projectId}.supabase.co/functions/v1/club-strava-callback`;
+      const returnTo = window.location.origin;
 
       const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/club-strava-auth?redirect_uri=${encodeURIComponent(redirectUri)}`,
+        `https://${projectId}.supabase.co/functions/v1/club-strava-auth?redirect_uri=${encodeURIComponent(redirectUri)}&return_to=${encodeURIComponent(returnTo)}`,
         { headers: { Authorization: `Bearer ${session?.access_token}` } }
       );
       const json = await res.json();
@@ -247,6 +258,7 @@ export const ClubStravaAdmin = ({ preselectedAthleteKey, onAthleteSelected }: Cl
   };
 
   const isConnected = !!creds;
+  const needsReauth = !!creds?.needs_reauth;
   const unassigned = athletes.filter((a) => !a.matched_user_id && !a.ignored).length;
 
   const hoursSinceSync = lastSyncAt
@@ -254,7 +266,7 @@ export const ClubStravaAdmin = ({ preselectedAthleteKey, onAthleteSelected }: Cl
     : null;
   const tokenExpired = creds ? new Date(creds.expires_at).getTime() < Date.now() : false;
   const syncStale = hoursSinceSync === null || hoursSinceSync > 24;
-  const showStaleAlert = !loading && (syncStale || tokenExpired);
+  const showStaleAlert = !loading && !needsReauth && (syncStale || tokenExpired);
 
   const selectValue = (a: AthleteRow): string => {
     if (a.ignored) return IGNORE_VALUE;
