@@ -65,9 +65,6 @@ const Footer = () => {
           <div className="col-span-2 md:col-span-1 text-center md:text-left mt-4 md:mt-0">
             <h4 className="text-sm font-medium mb-3 md:mb-4">Sledujte nás</h4>
             <div className="flex gap-4 justify-center md:justify-start">
-              <a href="https://www.facebook.com/eskokafe" target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                Facebook
-              </a>
               <a href="https://www.strava.com/clubs/1860524" target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Strava
               </a>
