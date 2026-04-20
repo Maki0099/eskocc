@@ -552,7 +552,7 @@ const Admin = () => {
             </TabsContent>
 
             <TabsContent value="club-strava">
-              <ClubStravaAdmin />
+              <ClubStravaAdmin preselectedAthleteKey={preselectedAthleteKey} onAthleteSelected={() => setPreselectedAthleteKey(null)} />
             </TabsContent>
           </Tabs>
         </div>
