@@ -78,6 +78,7 @@ export const ClubStravaAdmin = ({ preselectedAthleteKey, onAthleteSelected }: Cl
   const [syncing, setSyncing] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [savingKey, setSavingKey] = useState<string | null>(null);
+  const [highlightedAthleteKey, setHighlightedAthleteKey] = useState<string | null>(null);
 
   const [lastSyncAt, setLastSyncAt] = useState<string | null>(null);
 
