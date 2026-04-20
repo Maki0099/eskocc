@@ -338,7 +338,7 @@ export const ClubStravaAdmin = ({ preselectedAthleteKey, onAthleteSelected }: Cl
             <div>
               <p className="text-sm font-medium">Manuální sync</p>
               <p className="text-xs text-muted-foreground">
-                Cron běží automaticky každou hodinu. Tlačítko spustí sync ihned.
+                Cron běží automaticky každé 4 hodiny. Tlačítko spustí sync ihned.
               </p>
             </div>
             <Button onClick={handleSync} disabled={syncing || !isConnected} variant="outline">

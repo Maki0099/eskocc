@@ -97,37 +97,17 @@ Deno.serve(async (req) => {
 
     if (bulkErr) throw bulkErr;
 
-    // 4. Recalc YTD for both old and new user
-    const usersToRecalc = new Set<string>();
-    if (previousUserId) usersToRecalc.add(previousUserId);
-    if (newUserId) usersToRecalc.add(newUserId);
-
-    const year = new Date().getFullYear();
-    const yearStart = new Date(year, 0, 1).toISOString();
-    const cachedAt = new Date().toISOString();
-
-    for (const uid of usersToRecalc) {
-      const { data: rows } = await adminSupa
-        .from("club_activities")
-        .select("distance_m")
-        .eq("matched_user_id", uid)
-        .gte("activity_date", yearStart);
-
-      const distM = (rows || []).reduce((s, r) => s + (r.distance_m || 0), 0);
-      const count = (rows || []).length;
-
-      await adminSupa
-        .from("profiles")
-        .update({
-          strava_ytd_distance: Math.round(distM / 1000),
-          strava_ytd_count: count,
-          strava_stats_cached_at: cachedAt,
-        })
-        .eq("id", uid);
-    }
+    // 4. Atomic batch YTD recalc (handles old user, new user, and zeros members without activities)
+    const { data: recalc, error: recalcErr } = await adminSupa.rpc("recalc_club_ytd");
+    if (recalcErr) throw recalcErr;
+    const recalcRow = Array.isArray(recalc) ? recalc[0] : recalc;
 
     return new Response(
-      JSON.stringify({ success: true, recalculated_users: usersToRecalc.size }),
+      JSON.stringify({
+        success: true,
+        users_updated: recalcRow?.users_updated ?? 0,
+        users_zeroed: recalcRow?.users_zeroed ?? 0,
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
