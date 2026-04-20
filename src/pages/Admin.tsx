@@ -96,11 +96,27 @@ const Admin = () => {
 
       if (rolesError) throw rolesError;
 
+      const { data: mappings, error: mappingsError } = await supabase
+        .from("club_athlete_mappings")
+        .select("matched_user_id, athlete_firstname, athlete_lastname_initial, ignored")
+        .not("matched_user_id", "is", null)
+        .eq("ignored", false);
+
+      if (mappingsError) throw mappingsError;
+
+      const mappingByUser = new Map(
+        (mappings || []).map((m) => [
+          m.matched_user_id as string,
+          { firstname: m.athlete_firstname, lastnameInitial: m.athlete_lastname_initial },
+        ])
+      );
+
       const usersWithRoles: UserWithRole[] = (profiles || []).map((profile) => {
         const userRole = roles?.find((r) => r.user_id === profile.id);
         return {
           ...profile,
           role: (userRole?.role as AppRole) || "pending",
+          clubAthlete: mappingByUser.get(profile.id) || null,
         };
       });
 
