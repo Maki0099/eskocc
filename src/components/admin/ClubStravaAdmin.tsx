@@ -276,6 +276,27 @@ export const ClubStravaAdmin = ({ preselectedAthleteKey, onAthleteSelected }: Cl
 
   return (
     <div className="space-y-6">
+      {needsReauth && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Strava token byl odvolán</AlertTitle>
+          <AlertDescription className="space-y-2">
+            <p>
+              Strava odmítla obnovit token (uživatel pravděpodobně odpojil aplikaci, nebo
+              vypršel refresh token). Sync je zastaven, dokud nebudeš autorizovat znovu.
+            </p>
+            {creds?.last_error && (
+              <p className="text-xs font-mono opacity-80 break-all">
+                Detail: {creds.last_error}
+              </p>
+            )}
+            <Button size="sm" onClick={handleConnect} disabled={connecting}>
+              {connecting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Link2 className="w-4 h-4 mr-2" />}
+              Přepojit
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
       {showStaleAlert && (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
