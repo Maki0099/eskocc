@@ -74,10 +74,12 @@ export const ClubStravaAdmin = () => {
   const [connecting, setConnecting] = useState(false);
   const [savingKey, setSavingKey] = useState<string | null>(null);
 
+  const [lastSyncAt, setLastSyncAt] = useState<string | null>(null);
+
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [credsRes, actsRes, mapRes, profilesRes] = await Promise.all([
+      const [credsRes, actsRes, mapRes, profilesRes, lastSyncRes] = await Promise.all([
         supabase.from("club_api_credentials").select("athlete_id, expires_at, updated_at").maybeSingle(),
         supabase
           .from("club_activities")
@@ -86,12 +88,19 @@ export const ClubStravaAdmin = () => {
           .limit(100),
         supabase.from("club_athlete_mappings").select("*"),
         supabase.from("profiles").select("id, full_name, nickname"),
+        supabase
+          .from("club_activities")
+          .select("created_at")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
       ]);
 
       setCreds(credsRes.data);
       const acts = (actsRes.data || []) as ClubActivity[];
       setActivities(acts);
       setMembers(profilesRes.data || []);
+      setLastSyncAt(lastSyncRes.data?.created_at || null);
 
       // Aggregate per-athlete stats from activities
       const stats = new Map<string, { count: number; distM: number }>();
