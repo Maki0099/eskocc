@@ -324,8 +324,6 @@ const Admin = () => {
                           <TableRow>
                             <TableHead>Uživatel</TableHead>
                             <TableHead>Email</TableHead>
-                            <TableHead className="text-center">Strava</TableHead>
-                            <TableHead className="text-center">Klub</TableHead>
                             <TableHead>Registrace</TableHead>
                             <TableHead>Role</TableHead>
                             <TableHead className="text-right">Akce</TableHead>
