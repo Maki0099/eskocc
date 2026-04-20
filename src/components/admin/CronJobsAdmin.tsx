@@ -24,7 +24,53 @@ interface CronJob {
   username: string;
   active: boolean;
   jobname: string | null;
+  last_run_at: string | null;
+  last_run_status: string | null;
+  last_run_duration_ms: number | null;
 }
+
+const formatRelativeTime = (iso: string | null): string => {
+  if (!iso) return "—";
+  const diff = Date.now() - new Date(iso).getTime();
+  const min = Math.floor(diff / 60000);
+  if (min < 1) return "před chvílí";
+  if (min < 60) return `před ${min} min`;
+  const h = Math.floor(min / 60);
+  if (h < 24) return `před ${h} h`;
+  const d = Math.floor(h / 24);
+  return `před ${d} dny`;
+};
+
+const formatDateTime = (iso: string | null): string => {
+  if (!iso) return "";
+  return new Date(iso).toLocaleString("cs-CZ", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+const statusVariant = (status: string | null): "default" | "secondary" | "destructive" | "outline" => {
+  if (!status) return "outline";
+  const s = status.toLowerCase();
+  if (s === "succeeded") return "default";
+  if (s === "failed") return "destructive";
+  if (s === "running" || s === "starting") return "secondary";
+  return "outline";
+};
+
+const statusLabel = (status: string | null): string => {
+  if (!status) return "Nespuštěno";
+  const map: Record<string, string> = {
+    succeeded: "Úspěch",
+    failed: "Chyba",
+    running: "Běží",
+    starting: "Startuje",
+  };
+  return map[status.toLowerCase()] || status;
+};
 
 const CronJobsAdmin = () => {
   const [jobs, setJobs] = useState<CronJob[]>([]);
