@@ -396,6 +396,30 @@ const Admin = () => {
                                   {ROLE_LABELS[user.role]}
                                 </Badge>
                               </TableCell>
+                              <TableCell className="hidden md:table-cell">
+                                <TooltipProvider delayDuration={200}>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      {user.clubAthlete ? (
+                                        <Badge variant="secondary" className="gap-1 bg-primary/10 text-primary hover:bg-primary/20 border-primary/20">
+                                          <Activity className="w-3 h-3" />
+                                          {user.clubAthlete.firstname}
+                                          {user.clubAthlete.lastnameInitial ? ` ${user.clubAthlete.lastnameInitial}.` : ""}
+                                        </Badge>
+                                      ) : (
+                                        <Badge variant="outline" className="text-muted-foreground">
+                                          Nepropojeno
+                                        </Badge>
+                                      )}
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      {user.clubAthlete
+                                        ? "Propojeno se Strava klub atletem"
+                                        : "Uživatel není napárovaný na žádného atleta v klubu"}
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              </TableCell>
                               <TableCell className="text-right">
                                 <div className="flex items-center justify-end gap-2">
                                   <Button
