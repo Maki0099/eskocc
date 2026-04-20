@@ -483,6 +483,10 @@ const Admin = () => {
             <TabsContent value="ai">
               <AiSettingsAdmin />
             </TabsContent>
+
+            <TabsContent value="club-strava">
+              <ClubStravaAdmin />
+            </TabsContent>
           </Tabs>
         </div>
       </main>
