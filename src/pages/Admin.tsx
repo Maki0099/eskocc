@@ -83,7 +83,7 @@ const Admin = () => {
     try {
       const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
-        .select("id, email, full_name, avatar_url, strava_id, is_strava_club_member, created_at")
+        .select("id, email, full_name, avatar_url, created_at")
         .order("created_at", { ascending: false });
 
       if (profilesError) throw profilesError;
@@ -98,7 +98,6 @@ const Admin = () => {
         const userRole = roles?.find((r) => r.user_id === profile.id);
         return {
           ...profile,
-          is_strava_club_member: profile.is_strava_club_member ?? false,
           role: (userRole?.role as AppRole) || "pending",
         };
       });
