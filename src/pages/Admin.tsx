@@ -58,8 +58,6 @@ interface UserWithRole {
   email: string;
   full_name: string | null;
   avatar_url: string | null;
-  strava_id: string | null;
-  is_strava_club_member: boolean;
   created_at: string;
   role: AppRole;
 }
