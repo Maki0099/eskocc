@@ -58,13 +58,62 @@ function buildAthleteKey(firstname: string, lastInit: string): string {
   return `${firstname.trim().toLowerCase()}|${(lastInit || "").trim().toLowerCase()}`;
 }
 
+// Stable fingerprint without date. Strava Club API doesn't provide activity IDs,
+// so combo (athlete + distance + moving_time + elevation) is the most stable identifier.
+// Two truly identical activities by the same athlete are extremely rare and harmless to dedup.
 function buildFingerprint(
   firstname: string,
   lastInit: string,
-  date: string,
-  distance: number
+  distance: number,
+  movingTime: number,
+  elevation: number,
+  sportType: string
 ): string {
-  return `${firstname.toLowerCase()}|${lastInit.toLowerCase()}|${date.slice(0, 10)}|${Math.round(distance)}`;
+  return [
+    firstname.trim().toLowerCase(),
+    (lastInit || "").trim().toLowerCase(),
+    Math.round(distance),
+    Math.round(movingTime),
+    Math.round(elevation),
+    (sportType || "").toLowerCase(),
+  ].join("|");
+}
+
+// Authorize request: must come either from an authenticated admin user, or
+// from the cron / service role (Authorization: Bearer <service-role-key>).
+async function authorize(req: Request): Promise<{ ok: boolean; reason?: string }> {
+  const authHeader = req.headers.get("Authorization") || "";
+  const token = authHeader.replace(/^Bearer\s+/i, "");
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
+
+  if (!token) return { ok: false, reason: "missing_auth" };
+
+  // Cron / server-to-server: service-role key.
+  if (token === serviceKey) return { ok: true };
+
+  // Otherwise treat as user JWT and require admin role.
+  if (!anonKey) return { ok: false, reason: "server_misconfig" };
+  const userClient = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    anonKey,
+    { global: { headers: { Authorization: authHeader } } }
+  );
+  const { data: { user } } = await userClient.auth.getUser();
+  if (!user) return { ok: false, reason: "invalid_token" };
+
+  const adminSupa = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    serviceKey
+  );
+  const { data: role } = await adminSupa
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", user.id)
+    .eq("role", "admin")
+    .maybeSingle();
+  if (!role) return { ok: false, reason: "not_admin" };
+  return { ok: true };
 }
 
 Deno.serve(async (req) => {
@@ -73,6 +122,14 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const auth = await authorize(req);
+    if (!auth.ok) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized", reason: auth.reason }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
@@ -96,7 +153,6 @@ Deno.serve(async (req) => {
     const accessToken = await refreshIfNeeded(supabase, creds, creds.id);
 
     // 2. Fetch club activities with retry on transient network errors
-    // Strava občas resetuje spojení (ECONNRESET / os error 104) — retry s backoffem.
     const fetchWithRetry = async (url: string, init: RequestInit, maxAttempts = 4): Promise<Response> => {
       let lastErr: unknown;
       for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -104,7 +160,7 @@ Deno.serve(async (req) => {
           return await fetch(url, init);
         } catch (e) {
           lastErr = e;
-          const delay = 500 * Math.pow(2, attempt - 1); // 500, 1000, 2000, 4000 ms
+          const delay = 500 * Math.pow(2, attempt - 1);
           console.warn(`fetch attempt ${attempt}/${maxAttempts} failed: ${(e as Error).message}. Retrying in ${delay}ms`);
           await new Promise((res) => setTimeout(res, delay));
         }
@@ -112,24 +168,20 @@ Deno.serve(async (req) => {
       throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
     };
 
-    const allActs: any[] = [];
-    const MAX_PAGES = 5;
-    for (let page = 1; page <= MAX_PAGES; page++) {
-      const r = await fetchWithRetry(
-        `https://www.strava.com/api/v3/clubs/${CLUB_ID}/activities?per_page=200&page=${page}`,
-        { headers: { Authorization: `Bearer ${accessToken}` } }
-      );
-      if (!r.ok) {
-        const t = await r.text();
-        throw new Error(`Strava API error ${r.status} (page ${page}): ${t}`);
-      }
-      const acts = await r.json();
-      console.log(`Page ${page}: got ${acts.length} activities`);
-      if (!Array.isArray(acts) || acts.length === 0) break;
-      allActs.push(...acts);
-      if (acts.length < 200) break;
+    // Strava Club Activities endpoint returns at most ~200 latest activities total.
+    // One page (per_page=200) suffices and avoids extra round-trips.
+    const r = await fetchWithRetry(
+      `https://www.strava.com/api/v3/clubs/${CLUB_ID}/activities?per_page=200&page=1`,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+    if (!r.ok) {
+      const t = await r.text();
+      throw new Error(`Strava API error ${r.status}: ${t}`);
     }
-
+    const allActs: any[] = await r.json();
+    if (!Array.isArray(allActs)) {
+      throw new Error("Unexpected Strava response shape");
+    }
     console.log(`Fetched ${allActs.length} club activities`);
 
     // 3. Load existing mappings
@@ -142,18 +194,28 @@ Deno.serve(async (req) => {
       mappingByKey.set(m.athlete_key, { matched_user_id: m.matched_user_id, ignored: m.ignored });
     }
 
-    // 4. Upsert activities + auto-create mappings for new athletes
-    let inserted = 0;
-    let matched = 0;
-    const today = new Date().toISOString();
+    // 4. Build batch rows + collect new athletes
+    const syncedAt = new Date().toISOString();
     const newMappings = new Map<string, { firstname: string; lastInit: string }>();
+    const seenFp = new Set<string>();
+    const rows: any[] = [];
+    let matched = 0;
 
     for (const a of allActs) {
       const firstname = a.athlete?.firstname || "";
       const lastInit = a.athlete?.lastname || "";
+      if (!firstname && !lastInit) continue;
       const fullName = `${firstname} ${lastInit}`.trim();
       const distance = Math.round(a.distance || 0);
-      const fp = buildFingerprint(firstname, lastInit, today, distance);
+      const movingTime = a.moving_time || 0;
+      const elevation = Math.round(a.total_elevation_gain || 0);
+      const sportType = a.sport_type || a.type || "";
+      const fp = buildFingerprint(firstname, lastInit, distance, movingTime, elevation, sportType);
+
+      // Dedup within the same payload (Strava sometimes returns duplicates)
+      if (seenFp.has(fp)) continue;
+      seenFp.add(fp);
+
       const key = buildAthleteKey(firstname, lastInit);
 
       let matchedUserId: string | null = null;
@@ -166,78 +228,60 @@ Deno.serve(async (req) => {
 
       if (matchedUserId) matched++;
 
-      const { error: upErr } = await supabase
-        .from("club_activities")
-        .upsert(
-          {
-            fingerprint: fp,
-            athlete_firstname: firstname,
-            athlete_lastname_initial: lastInit,
-            athlete_full: fullName,
-            matched_user_id: matchedUserId,
-            activity_date: today,
-            distance_m: distance,
-            moving_time: a.moving_time || 0,
-            elevation_gain: Math.round(a.total_elevation_gain || 0),
-            sport_type: a.sport_type || a.type || null,
-          },
-          { onConflict: "fingerprint", ignoreDuplicates: false }
-        );
-
-      if (!upErr) inserted++;
+      rows.push({
+        fingerprint: fp,
+        athlete_firstname: firstname,
+        athlete_lastname_initial: lastInit,
+        athlete_full: fullName,
+        matched_user_id: matchedUserId,
+        // Strava Club API doesn't expose start_date — store sync time as best-effort.
+        // This is intentional: YTD now resets correctly each Jan 1 (rows older than year_start are excluded).
+        activity_date: syncedAt,
+        distance_m: distance,
+        moving_time: movingTime,
+        elevation_gain: elevation,
+        sport_type: sportType || null,
+      });
     }
 
-    // 5. Insert new athlete mappings (matched_user_id = null, admin will assign)
+    // 5. Single batch upsert (avoids N+1)
+    let upserted = 0;
+    if (rows.length > 0) {
+      const { error: upErr, count } = await supabase
+        .from("club_activities")
+        .upsert(rows, { onConflict: "fingerprint", ignoreDuplicates: false, count: "exact" });
+      if (upErr) throw upErr;
+      upserted = count ?? rows.length;
+    }
+
+    // 6. Insert new athlete mappings
     if (newMappings.size > 0) {
-      const rows = Array.from(newMappings.entries()).map(([athlete_key, v]) => ({
+      const mappingRows = Array.from(newMappings.entries()).map(([athlete_key, v]) => ({
         athlete_key,
         athlete_firstname: v.firstname,
         athlete_lastname_initial: v.lastInit,
         matched_user_id: null,
       }));
-      await supabase.from("club_athlete_mappings").upsert(rows, { onConflict: "athlete_key", ignoreDuplicates: true });
-      console.log(`Created ${rows.length} new athlete mappings`);
-    }
-
-    // 6. Recalculate YTD per matched user
-    const year = new Date().getFullYear();
-    const yearStart = new Date(year, 0, 1).toISOString();
-
-    const { data: matchedUsers } = await supabase
-      .from("club_activities")
-      .select("matched_user_id, distance_m")
-      .not("matched_user_id", "is", null)
-      .gte("activity_date", yearStart);
-
-    const totals = new Map<string, { dist: number; count: number }>();
-    for (const r of matchedUsers || []) {
-      const u = r.matched_user_id!;
-      const cur = totals.get(u) || { dist: 0, count: 0 };
-      cur.dist += r.distance_m;
-      cur.count += 1;
-      totals.set(u, cur);
-    }
-
-    const cachedAt = new Date().toISOString();
-    for (const [uid, t] of totals) {
       await supabase
-        .from("profiles")
-        .update({
-          strava_ytd_distance: Math.round(t.dist / 1000),
-          strava_ytd_count: t.count,
-          strava_stats_cached_at: cachedAt,
-        })
-        .eq("id", uid);
+        .from("club_athlete_mappings")
+        .upsert(mappingRows, { onConflict: "athlete_key", ignoreDuplicates: true });
+      console.log(`Created ${mappingRows.length} new athlete mappings`);
     }
+
+    // 7. Single-call YTD recalc (atomic, also zeroes members without activities)
+    const { data: recalc, error: recalcErr } = await supabase.rpc("recalc_club_ytd");
+    if (recalcErr) throw recalcErr;
+    const recalcRow = Array.isArray(recalc) ? recalc[0] : recalc;
 
     return new Response(
       JSON.stringify({
         success: true,
         fetched: allActs.length,
-        upserted: inserted,
+        upserted,
         matched,
         new_athletes: newMappings.size,
-        users_updated: totals.size,
+        users_updated: recalcRow?.users_updated ?? 0,
+        users_zeroed: recalcRow?.users_zeroed ?? 0,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
