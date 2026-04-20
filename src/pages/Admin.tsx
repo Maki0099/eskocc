@@ -73,6 +73,8 @@ const Admin = () => {
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
   const [resettingPasswordUserId, setResettingPasswordUserId] = useState<string | null>(null);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("users");
+  const [preselectedAthleteKey, setPreselectedAthleteKey] = useState<string | null>(null);
 
   useEffect(() => {
     if (!roleLoading && !isAdmin) {
