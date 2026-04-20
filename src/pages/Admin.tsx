@@ -44,7 +44,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Users, Shield, Loader2, Coffee, Target, Clock, KeyRound, Bell, Route, Sparkles, Trash2, Link2, Link2Off, Trophy } from "lucide-react";
+import { Users, Shield, Loader2, Coffee, Target, Clock, KeyRound, Bell, Route, Sparkles, Trash2, Activity } from "lucide-react";
+import { ClubStravaAdmin } from "@/components/admin/ClubStravaAdmin";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
@@ -57,8 +58,6 @@ interface UserWithRole {
   email: string;
   full_name: string | null;
   avatar_url: string | null;
-  strava_id: string | null;
-  is_strava_club_member: boolean;
   created_at: string;
   role: AppRole;
 }
@@ -84,7 +83,7 @@ const Admin = () => {
     try {
       const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
-        .select("id, email, full_name, avatar_url, strava_id, is_strava_club_member, created_at")
+        .select("id, email, full_name, avatar_url, created_at")
         .order("created_at", { ascending: false });
 
       if (profilesError) throw profilesError;
@@ -99,7 +98,6 @@ const Admin = () => {
         const userRole = roles?.find((r) => r.user_id === profile.id);
         return {
           ...profile,
-          is_strava_club_member: profile.is_strava_club_member ?? false,
           role: (userRole?.role as AppRole) || "pending",
         };
       });
@@ -193,8 +191,6 @@ const Admin = () => {
   };
 
   const pendingCount = users.filter((u) => u.role === "pending").length;
-  const stravaConnectedCount = users.filter((u) => u.strava_id).length;
-  const clubMemberCount = users.filter((u) => u.is_strava_club_member).length;
 
   if (roleLoading || !isAdmin) {
     return (
@@ -255,6 +251,10 @@ const Admin = () => {
                 <Sparkles className="w-4 h-4" />
                 AI
               </TabsTrigger>
+              <TabsTrigger value="club-strava" className="gap-2">
+                <Activity className="w-4 h-4" />
+                Strava klub
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="users" className="space-y-6">
@@ -303,26 +303,6 @@ const Admin = () => {
                     </div>
                   </CardContent>
                 </Card>
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">
-                      Strava propojeno
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-green-500">{stravaConnectedCount}</div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">
-                      Členové klubu
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-primary">{clubMemberCount}</div>
-                  </CardContent>
-                </Card>
               </div>
 
               <Card>
@@ -348,8 +328,6 @@ const Admin = () => {
                           <TableRow>
                             <TableHead>Uživatel</TableHead>
                             <TableHead>Email</TableHead>
-                            <TableHead className="text-center">Strava</TableHead>
-                            <TableHead className="text-center">Klub</TableHead>
                             <TableHead>Registrace</TableHead>
                             <TableHead>Role</TableHead>
                             <TableHead className="text-right">Akce</TableHead>
@@ -375,23 +353,6 @@ const Admin = () => {
                               </TableCell>
                               <TableCell className="text-muted-foreground">
                                 {user.email}
-                              </TableCell>
-                              <TableCell className="text-center">
-                                {user.strava_id ? (
-                                  <div className="flex items-center justify-center gap-1.5">
-                                    <Link2 className="w-4 h-4 text-green-500" />
-                                    <span className="text-xs text-muted-foreground">{user.strava_id}</span>
-                                  </div>
-                                ) : (
-                                  <Link2Off className="w-4 h-4 text-muted-foreground/50 mx-auto" />
-                                )}
-                              </TableCell>
-                              <TableCell className="text-center">
-                                {user.is_strava_club_member ? (
-                                  <Trophy className="w-4 h-4 text-primary mx-auto" />
-                                ) : (
-                                  <span className="text-muted-foreground/50">—</span>
-                                )}
                               </TableCell>
                               <TableCell className="text-muted-foreground">
                                 {format(new Date(user.created_at), "d. M. yyyy", {
@@ -521,6 +482,10 @@ const Admin = () => {
 
             <TabsContent value="ai">
               <AiSettingsAdmin />
+            </TabsContent>
+
+            <TabsContent value="club-strava">
+              <ClubStravaAdmin />
             </TabsContent>
           </Tabs>
         </div>

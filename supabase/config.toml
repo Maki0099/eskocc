@@ -1,17 +1,5 @@
 project_id = "mtlycegceaeueuyymkyv"
 
-[functions.strava-auth]
-verify_jwt = true
-
-[functions.strava-callback]
-verify_jwt = false
-
-[functions.strava-stats]
-verify_jwt = true
-
-[functions.strava-stats-batch]
-verify_jwt = true
-
 [functions.notify-admin-new-user]
 verify_jwt = false
 
@@ -43,4 +31,16 @@ verify_jwt = true
 verify_jwt = false
 
 [functions.delete-user]
+verify_jwt = true
+
+[functions.club-strava-auth]
+verify_jwt = true
+
+[functions.club-strava-callback]
+verify_jwt = false
+
+[functions.sync-club-activities]
+verify_jwt = false
+
+[functions.match-club-activity]
 verify_jwt = true
