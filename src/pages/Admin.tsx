@@ -251,6 +251,10 @@ const Admin = () => {
                 <Sparkles className="w-4 h-4" />
                 AI
               </TabsTrigger>
+              <TabsTrigger value="club-strava" className="gap-2">
+                <Activity className="w-4 h-4" />
+                Strava klub
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="users" className="space-y-6">
