@@ -1,68 +1,28 @@
 
 
-## Sekce „Co nabízíme" — nahrazení demo statistik reálnými
+## Oprava: „km letos" v hero sekci = klubový součet, ne osobní YTD
 
 ### Problém
-Bento grid v `FeaturesSection.tsx` používá hardcoded čísla (200+ členů, 500+ tras, 1000+ fotek, 100+ vyjížděk ročně), která **vůbec neodpovídají realitě**:
+V `HeroSection.tsx` (ř. 60–62) se zobrazuje `ytdDistance` z hooku `useUserStats` — což je **YTD aktuálního přihlášeného uživatele** (`profiles.strava_ytd_distance`), nikoli součet všech členů klubu. U právě přihlášeného admina to vyjde jako 646 km, ale prezentuje se to vizuálně jako klubový údaj.
 
-| Údaj v UI | Reálně v DB |
-|---|---|
-| 100+ vyjížděk ročně | 4 vyjížďky celkem |
-| 200+ členů | 5 členů |
-| 500+ tras | 5 oblíbených tras |
-| 1000+ fotek | 17 položek v galerii |
-| ∞ segmentů (Strava) | bez vazby na data |
-| 12 měsíců | čistě deklarativní |
+### Řešení
+Použít už existující `useClubStats` hook (vytvořený minule pro Bento grid), který načítá `ytd_km` = `SUM(strava_ytd_distance)` přes všechny profily přes RPC `get_public_club_stats()`. Ten už je veřejný (SECURITY DEFINER), takže funguje i pro nepřihlášené.
 
-Pro malý začínající klub působí přehnané statistiky nedůvěryhodně.
+### Změny
 
-### Řešení: Live statistiky z DB + kvalitativní popisky
-
-**1. Nový hook `useClubStats.ts`**
-Jednorázově načte v `Index.tsx`:
-- `members` — `count(user_roles where role in member/active_member/admin)`
-- `routes` — `count(favorite_routes)`
-- `events_total` — `count(events)`
-- `gallery_items` — `count(gallery_items)`
-- `ytd_km` — `sum(profiles.strava_ytd_distance)`
-- `ytd_rides` — `sum(profiles.strava_ytd_count)`
-
-Cachováno v komponentě (jeden fetch při mountu), s fallbackem na `—` při loadingu.
-
-**2. Úprava `FeaturesSection.tsx`**
-Komponenta přijme `stats` jako prop a karty se přemapují na **smysluplné páry**:
-
-| Karta | Stat | Label |
-|---|---|---|
-| Vyjížďky | `events_total` | proběhlo |
-| Komunita | `members` | členů |
-| GPX trasy | `routes` | v knihovně |
-| Strava | `ytd_km` km | letos najeto |
-| Galerie | `gallery_items` | momentek |
-| Celoročně | `ytd_rides` | jízd letos |
-
-**3. Doprovodné formátování**
-- Pokud `stats == null` (loading), zobrazit jemný skeleton místo čísla.
-- Pokud je hodnota 0 (např. nový rok bez aktivit), zobrazit `—` místo `0`, aby karta nepůsobila prázdně.
-- Čísla nad 999 formátovat s mezerou (`1 240`).
-
-**4. Honest tone v textech**
-Aktuální popisky („Přátelská parta zkušených cyklistů", „Aktivní program za každého počasí") zachovat — jsou kvalitativní, ne kvantitativní, a fungují i pro malý klub.
-
-### Technické detaily
-
-**Soubory:**
-- nový: `src/hooks/useClubStats.ts` (~40 řádků, jeden agregační dotaz)
-- upravit: `src/components/home/FeaturesSection.tsx` (přijmout prop `stats`, přemapovat `features` array, přidat skeleton state pro `stat`)
-- upravit: `src/pages/Index.tsx` (zavolat hook, předat dolů)
-
-**Dotazy:**
-Buď 6 paralelních `supabase.from(...).select('*', { count: 'exact', head: true })`, nebo (čistší) jedna RPC funkce `get_public_club_stats()` vracející JSON s veškerými countersy. Doporučuji RPC — méně round-tripů a stats jdou cachovat 1 minutu serverside.
-
-**RLS:**
-Counts musí být přístupné anonymním návštěvníkům (sekce je na homepage). Pokud RLS na `favorite_routes`/`gallery_items`/`profiles` blokuje anonymní `count`, RPC `SECURITY DEFINER` to obejde čistě (vrací jen agregát, ne řádky).
+**`src/components/home/HeroSection.tsx`**
+- Nahradit import `useUserStats` → `useClubStats` (a `formatStatNumber`).
+- `ytdDistance` (osobní) nahradit `stats?.ytd_km` (klubový součet).
+- Animace `useCountUp` zůstává — jen pojede na klubovém čísle.
+- Změnit podmínku zobrazení: místo `user && ytdDistance !== null` použít `stats && stats.ytd_km > 0` — tj. **zobrazit všem návštěvníkům** (i nepřihlášeným), protože je to veřejný klubový údaj.
+- Upravit text labelu pro jasnost: `„{X} km najezdil klub letos"` místo nejednoznačného `„X km letos"`.
 
 ### Co se NEmění
-- Vizuální design Bento gridu, animace, ikony — vše zůstává.
-- Layout 6 karet (large + medium + 4× small) zůstává.
+- Vizuální styl, animace, layout hero sekce.
+- `useUserStats` se z HeroSection odstraní (nikde jinde tam nebyl použit), zbytek aplikace ho používá dál.
+- RPC ani DB schéma — `get_public_club_stats` už `ytd_km` vrací.
+
+### Edge cases
+- Pokud `stats.ytd_km === 0` (začátek roku, žádné aktivity), řádek se vůbec nezobrazí — žádné nešťastné „0 km letos".
+- Loading: během načítání `stats === null`, řádek se nezobrazí (žádný flash skeletonu v hero).
 
