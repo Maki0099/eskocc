@@ -177,7 +177,8 @@ const CronJobsAdmin = () => {
                     <TableHead>Název</TableHead>
                     <TableHead>Plán</TableHead>
                     <TableHead>Stav</TableHead>
-                    <TableHead>Příkaz</TableHead>
+                    <TableHead>Poslední spuštění</TableHead>
+                    <TableHead>Výsledek</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -190,19 +191,32 @@ const CronJobsAdmin = () => {
                         <code className="text-xs bg-muted px-2 py-1 rounded">
                           {job.schedule}
                         </code>
-                        <span className="text-muted-foreground text-sm ml-2">
-                          ({formatSchedule(job.schedule)})
-                        </span>
+                        <div className="text-muted-foreground text-xs mt-1">
+                          {formatSchedule(job.schedule)}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Badge variant={job.active ? "default" : "secondary"}>
                           {job.active ? "Aktivní" : "Neaktivní"}
                         </Badge>
                       </TableCell>
-                      <TableCell className="max-w-xs">
-                        <code className="text-xs text-muted-foreground truncate block">
-                          {job.command.substring(0, 100)}...
-                        </code>
+                      <TableCell>
+                        {job.last_run_at ? (
+                          <div>
+                            <div className="text-sm">{formatRelativeTime(job.last_run_at)}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {formatDateTime(job.last_run_at)}
+                              {job.last_run_duration_ms != null && ` · ${job.last_run_duration_ms} ms`}
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={statusVariant(job.last_run_status)}>
+                          {statusLabel(job.last_run_status)}
+                        </Badge>
                       </TableCell>
                     </TableRow>
                   ))}
