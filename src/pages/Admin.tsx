@@ -191,8 +191,6 @@ const Admin = () => {
   };
 
   const pendingCount = users.filter((u) => u.role === "pending").length;
-  const stravaConnectedCount = users.filter((u) => u.strava_id).length;
-  const clubMemberCount = users.filter((u) => u.is_strava_club_member).length;
 
   if (roleLoading || !isAdmin) {
     return (
