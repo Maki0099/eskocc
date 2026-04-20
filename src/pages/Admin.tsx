@@ -276,7 +276,7 @@ const Admin = () => {
             </TabsList>
 
             <TabsContent value="users" className="space-y-6">
-              <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
+              <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
                 <Card>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium text-muted-foreground">
