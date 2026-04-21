@@ -56,6 +56,7 @@ const RecentClubActivities = () => {
   const [profiles, setProfiles] = useState<Record<string, MemberProfile>>({});
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<FilterGroup>("all");
+  const [userFilter, setUserFilter] = useState<string>("all");
 
   useEffect(() => {
     const fetchData = async () => {
