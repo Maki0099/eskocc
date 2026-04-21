@@ -118,7 +118,7 @@ const Gallery = () => {
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {externalAlbums.map((album, index) => {
-                      const cover = album.cover_image_url || FALLBACK_COVERS[album.title];
+                      const cover = album.cover_image_url;
                       return (
                         <a
                           key={album.id}
