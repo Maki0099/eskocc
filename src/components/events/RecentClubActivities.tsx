@@ -5,6 +5,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Activity, Mountain, Clock, MapPin } from "lucide-react";
 import { format, formatDistanceToNow, isToday, isYesterday, startOfDay } from "date-fns";
 import { cs } from "date-fns/locale";
@@ -56,6 +63,7 @@ const RecentClubActivities = () => {
   const [profiles, setProfiles] = useState<Record<string, MemberProfile>>({});
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<FilterGroup>("all");
+  const [userFilter, setUserFilter] = useState<string>("all");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -100,10 +108,30 @@ const RecentClubActivities = () => {
     fetchData();
   }, []);
 
+  const userOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    activities.forEach((a) => {
+      const key = a.matched_user_id ?? `unmatched:${a.athlete_full}`;
+      if (map.has(key)) return;
+      const profile = a.matched_user_id ? profiles[a.matched_user_id] : null;
+      const label = profile?.nickname || profile?.full_name || a.athlete_full || a.athlete_firstname;
+      map.set(key, label);
+    });
+    return Array.from(map.entries())
+      .map(([value, label]) => ({ value, label }))
+      .sort((a, b) => a.label.localeCompare(b.label, "cs"));
+  }, [activities, profiles]);
+
   const filtered = useMemo(() => {
-    if (filter === "all") return activities;
-    return activities.filter((a) => getSportMeta(a.sport_type).group === filter);
-  }, [activities, filter]);
+    return activities.filter((a) => {
+      if (filter !== "all" && getSportMeta(a.sport_type).group !== filter) return false;
+      if (userFilter !== "all") {
+        const key = a.matched_user_id ?? `unmatched:${a.athlete_full}`;
+        if (key !== userFilter) return false;
+      }
+      return true;
+    });
+  }, [activities, filter, userFilter]);
 
   const grouped = useMemo(() => {
     const groups = new Map<string, { date: Date; items: ClubActivity[] }>();
@@ -128,18 +156,33 @@ const RecentClubActivities = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap gap-2">
-        {FILTERS.map((f) => (
-          <Button
-            key={f.value}
-            variant={filter === f.value ? "default" : "outline"}
-            size="sm"
-            onClick={() => setFilter(f.value)}
-            className="rounded-full"
-          >
-            {f.label}
-          </Button>
-        ))}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap gap-2">
+          {FILTERS.map((f) => (
+            <Button
+              key={f.value}
+              variant={filter === f.value ? "default" : "outline"}
+              size="sm"
+              onClick={() => setFilter(f.value)}
+              className="rounded-full"
+            >
+              {f.label}
+            </Button>
+          ))}
+        </div>
+        <Select value={userFilter} onValueChange={setUserFilter}>
+          <SelectTrigger className="w-full sm:w-64">
+            <SelectValue placeholder="Všichni jezdci" />
+          </SelectTrigger>
+          <SelectContent className="max-h-72">
+            <SelectItem value="all">Všichni jezdci</SelectItem>
+            {userOptions.map((u) => (
+              <SelectItem key={u.value} value={u.value}>
+                {u.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {grouped.length === 0 ? (
