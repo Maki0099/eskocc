@@ -344,11 +344,30 @@ export const ClubStravaAdmin = ({ preselectedAthleteKey, onAthleteSelected }: Cl
             <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
               <div className="flex items-center gap-3">
                 <CheckCircle2 className="w-5 h-5 text-primary" />
-                <div>
-                  <p className="font-medium">Propojeno</p>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium">Propojeno</p>
+                    <Badge variant="outline" className={healthBadge.className}>
+                      {healthBadge.label}
+                    </Badge>
+                  </div>
                   <p className="text-sm text-muted-foreground">
-                    Athlete ID: {creds.athlete_id || "—"} · Token expiruje{" "}
-                    {format(new Date(creds.expires_at), "d. M. yyyy HH:mm", { locale: cs })}
+                    Athlete ID: {creds.athlete_id || "—"}
+                    {lastSuccessLog ? (
+                      <>
+                        {" "}· Poslední úspěšný sync:{" "}
+                        {formatDistanceToNow(new Date(lastSuccessLog.started_at), { addSuffix: true, locale: cs })}
+                        {" "}({lastSuccessLog.fetched_count} aktivit)
+                      </>
+                    ) : lastSyncAt ? (
+                      <>
+                        {" "}· Poslední aktivita:{" "}
+                        {formatDistanceToNow(new Date(lastSyncAt), { addSuffix: true, locale: cs })}
+                      </>
+                    ) : (
+                      <> · Sync ještě neproběhl</>
+                    )}
+                    {" "}· Auto-refresh ✓
                   </p>
                 </div>
               </div>
