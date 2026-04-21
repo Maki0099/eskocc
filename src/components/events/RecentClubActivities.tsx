@@ -156,18 +156,33 @@ const RecentClubActivities = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap gap-2">
-        {FILTERS.map((f) => (
-          <Button
-            key={f.value}
-            variant={filter === f.value ? "default" : "outline"}
-            size="sm"
-            onClick={() => setFilter(f.value)}
-            className="rounded-full"
-          >
-            {f.label}
-          </Button>
-        ))}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap gap-2">
+          {FILTERS.map((f) => (
+            <Button
+              key={f.value}
+              variant={filter === f.value ? "default" : "outline"}
+              size="sm"
+              onClick={() => setFilter(f.value)}
+              className="rounded-full"
+            >
+              {f.label}
+            </Button>
+          ))}
+        </div>
+        <Select value={userFilter} onValueChange={setUserFilter}>
+          <SelectTrigger className="w-full sm:w-64">
+            <SelectValue placeholder="Všichni jezdci" />
+          </SelectTrigger>
+          <SelectContent className="max-h-72">
+            <SelectItem value="all">Všichni jezdci</SelectItem>
+            {userOptions.map((u) => (
+              <SelectItem key={u.value} value={u.value}>
+                {u.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {grouped.length === 0 ? (
