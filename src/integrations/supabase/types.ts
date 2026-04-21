@@ -538,6 +538,39 @@ export type Database = {
           },
         ]
       }
+      external_albums: {
+        Row: {
+          cover_image_url: string | null
+          created_at: string
+          id: string
+          sort_order: number
+          title: string
+          updated_at: string
+          url: string
+          year: number | null
+        }
+        Insert: {
+          cover_image_url?: string | null
+          created_at?: string
+          id?: string
+          sort_order?: number
+          title: string
+          updated_at?: string
+          url: string
+          year?: number | null
+        }
+        Update: {
+          cover_image_url?: string | null
+          created_at?: string
+          id?: string
+          sort_order?: number
+          title?: string
+          updated_at?: string
+          url?: string
+          year?: number | null
+        }
+        Relationships: []
+      }
       favorite_routes: {
         Row: {
           cover_image_url: string | null
