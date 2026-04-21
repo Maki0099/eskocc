@@ -1,54 +1,77 @@
 
 
-## Drag-and-drop řazení interních fotek v galerii
+## Otázka: "Connect Strava to pull member activities into the events page and gallery highlights"
 
-### Cíl
-Umožnit ručně přeuspořádat pořadí fotek v `/galerie`. Spravované přes nový admin panel (drag-and-drop), zobrazené ve veřejné galerii podle nastaveného pořadí.
+### Krátká odpověď
+**Z velké části už to máš.** Jen není povrchově vidět na `/events` a `/galerie`. Stačí ty existující data (která už taháme přes `sync-club-activities` cron každých 24h) **vystavit** v UI jako dvě nové sekce. Žádný nový OAuth, žádné nové API permissions.
 
-### Změny v databázi
-Migrace tabulky `gallery_items`:
-- Přidat sloupec `sort_order INTEGER NOT NULL DEFAULT 0`
-- Backfill: existujícím fotkám přiřadit `sort_order` podle pořadí `created_at DESC` (0, 1, 2, …) — nejnovější fotky budou nahoře, jako teď.
-- Index na `sort_order` pro rychlé řazení.
+### Co už dnes funguje v pozadí
+- **Klubový OAuth** (`club_api_credentials`) — admin propojený jednorázově se Stravou.
+- **Cron 24h** (`sync-club-activities`) — stahuje až 200 nejnovějších klubových aktivit.
+- **`club_activities` tabulka** — fingerprint, jméno, distance, čas, převýšení, sport, datum, `matched_user_id` (mapováno na našeho usera přes `club_athlete_mappings`).
+- **YTD agregace** — `recalc_club_ytd()` plní `profiles.strava_ytd_distance/count`, dnes využité jen na `/statistiky` a v homepage teaseru.
 
-### Změny v aplikaci
+**Co Strava klubový endpoint NEvrací:** fotky, GPS trasu (polyline) ani odkaz na konkrétní aktivitu. To je hard limit Strava API — pro fotky/polyline by musel **každý člen** propojit svůj osobní Strava účet (= jiný projekt, viz sekce „Co NENÍ realistické").
 
-**1. Nový admin tab „Fotky" (`/admin` → Fotky)**
-Nová komponenta `src/components/admin/GalleryPhotosAdmin.tsx`:
-- Načte všechny fotky z `gallery_items` seřazené podle `sort_order ASC`.
-- Zobrazí seznam s drag-handle (`GripVertical`), náhledem (cca 80×80), titulkem (caption nebo „Bez popisu"), jménem autora, datem nahrání a tlačítkem smazat.
-- Filtr/přepínač: **Všechny / Z vyjížděk (event_id) / Ostatní (bez event_id)** — řazení se ukládá globálně přes všechny fotky bez ohledu na filtr (filter je jen view).
-- Drag-and-drop přes `@dnd-kit` (stejný pattern jako `SortableAlbumItem`/`SortableMenuItem`):
-  - `DndContext` + `SortableContext` + `PointerSensor` (8px activation)
-  - Po dropu `arrayMove` → batch UPDATE všech přesunutých řádků s novým `sort_order`.
-- Nová sortable item komponenta `src/components/admin/SortableGalleryPhotoItem.tsx` (analogie k `SortableAlbumItem`).
+---
 
-**2. Nový tab v `Admin.tsx`**
-Přidat `<TabsTrigger value="gallery">` s ikonou `Image` (lucide), uvnitř `<TabsContent value="gallery">` renderovat `<GalleryPhotosAdmin />`.
+### Co reálně postavíme
 
-**3. Galerie pro členy (`src/pages/Gallery.tsx`)**
-Změnit dotaz z `.order("created_at", { ascending: false })` na `.order("sort_order", { ascending: true }).order("created_at", { ascending: false })` (sekundární řazení pro stabilní pořadí u nových fotek se stejným `sort_order`).
+#### 1. „Nedávné klubové jízdy" sekce na `/events`
+Nový blok mezi „Nadcházející" a „Historie" tabem (nebo jako třetí tab **„Nedávné jízdy"**):
+- Posledních 14 dní aktivit z `club_activities`, seskupeno podle dne.
+- Karta jízdy: jméno člena (klikatelné na `/member/:userId` pokud `matched_user_id` existuje, jinak jen text), sport ikona (silnička/MTB/gravel/run), distance, čas, převýšení, relativní čas („před 2 dny").
+- Filter pill: **Vše / Silnice / MTB / Gravel** (podle `sport_type`).
+- Zobrazí se členům (`member`/`active_member`/`admin`) — RLS už to umožňuje.
 
-**4. Auto-přiřazení `sort_order` při uploadu**
-V `src/components/gallery/PhotoUpload.tsx` při vytvoření nové fotky přiřadit `sort_order = -1` (nebo `MIN(sort_order) - 1`), aby se nová fotka objevila jako první (nahoře). Alternativa: `sort_order = 0` a admin si může přesunout — doporučuji **`-1`** (nejnovější nahoře, intuitivní).
+#### 2. „Highlights týdne" widget v `/galerie`
+Banner nahoře nad tabbed galerií:
+- **Top 3 jízdy minulého týdne** podle distance (z `club_activities` WHERE `activity_date >= now()-7d`).
+- Karty: jméno + iniciála, distance, převýšení, datum, sport.
+- Plus jeden „leaderboard chip" — kdo má nejvíc km za posledních 7 dní celkově.
+- Cíl: galerie přestane být jen statická fotka-grid, dostane „život klubu".
 
-### Co se NEmění
-- Komponenta `PhotoGrid.tsx` (frontend grid v galerii) — pořadí přijde už seřazené z dotazu.
-- RLS policies — admin už má `has_role('admin')` práva na update přes existující politiky? **Pozor:** `gallery_items` aktuálně **nemá UPDATE policy** — je tam jen INSERT a DELETE. Migrace musí přidat policy „Admins can update gallery items" pro `UPDATE` s `has_role(auth.uid(), 'admin')`.
+#### 3. Manuální „Sync teď" tlačítko
+V adminu (Strava klub tab) už existuje. Přidat ho i do Dashboardu pro adminy, aby nemuseli do `/admin` (drobný UX bonus, žádná nová logika).
 
-### Technické detaily
-- `@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities` už v projektu jsou (používá je admin alb i menu).
-- Batch update: pro N přesunutých řádků provést N samostatných `UPDATE` přes Promise.all (stejný pattern jako `ExternalAlbumsAdmin`). U galerie s desítkami až stovkami fotek je to OK; pokud by jich byly tisíce, řešilo by se RPC funkcí — teď ne.
-- Filtr v adminu je čistě view-side — `sort_order` je globální napříč všemi fotkami (jednodušší než per-kategorie pořadí).
+---
+
+### Co NENÍ realistické (a proč)
+
+| Požadavek | Proč to nejde |
+|---|---|
+| Fotky z aktivit členů v galerii | Strava klubový endpoint fotky nevrací. Per-user OAuth + scope `activity:read_all` by teoreticky šel, ale Strava App je momentálně omezená na 1 athlete (viz mem `strava-api-app-misconfiguration`). |
+| GPS trasa konkrétní jízdy na mapě | Stejný důvod — `polyline` chybí v klubovém endpointu. |
+| Real-time push „Petr právě dojel 80 km" | Strava neposkytuje webhooks pro klubové aktivity. Max co můžeme = 24h cron + manuální sync. |
+| Aktivity starší než ~200 nejnovějších | Strava klubový endpoint vrací jen poslední stránku (~200). Historie před tím je nedostupná. |
+
+---
 
 ### Soubory
+
 **Nové:**
-- `supabase/migrations/<timestamp>_gallery_items_sort_order.sql`
-- `src/components/admin/GalleryPhotosAdmin.tsx`
-- `src/components/admin/SortableGalleryPhotoItem.tsx`
+- `src/components/events/RecentClubActivities.tsx` — sekce/tab s posledními aktivitami
+- `src/components/gallery/WeeklyHighlights.tsx` — banner top 3 jízd v galerii
+- `src/lib/sport-type-utils.ts` — mapování `sport_type` → ikona + lokalizovaný název (silnička/MTB/gravel/běh/…)
 
 **Upravené:**
-- `src/pages/Admin.tsx` (nový tab)
-- `src/pages/Gallery.tsx` (řazení)
-- `src/components/gallery/PhotoUpload.tsx` (auto sort_order pro nové fotky)
+- `src/pages/Events.tsx` — nový tab „Nedávné jízdy" (member-only)
+- `src/pages/Gallery.tsx` — `<WeeklyHighlights />` nad tabbed obsah
+- `src/components/dashboard/StravaWidget.tsx` (nebo nová karta) — admin „Sync teď" shortcut
+
+**Beze změny:**
+- Edge funkce, DB schema, cron, RLS — vše už je hotové a funguje.
+
+---
+
+### Technická poznámka
+Dotaz pro „nedávné jízdy" bude jednoduchý:
+```ts
+supabase.from("club_activities")
+  .select("*, profiles:matched_user_id(id, full_name, nickname, avatar_url)")
+  .gte("activity_date", subDays(new Date(), 14).toISOString())
+  .order("activity_date", { ascending: false })
+  .limit(50);
+```
+Foreign key `matched_user_id → profiles(id)` v DB chybí (tabulka nemá FK), takže join udělám přes ruční dotaz na `profiles` IN (...ids) a mapping client-side. Žádná migrace.
 
