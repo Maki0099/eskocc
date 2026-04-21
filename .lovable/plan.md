@@ -1,92 +1,88 @@
 
 
-## Kalendářní zobrazení nadcházejících vyjížděk
+## Mobilní optimalizace karet vyjížděk + výrazné CTA „Jdu/Nejdu"
 
 ### Diagnóza
-Současné grupování po týdnech ("Tento týden / Příští týden / Později") je hrubé — uživatel nevidí na první pohled, **který konkrétní den** se jede. Když je v týdnu 4 vyjížďky, splývají dohromady.
+Na mobilu (≤640px) se v `EventCard` skládá do jednoho řádku datum, počet účastníků, badge Strava/Pouze ženy, admin ikony **a** participation toggle. Toggle se zmenší (skryje text „Přihlásit"), splývá s ostatními chipy a přestává být primární akcí. Title je až pod meta řádkem, takže CTA je vizuálně schované.
 
 ### Cíl
-Řazení **po dnech** s jasným denním nadpisem (datum + den v týdnu), prázdné dny se přeskakují. Volitelně přepínač mezi seznamem a měsíčním kalendářem.
+Na mobilu udělat z **„Jdu/Nejdu"** dominantní akci — full-width tlačítko pod obsahem karty, vždy viditelné, s jasným barevným stavem. Na desktopu zachovat kompaktní řádek vpravo nahoře.
 
 ---
 
 ### Návrh
 
-#### 1. Denní grupování (default view)
-Nahradit `groupEventsByPeriod` novým `groupEventsByDay`. Každá skupina = jeden konkrétní den s vyjížďkou. Layout:
+#### 1. Restrukturace `EventCard` — mobile-first stack
 
+**Mobil (`<sm`):**
 ```
-┌─ ČT 24. dubna ────────────── zítra ─┐
-│  [karta vyjížďky]                    │
-└──────────────────────────────────────┘
-
-┌─ SO 26. dubna ──────────── za 3 dny ─┐
-│  [karta vyjížďky]                    │
-│  [karta vyjížďky]   ← víc jízd v den │
-└──────────────────────────────────────┘
-
-┌─ NE 4. května ──────────────────────┐
-│  [karta vyjížďky]                    │
-└──────────────────────────────────────┘
+┌──────────────────────────────────┐
+│ ČT 24. 4. · 18:00  · 5 jede      │  ← meta (bez CTA)
+│ [Strava] [Pouze ženy]            │
+│                                  │
+│ Vyjížďka okolo Brna              │  ← title (větší, výraznější)
+│                                  │
+│ 📍 Brno  🛣 45 km  ⛰ 600 m       │  ← meta line
+│                                  │
+│ ┌──────────────────────────────┐ │
+│ │   ✓  Jdu na vyjížďku         │ │  ← full-width CTA
+│ └──────────────────────────────┘ │
+│ [✏ admin] [🗑 admin]   (vpravo)  │  ← admin akce zvlášť, malé
+└──────────────────────────────────┘
 ```
 
-Denní header obsahuje:
-- **Velký den + datum** vlevo (např. `ČT 24. dubna`), zvýrazněně
-- **Relativní popisek** vpravo (`dnes`, `zítra`, `za 3 dny`, `příští týden`, jinak nic)
-- Levá barevná lišta / tečka pro vizuální rytmus
-- Sticky chování při scrollu (volitelné — header se přilepí nahoru, dokud nepřijde další den)
+**Desktop (`≥sm`):** zachovat současný layout — CTA vpravo nahoře vedle meta řádku.
 
-Mezi dny větší vertikální mezera (`space-y-8`), uvnitř dne menší (`space-y-2`).
+#### 2. Vylepšený participation button
 
-#### 2. Měsíční oddělovač
-Když přechod mezi dny překročí měsíc, vsadit tenký label:
-```
-─── KVĚTEN 2026 ───
-```
-Pomáhá orientaci u dlouhých seznamů.
+`EventParticipationToggle` dostane prop `fullWidth?: boolean` a `size?: "sm" | "default" | "lg"`:
 
-#### 3. Přepínač View: Seznam ↔ Kalendář
-Vpravo nahoře vedle filtrů: ikony **☰ Seznam** / **▦ Kalendář**.
+- **Mobil**: `size="lg"`, `fullWidth`, vždy viditelný text („Jdu na vyjížďku" / „Už nejdu"), výrazná barva:
+  - Nepřihlášen: `variant="default"` (primární, plná barva) + ikona `UserPlus`
+  - Přihlášen: `variant="secondary"` se zeleným ringem + ikona `Check` + text „Jdeš ✓ — odhlásit"
+- **Desktop**: současné chování (sm, ikona + text)
 
-**Kalendářní view** = klasický měsíční grid (Po–Ne), den s vyjížďkou má:
-- Tečku/badge s počtem jízd (1, 2, 3+)
-- Klik na den → scroll/expand seznamu na ten den (nebo popover s mini-kartami)
-- Today highlight, navigace ‹ Duben | Květen ›
+Odstranit oddělený `Badge` „Jdeš ✓" z karty — stav je vyjádřený samotným tlačítkem.
 
-Použít existující `Calendar` (react-day-picker) z `src/components/ui/calendar.tsx` s custom `modifiers` pro dny s eventy.
+#### 3. Strava karty na mobilu
 
-Default view = **Seznam** (mobile-first). Kalendář je opt-in pro desktop power-usery. Volba se pamatuje v `localStorage`.
+Pro Strava události (kde nelze toggle) udělat **full-width „Otevřít na Stravě"** tlačítko ve stejné pozici, oranžové (`bg-[#FC4C02]`). Konzistentní vizuální rytmus — uživatel vždy ví, kde je primární akce.
 
-#### 4. Filtry zůstanou
-Pill řádek (Vše / Silnice / MTB / Gravel / S GPX) pracuje přes oba view. V kalendáři se promítne do tečkování dnů.
+#### 4. Admin akce
 
-#### 5. Hero "Next Up" zůstává nahoře
-Beze změny — pořád ukazuje nejbližší vyjížďku do 7 dní jako prominentní kartu nad denním seznamem.
+Na mobilu přesunout `Pencil` + `Trash2` ikony do pravého spodního rohu karty (malý řádek pod CTA, justify-end). Na desktopu zůstávají vpravo nahoře. Nebudou konkurovat hlavnímu CTA.
 
-#### 6. Mobil
-- Denní header je menší ale stále jasný (`text-sm font-semibold uppercase` pro den, datum jako sekundární)
-- Kalendářní grid na mobilu kompaktní (full-width buňky, jen tečky bez čísel)
-- Sticky day header funguje i na mobilu
+#### 5. NextUpHero (hero karta)
+
+Stejný princip: na mobilu CTA full-width pod metadaty. „Detail vyjížďky" pod hlavním CTA jako sekundární odkaz (text-only `link` variant nebo `outline` full-width).
+
+#### 6. Touch targety
+
+Hlavní CTA min. `h-12` (48px) — Apple/Material guideline. Admin ikony min. `h-9 w-9` s rozumným paddingem mezi nimi (gap-2).
+
+#### 7. Vizuální stavy
+
+Stav „přihlášen" musí být okamžitě čitelný:
+- Tlačítko `secondary` + thin levý border `border-l-4 border-l-green-500` na celé kartě (subtilně)
+- Nebo: jen výrazné tlačítko se zeleným ✓ a textem „Jdeš — odhlásit"
+
+Volím variantu s tlačítkem (méně vizuálního šumu na kartě, akce zůstává dominantní).
 
 ---
 
 ### Soubory
 
-**Nové:**
-- `src/components/events/EventsCalendarView.tsx` — měsíční kalendář s tečkováním dnů a popoverem
-- `src/components/events/DayHeader.tsx` — sticky denní nadpis s relativním popiskem
-
 **Upravené:**
-- `src/lib/event-utils.ts` — nahradit/doplnit `groupEventsByDay()` (klíč = `yyyy-MM-dd`), helper `getRelativeDayLabel(date)` ("dnes" / "zítra" / "za N dní" / null)
-- `src/components/events/UpcomingEventsList.tsx` — denní grupování + view toggle (seznam/kalendář), `localStorage` perzistence preference
-- `src/pages/Events.tsx` — žádné změny v topologii, jen předá data do nového listu
+- `src/components/events/EventCard.tsx` — restrukturace na mobile-first: meta nahoře (bez CTA/admin), title, meta line, full-width CTA blok dole, admin akce v patičce. Použití `useIsMobile` nebo čisté Tailwind responsive třídy (`sm:` breakpoint).
+- `src/components/events/EventParticipationToggle.tsx` — přidat props `fullWidth`, `size`, `showFullText`. Vždy zobrazit text na mobilu. Lepší vizuální stavy (ikona + text podle stavu).
+- `src/components/events/NextUpHero.tsx` — full-width CTA na mobilu, sekundární akce pod ním.
 
 **Beze změny:**
-- `EventCard`, `NextUpHero`, `RecentClubActivities`, edge funkce, DB.
+- `UpcomingEventsList`, `DayHeader`, `EventsCalendarView`, `event-utils.ts`, edge funkce, DB.
 
 ### Otevřené otázky
 
-1. **Sticky day header** při scrollu — chceš (vždy víš ve kterém dni jsi), nebo necháme statické?
-2. **Default view** — souhlasíš se Seznamem jako výchozím a Kalendářem jako opt-in přepínačem? Nebo radši Kalendář defaultně na desktopu?
-3. **Klik na den v kalendáři** — preferuješ (a) scroll na ten den v seznamu pod kalendářem, nebo (b) popover/dialog se seznamem jízd toho dne přímo nad kalendářem?
+1. **Zachovat tlačítko vpravo nahoře i na desktopu**, nebo přesunout full-width CTA i na desktop pro konzistenci napříč zařízeními?
+2. **Vizuální označení „jsem přihlášen"**: stačí změna stavu tlačítka (varianta A), nebo přidat i jemný levý border na kartě (varianta B)?
+3. **Admin akce na mobilu** — pod CTA v patičce karty (jak navrhuji), nebo radši v meta řádku nahoře (jako dnes), jen menší?
 
