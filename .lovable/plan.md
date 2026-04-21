@@ -1,97 +1,92 @@
 
 
-## Lepší UX pro `/events` a „Nadcházející vyjížďky"
+## Kalendářní zobrazení nadcházejících vyjížděk
 
-### Diagnóza současného stavu
-- **3 taby vedle sebe** (Nadcházející / Historie / Nedávné jízdy) — uživatel musí klikat, aby viděl, „co se děje".
-- **Karty nadcházejících jsou husté** — title, datum, místo, počet účastníků, distance/elevation badges, „Jdu" badge, toggle, externí odkaz — vše v jednom řádku, na mobilu se to láme.
-- **Strava události vypadají skoro stejně** jako lokální, jen s oranžovým rámečkem — uživatel snadno přehlédne, že je nemůže potvrdit přes „Jdu".
-- **Chybí časová orientace** — žádné „Dnes / Tento víkend / Příští týden" rozdělení. Když je 12 nadcházejících vyjížděk, je to monotónní seznam.
-- **Žádný hero/next-up** — nejbližší vyjížďka by měla být vizuálně dominantní, teď splývá s ostatními.
-- **Nedávné jízdy** jsou OK (po posledních úpravách), ale žijou v izolovaném tabu — uživatel je vidí jen když si vzpomene kliknout.
+### Diagnóza
+Současné grupování po týdnech ("Tento týden / Příští týden / Později") je hrubé — uživatel nevidí na první pohled, **který konkrétní den** se jede. Když je v týdnu 4 vyjížďky, splývají dohromady.
+
+### Cíl
+Řazení **po dnech** s jasným denním nadpisem (datum + den v týdnu), prázdné dny se přeskakují. Volitelně přepínač mezi seznamem a měsíčním kalendářem.
 
 ---
 
-### Návrh nového UX
+### Návrh
 
-#### 1. „Next Up" hero karta nahoře
-Nad taby dát **velkou kartu nejbližší vyjížďky** (pokud existuje, do 7 dní):
-- Větší title, countdown („Za 2 dny · sobota 9:00"), místo, distance + elevation jako prominentní metriky.
-- Avatary prvních 5 účastníků + „+8 dalších".
-- Velké CTA tlačítko **„Jdu / Nejdu"** (ne malý toggle).
-- Pokud má GPX → mini mapový náhled vpravo.
-- Pokud je to Strava event → oranžový akcent + „Otevřít na Stravě".
+#### 1. Denní grupování (default view)
+Nahradit `groupEventsByPeriod` novým `groupEventsByDay`. Každá skupina = jeden konkrétní den s vyjížďkou. Layout:
 
-Tím dostane uživatel **okamžitou odpověď** na „kam jdeme nejbližší víkend".
-
-#### 2. Restrukturovat taby na 2 (místo 3)
-- **„Vyjížďky"** (default) = Nadcházející + sekce „Nedávné jízdy klubu" pod tím (collapsed po 6 položkách s „Zobrazit více").
-- **„Historie"** = beze změny.
-
-Důvod: „Nadcházející" a „Nedávné jízdy" patří k sobě — obě odpovídají na „co se v klubu děje teď". Oddělené taby vytváří třecí bod.
-
-#### 3. Časové grupování nadcházejících
-Místo plochého seznamu rozdělit na sekce s nadpisy:
-- **Tento týden** (do neděle)
-- **Příští týden**
-- **Později** (vše dál)
-
-Každá sekce má malý nadpis + počet. Když je sekce prázdná, neukáže se.
-
-#### 4. Vyčistit kartu vyjížďky
-Současná karta má 7+ vizuálních elementů. Redesign:
 ```
-┌─────────────────────────────────────────────┐
-│ So 26.4. · 9:00      [● 12 jdou]   [Jdu ✓] │
-│ Vyjížďka okolo Brna                          │
-│ 📍 Brno-Lesná  ·  🚴 65 km  ·  ⛰ 850 m      │
-└─────────────────────────────────────────────┘
+┌─ ČT 24. dubna ────────────── zítra ─┐
+│  [karta vyjížďky]                    │
+└──────────────────────────────────────┘
+
+┌─ SO 26. dubna ──────────── za 3 dny ─┐
+│  [karta vyjížďky]                    │
+│  [karta vyjížďky]   ← víc jízd v den │
+└──────────────────────────────────────┘
+
+┌─ NE 4. května ──────────────────────┐
+│  [karta vyjížďky]                    │
+└──────────────────────────────────────┘
 ```
-- Datum a počet účastníků nahoře jako meta-řádek (menší, šedé).
-- Title velký, samostatně.
-- Lokace + metriky v jednom řádku s tečkovým oddělovačem (ne badges).
-- CTA „Jdu/Nejdu" vpravo nahoře, vždy stejné místo.
-- Strava události: stejný layout, jen oranžový proužek vlevo + ikona Stravy v meta-řádku.
 
-#### 5. Filtry nadcházejících (lehké)
-Pill řádek nad seznamem: **Vše · Silnice · MTB · Gravel · S GPX**. Filtruje podle `sport_type` (pokud máme) nebo podle distance heuristiky. Ve výchozím stavu „Vše" — žádný cognitive load pro běžného uživatele.
+Denní header obsahuje:
+- **Velký den + datum** vlevo (např. `ČT 24. dubna`), zvýrazněně
+- **Relativní popisek** vpravo (`dnes`, `zítra`, `za 3 dny`, `příští týden`, jinak nic)
+- Levá barevná lišta / tečka pro vizuální rytmus
+- Sticky chování při scrollu (volitelné — header se přilepí nahoru, dokud nepřijde další den)
 
-#### 6. „Nedávné jízdy" zkrácený přehled v hlavním tabu
-Pod nadcházejícími:
-- Header: **„Co klub jezdil tento týden"** + odkaz „Vše →" (otevře plnou sekci nebo modal s celými 14 dny).
-- Zobrazit jen **dnes + včera** (max 6 karet). Existující komponentu `RecentClubActivities` použít s prop `compact + maxDays={2}`.
-- Zachovat link na plnou historii (přes „Vše →").
+Mezi dny větší vertikální mezera (`space-y-8`), uvnitř dne menší (`space-y-2`).
 
-#### 7. Dashboard widget zarovnat
-`UpcomingEventsWidget` na Dashboardu má smysl ponechat, ale:
-- Použít stejný layout karty jako na `/events` (konzistence).
-- Pokud existuje „Next Up" do 48h → vizuální zvýraznění (border accent).
+#### 2. Měsíční oddělovač
+Když přechod mezi dny překročí měsíc, vsadit tenký label:
+```
+─── KVĚTEN 2026 ───
+```
+Pomáhá orientaci u dlouhých seznamů.
+
+#### 3. Přepínač View: Seznam ↔ Kalendář
+Vpravo nahoře vedle filtrů: ikony **☰ Seznam** / **▦ Kalendář**.
+
+**Kalendářní view** = klasický měsíční grid (Po–Ne), den s vyjížďkou má:
+- Tečku/badge s počtem jízd (1, 2, 3+)
+- Klik na den → scroll/expand seznamu na ten den (nebo popover s mini-kartami)
+- Today highlight, navigace ‹ Duben | Květen ›
+
+Použít existující `Calendar` (react-day-picker) z `src/components/ui/calendar.tsx` s custom `modifiers` pro dny s eventy.
+
+Default view = **Seznam** (mobile-first). Kalendář je opt-in pro desktop power-usery. Volba se pamatuje v `localStorage`.
+
+#### 4. Filtry zůstanou
+Pill řádek (Vše / Silnice / MTB / Gravel / S GPX) pracuje přes oba view. V kalendáři se promítne do tečkování dnů.
+
+#### 5. Hero "Next Up" zůstává nahoře
+Beze změny — pořád ukazuje nejbližší vyjížďku do 7 dní jako prominentní kartu nad denním seznamem.
+
+#### 6. Mobil
+- Denní header je menší ale stále jasný (`text-sm font-semibold uppercase` pro den, datum jako sekundární)
+- Kalendářní grid na mobilu kompaktní (full-width buňky, jen tečky bez čísel)
+- Sticky day header funguje i na mobilu
 
 ---
-
-### Co se NEmění
-- DB schema, RLS, edge funkce, sync logika — vše čistě front-end refactor.
-- Funkcionalita účasti (`EventParticipationToggle`) — jen jiný visual wrapper.
-- Strava event detekce a odkazy — beze změny logiky.
 
 ### Soubory
 
 **Nové:**
-- `src/components/events/NextUpHero.tsx` — hero karta nejbližší vyjížďky
-- `src/components/events/EventCard.tsx` — sjednocená karta (lokální + Strava varianta přes prop)
-- `src/components/events/UpcomingEventsList.tsx` — grouping podle Tento týden / Příští týden / Později + filtry
-- `src/lib/event-utils.ts` — helpery `groupEventsByPeriod()`, `getNextUpEvent()`
+- `src/components/events/EventsCalendarView.tsx` — měsíční kalendář s tečkováním dnů a popoverem
+- `src/components/events/DayHeader.tsx` — sticky denní nadpis s relativním popiskem
 
 **Upravené:**
-- `src/pages/Events.tsx` — 2 taby místo 3, hero nahoře, „Co klub jezdil" sekce pod nadcházejícími
-- `src/components/events/RecentClubActivities.tsx` — přidat props `compact?: boolean`, `maxDays?: number`
-- `src/components/dashboard/UpcomingEventsWidget.tsx` — použít sdílenou `<EventCard />` pro konzistenci
+- `src/lib/event-utils.ts` — nahradit/doplnit `groupEventsByDay()` (klíč = `yyyy-MM-dd`), helper `getRelativeDayLabel(date)` ("dnes" / "zítra" / "za N dní" / null)
+- `src/components/events/UpcomingEventsList.tsx` — denní grupování + view toggle (seznam/kalendář), `localStorage` perzistence preference
+- `src/pages/Events.tsx` — žádné změny v topologii, jen předá data do nového listu
 
 **Beze změny:**
-- `EventParticipationToggle`, `StravaEventBadge`, `EditEventDialog`, `CreateEventDialog`, edge funkce, DB.
+- `EventCard`, `NextUpHero`, `RecentClubActivities`, edge funkce, DB.
 
-### Otevřené otázky (před implementací)
-1. **Hero karta**: chceš ji vždy viditelnou (i když je nejbližší vyjížďka za 3 týdny), nebo jen pokud je do 7 dní?
-2. **Strava události v hero**: pokud je nejbližší událost Strava (ne lokální), má být v hero, nebo skipnout na nejbližší lokální?
-3. **„Nedávné jízdy" jako 3. tab vs. sekce v hlavním tabu**: souhlasíš se sloučením do 2 tabů, nebo radši ponechat 3 a jen vylepšit karty?
+### Otevřené otázky
+
+1. **Sticky day header** při scrollu — chceš (vždy víš ve kterém dni jsi), nebo necháme statické?
+2. **Default view** — souhlasíš se Seznamem jako výchozím a Kalendářem jako opt-in přepínačem? Nebo radši Kalendář defaultně na desktopu?
+3. **Klik na den v kalendáři** — preferuješ (a) scroll na ten den v seznamu pod kalendářem, nebo (b) popover/dialog se seznamem jízd toho dne přímo nad kalendářem?
 
