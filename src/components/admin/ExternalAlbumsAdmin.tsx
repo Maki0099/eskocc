@@ -240,11 +240,11 @@ const ExternalAlbumsAdmin = () => {
         )}
 
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogContent>
+          <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>{editing ? "Upravit album" : "Nové album"}</DialogTitle>
               <DialogDescription>
-                Sdílecí URL z Google Photos a cover obrázek (doporučeno 1600×900).
+                Sdílecí URL z Google Photos a cover obrázek.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
@@ -277,7 +277,12 @@ const ExternalAlbumsAdmin = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Cover obrázek</Label>
+                <div className="flex items-baseline justify-between gap-2">
+                  <Label>Cover obrázek</Label>
+                  <span className="text-xs text-muted-foreground">
+                    Doporučené rozlišení: <strong>1600×900</strong> (poměr 16:9)
+                  </span>
+                </div>
                 {form.cover_image_url && (
                   <img
                     src={form.cover_image_url}
