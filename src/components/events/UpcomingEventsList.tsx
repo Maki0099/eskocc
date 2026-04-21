@@ -1,7 +1,13 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { format } from "date-fns";
+import { cs } from "date-fns/locale";
+import { LayoutList, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import EventCard, { type EventCardEvent } from "@/components/events/EventCard";
-import { groupEventsByPeriod, matchesSportFilter, type SportFilter } from "@/lib/event-utils";
+import DayHeader from "@/components/events/DayHeader";
+import EventsCalendarView from "@/components/events/EventsCalendarView";
+import { groupEventsByDay, matchesSportFilter, type SportFilter } from "@/lib/event-utils";
 
 interface UpcomingEventsListProps {
   events: EventCardEvent[];
@@ -20,6 +26,9 @@ const FILTERS: { value: SportFilter; label: string }[] = [
   { value: "gpx", label: "S GPX" },
 ];
 
+type ViewMode = "list" | "calendar";
+const VIEW_STORAGE_KEY = "events:viewMode";
+
 const UpcomingEventsList = ({
   events,
   userId,
@@ -29,66 +38,130 @@ const UpcomingEventsList = ({
   onDeleteRequest,
 }: UpcomingEventsListProps) => {
   const [filter, setFilter] = useState<SportFilter>("all");
+  const [view, setView] = useState<ViewMode>("list");
+
+  // Restore preferred view
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(VIEW_STORAGE_KEY) as ViewMode | null;
+      if (saved === "list" || saved === "calendar") setView(saved);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const handleViewChange = (next: ViewMode) => {
+    setView(next);
+    try {
+      localStorage.setItem(VIEW_STORAGE_KEY, next);
+    } catch {
+      /* ignore */
+    }
+  };
 
   const filtered = useMemo(
     () => events.filter((e) => matchesSportFilter(e as any, filter)),
     [events, filter]
   );
-  const groups = useMemo(() => groupEventsByPeriod(filtered as any), [filtered]);
+  const dayGroups = useMemo(() => groupEventsByDay(filtered as EventCardEvent[]), [filtered]);
 
-  // Only show filter row if we have something to filter
   const showFilters = events.length > 3;
 
   return (
     <div className="space-y-6">
-      {showFilters && (
-        <div className="flex flex-wrap gap-2">
-          {FILTERS.map((f) => (
-            <Button
-              key={f.value}
-              variant={filter === f.value ? "default" : "outline"}
-              size="sm"
-              onClick={() => setFilter(f.value)}
-              className="rounded-full"
-            >
-              {f.label}
-            </Button>
-          ))}
-        </div>
-      )}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        {showFilters ? (
+          <div className="flex flex-wrap gap-2">
+            {FILTERS.map((f) => (
+              <Button
+                key={f.value}
+                variant={filter === f.value ? "default" : "outline"}
+                size="sm"
+                onClick={() => setFilter(f.value)}
+                className="rounded-full"
+              >
+                {f.label}
+              </Button>
+            ))}
+          </div>
+        ) : (
+          <span />
+        )}
 
-      {groups.length === 0 ? (
+        <ToggleGroup
+          type="single"
+          value={view}
+          onValueChange={(v) => v && handleViewChange(v as ViewMode)}
+          className="ml-auto"
+        >
+          <ToggleGroupItem value="list" aria-label="Zobrazit jako seznam" size="sm">
+            <LayoutList className="h-4 w-4" />
+            <span className="hidden sm:inline ml-1.5 text-xs">Seznam</span>
+          </ToggleGroupItem>
+          <ToggleGroupItem value="calendar" aria-label="Zobrazit jako kalendář" size="sm">
+            <CalendarDays className="h-4 w-4" />
+            <span className="hidden sm:inline ml-1.5 text-xs">Kalendář</span>
+          </ToggleGroupItem>
+        </ToggleGroup>
+      </div>
+
+      {dayGroups.length === 0 ? (
         <p className="text-sm text-muted-foreground py-8 text-center">
           {filter === "all"
             ? "Žádné nadcházející vyjížďky"
             : "V této kategorii nic není. Zkus jiný filtr."}
         </p>
+      ) : view === "calendar" ? (
+        <EventsCalendarView
+          events={filtered as EventCardEvent[]}
+          userId={userId}
+          isAdmin={isAdmin}
+          highlightId={highlightId}
+          onChanged={onChanged}
+          onDeleteRequest={onDeleteRequest}
+        />
       ) : (
-        groups.map((group) => (
-          <section key={group.key}>
-            <div className="flex items-baseline justify-between mb-3">
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                {group.label}
-              </h3>
-              <span className="text-xs text-muted-foreground">
-                {group.events.length}
-              </span>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {group.events.map((e) => (
-                <EventCard
-                  key={e.id}
-                  event={e as EventCardEvent}
-                  userId={userId}
-                  isAdmin={isAdmin}
-                  highlight={highlightId === e.id}
-                  onChanged={onChanged}
-                  onDeleteRequest={onDeleteRequest}
+        <div className="space-y-8">
+          {dayGroups.map((group, idx) => {
+            const prev = dayGroups[idx - 1];
+            const monthChanged =
+              !prev || prev.date.getMonth() !== group.date.getMonth() ||
+              prev.date.getFullYear() !== group.date.getFullYear();
+            const showMonthDivider = monthChanged && idx > 0;
+
+            return (
+              <div key={group.key}>
+                {showMonthDivider && (
+                  <div className="flex items-center gap-3 mb-6 mt-2">
+                    <div className="h-px flex-1 bg-border" />
+                    <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                      {format(group.date, "LLLL yyyy", { locale: cs })}
+                    </span>
+                    <div className="h-px flex-1 bg-border" />
+                  </div>
+                )}
+                <DayHeader
+                  date={group.date}
+                  count={group.events.length}
+                  id={`day-${group.key}`}
                 />
-              ))}
-            </div>
-          </section>
-        ))
+                <div className="space-y-3">
+                  {group.events.map((e) => (
+                    <EventCard
+                      key={e.id}
+                      event={e}
+                      userId={userId}
+                      isAdmin={isAdmin}
+                      highlight={highlightId === e.id}
+                      onChanged={onChanged}
+                      onDeleteRequest={onDeleteRequest}
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       )}
     </div>
   );

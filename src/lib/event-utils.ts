@@ -1,4 +1,4 @@
-import { addDays, endOfDay, endOfWeek, isBefore, startOfDay } from "date-fns";
+import { addDays, differenceInCalendarDays, endOfDay, endOfWeek, format, isBefore, startOfDay } from "date-fns";
 
 export interface EventLike {
   id: string;
@@ -81,4 +81,48 @@ export const pluralizeGoing = (count: number): string => {
   if (count === 1) return "1 jde";
   if (count >= 2 && count <= 4) return `${count} jdou`;
   return `${count} jde`;
+};
+
+export interface DayGroup<T extends EventLike> {
+  /** ISO key yyyy-MM-dd */
+  key: string;
+  date: Date;
+  events: T[];
+}
+
+/** Group events by calendar day (yyyy-MM-dd). Empty days omitted. Sorted ascending. */
+export const groupEventsByDay = <T extends EventLike>(events: T[]): DayGroup<T>[] => {
+  const map = new Map<string, { date: Date; events: T[] }>();
+  for (const e of events) {
+    const d = new Date(e.event_date);
+    const key = format(d, "yyyy-MM-dd");
+    const existing = map.get(key);
+    if (existing) {
+      existing.events.push(e);
+    } else {
+      map.set(key, { date: startOfDay(d), events: [e] });
+    }
+  }
+  const groups: DayGroup<T>[] = Array.from(map.entries()).map(([key, v]) => ({
+    key,
+    date: v.date,
+    events: v.events.sort(
+      (a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime()
+    ),
+  }));
+  groups.sort((a, b) => a.date.getTime() - b.date.getTime());
+  return groups;
+};
+
+/** Czech relative day label: "dnes", "zítra", "za N dní", "příští týden", or null. */
+export const getRelativeDayLabel = (date: Date, now: Date = new Date()): string | null => {
+  const diff = differenceInCalendarDays(startOfDay(date), startOfDay(now));
+  if (diff < 0) return null;
+  if (diff === 0) return "dnes";
+  if (diff === 1) return "zítra";
+  if (diff >= 2 && diff <= 4) return `za ${diff} dny`;
+  if (diff >= 5 && diff <= 6) return `za ${diff} dní`;
+  if (diff === 7) return "za týden";
+  if (diff >= 8 && diff <= 14) return "příští týden";
+  return null;
 };
