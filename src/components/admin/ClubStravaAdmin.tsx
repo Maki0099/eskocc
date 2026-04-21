@@ -264,9 +264,15 @@ export const ClubStravaAdmin = ({ preselectedAthleteKey, onAthleteSelected }: Cl
   const hoursSinceSync = lastSyncAt
     ? (Date.now() - new Date(lastSyncAt).getTime()) / 3_600_000
     : null;
-  const tokenExpired = creds ? new Date(creds.expires_at).getTime() < Date.now() : false;
   const syncStale = hoursSinceSync === null || hoursSinceSync > 24;
-  const showStaleAlert = !loading && !needsReauth && (syncStale || tokenExpired);
+  const showStaleAlert = !loading && !needsReauth && syncStale;
+  const lastSuccessLog = syncLogs.find((l) => l.status === "success") || null;
+
+  const healthBadge: { label: string; className: string } = needsReauth
+    ? { label: "Vyžaduje přepojení", className: "bg-destructive/15 text-destructive border-destructive/30" }
+    : syncStale
+    ? { label: "Sync zastaralý", className: "bg-yellow-500/15 text-yellow-700 dark:text-yellow-400 border-yellow-500/30" }
+    : { label: "Aktivní", className: "bg-green-500/15 text-green-700 dark:text-green-400 border-green-500/30" };
 
   const selectValue = (a: AthleteRow): string => {
     if (a.ignored) return IGNORE_VALUE;
@@ -301,21 +307,12 @@ export const ClubStravaAdmin = ({ preselectedAthleteKey, onAthleteSelected }: Cl
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>
-            {tokenExpired
-              ? "Strava token vypršel"
-              : hoursSinceSync === null
+            {hoursSinceSync === null
               ? "Sync ještě neproběhl"
               : "Sync neproběhl déle než 24 hodin"}
           </AlertTitle>
           <AlertDescription>
-            {tokenExpired ? (
-              <>
-                Token vypršel{" "}
-                {formatDistanceToNow(new Date(creds!.expires_at), { addSuffix: true, locale: cs })}.
-                Refresh by měl proběhnout automaticky při nejbližším syncu — pokud chyba přetrvává,
-                klikni na <strong>Přepojit</strong> a obnov OAuth autorizaci.
-              </>
-            ) : hoursSinceSync === null ? (
+            {hoursSinceSync === null ? (
               <>
                 V databázi nejsou žádné synchronizované aktivity. Spusť ručně „Sync teď" a zkontroluj
                 logy. Pokud sync selže, zkontroluj propojení Strava účtu níže.
@@ -347,11 +344,30 @@ export const ClubStravaAdmin = ({ preselectedAthleteKey, onAthleteSelected }: Cl
             <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
               <div className="flex items-center gap-3">
                 <CheckCircle2 className="w-5 h-5 text-primary" />
-                <div>
-                  <p className="font-medium">Propojeno</p>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium">Propojeno</p>
+                    <Badge variant="outline" className={healthBadge.className}>
+                      {healthBadge.label}
+                    </Badge>
+                  </div>
                   <p className="text-sm text-muted-foreground">
-                    Athlete ID: {creds.athlete_id || "—"} · Token expiruje{" "}
-                    {format(new Date(creds.expires_at), "d. M. yyyy HH:mm", { locale: cs })}
+                    Athlete ID: {creds.athlete_id || "—"}
+                    {lastSuccessLog ? (
+                      <>
+                        {" "}· Poslední úspěšný sync:{" "}
+                        {formatDistanceToNow(new Date(lastSuccessLog.started_at), { addSuffix: true, locale: cs })}
+                        {" "}({lastSuccessLog.fetched_count} aktivit)
+                      </>
+                    ) : lastSyncAt ? (
+                      <>
+                        {" "}· Poslední aktivita:{" "}
+                        {formatDistanceToNow(new Date(lastSyncAt), { addSuffix: true, locale: cs })}
+                      </>
+                    ) : (
+                      <> · Sync ještě neproběhl</>
+                    )}
+                    {" "}· Auto-refresh ✓
                   </p>
                 </div>
               </div>
