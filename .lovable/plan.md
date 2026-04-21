@@ -1,68 +1,54 @@
 
 
-## Přidání nového Google Photos alba do galerie
+## Drag-and-drop řazení interních fotek v galerii
 
-### Stav teď
-Alba jsou hardcoded v `src/pages/Gallery.tsx` v poli `externalAlbums` (4 alba: Mallorca 2022–2025). Cover obrázky jsou statické importy z `src/assets/albums/*.jpg`. Pro každé nové album je potřeba zásah do kódu **a** nahrání cover fotky do repa.
+### Cíl
+Umožnit ručně přeuspořádat pořadí fotek v `/galerie`. Spravované přes nový admin panel (drag-and-drop), zobrazené ve veřejné galerii podle nastaveného pořadí.
 
-### Dvě možnosti — vyber jednu
+### Změny v databázi
+Migrace tabulky `gallery_items`:
+- Přidat sloupec `sort_order INTEGER NOT NULL DEFAULT 0`
+- Backfill: existujícím fotkám přiřadit `sort_order` podle pořadí `created_at DESC` (0, 1, 2, …) — nejnovější fotky budou nahoře, jako teď.
+- Index na `sort_order` pro rychlé řazení.
 
----
+### Změny v aplikaci
 
-### Varianta A — Rychle: přidat další album do kódu (5 minut)
+**1. Nový admin tab „Fotky" (`/admin` → Fotky)**
+Nová komponenta `src/components/admin/GalleryPhotosAdmin.tsx`:
+- Načte všechny fotky z `gallery_items` seřazené podle `sort_order ASC`.
+- Zobrazí seznam s drag-handle (`GripVertical`), náhledem (cca 80×80), titulkem (caption nebo „Bez popisu"), jménem autora, datem nahrání a tlačítkem smazat.
+- Filtr/přepínač: **Všechny / Z vyjížděk (event_id) / Ostatní (bez event_id)** — řazení se ukládá globálně přes všechny fotky bez ohledu na filtr (filter je jen view).
+- Drag-and-drop přes `@dnd-kit` (stejný pattern jako `SortableAlbumItem`/`SortableMenuItem`):
+  - `DndContext` + `SortableContext` + `PointerSensor` (8px activation)
+  - Po dropu `arrayMove` → batch UPDATE všech přesunutých řádků s novým `sort_order`.
+- Nová sortable item komponenta `src/components/admin/SortableGalleryPhotoItem.tsx` (analogie k `SortableAlbumItem`).
 
-Vhodné, pokud alba přibývají max 1–2× ročně a nevadí, že to dělá vývojář.
+**2. Nový tab v `Admin.tsx`**
+Přidat `<TabsTrigger value="gallery">` s ikonou `Image` (lucide), uvnitř `<TabsContent value="gallery">` renderovat `<GalleryPhotosAdmin />`.
 
-**Co udělám:**
-1. Ty mi dodáš:
-   - Název alba (např. „Mallorca 2026")
-   - Sdílecí URL z Google Photos (`https://photos.app.goo.gl/...`)
-   - Cover obrázek (JPG, ideálně 1600×900, max 500 KB) — nahraj do chatu
-2. Já:
-   - Uložím obrázek do `src/assets/albums/<slug>.jpg`
-   - Přidám položku do pole `externalAlbums` v `Gallery.tsx` (nahoru, aby bylo nejnovější první)
+**3. Galerie pro členy (`src/pages/Gallery.tsx`)**
+Změnit dotaz z `.order("created_at", { ascending: false })` na `.order("sort_order", { ascending: true }).order("created_at", { ascending: false })` (sekundární řazení pro stabilní pořadí u nových fotek se stejným `sort_order`).
 
-**Soubory:** `src/pages/Gallery.tsx` + nový soubor v `src/assets/albums/`.
+**4. Auto-přiřazení `sort_order` při uploadu**
+V `src/components/gallery/PhotoUpload.tsx` při vytvoření nové fotky přiřadit `sort_order = -1` (nebo `MIN(sort_order) - 1`), aby se nová fotka objevila jako první (nahoře). Alternativa: `sort_order = 0` a admin si může přesunout — doporučuji **`-1`** (nejnovější nahoře, intuitivní).
 
----
+### Co se NEmění
+- Komponenta `PhotoGrid.tsx` (frontend grid v galerii) — pořadí přijde už seřazené z dotazu.
+- RLS policies — admin už má `has_role('admin')` práva na update přes existující politiky? **Pozor:** `gallery_items` aktuálně **nemá UPDATE policy** — je tam jen INSERT a DELETE. Migrace musí přidat policy „Admins can update gallery items" pro `UPDATE` s `has_role(auth.uid(), 'admin')`.
 
-### Varianta B — Lépe: admin panel pro správu alb (≈ 1 hodina práce)
+### Technické detaily
+- `@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities` už v projektu jsou (používá je admin alb i menu).
+- Batch update: pro N přesunutých řádků provést N samostatných `UPDATE` přes Promise.all (stejný pattern jako `ExternalAlbumsAdmin`). U galerie s desítkami až stovkami fotek je to OK; pokud by jich byly tisíce, řešilo by se RPC funkcí — teď ne.
+- Filtr v adminu je čistě view-side — `sort_order` je globální napříč všemi fotkami (jednodušší než per-kategorie pořadí).
 
-Vhodné, pokud chceš alba přidávat sám/sama bez vývojáře, případně častěji.
+### Soubory
+**Nové:**
+- `supabase/migrations/<timestamp>_gallery_items_sort_order.sql`
+- `src/components/admin/GalleryPhotosAdmin.tsx`
+- `src/components/admin/SortableGalleryPhotoItem.tsx`
 
-**Co vytvořím:**
-
-1. **DB migrace** — nová tabulka `external_albums`:
-   - `id`, `title`, `url`, `cover_image_url`, `sort_order`, `year` (int, nullable, pro řazení), `created_at`
-   - RLS: SELECT pro všechny (alba se ukazují i nečlenům? — viz otázka níž), INSERT/UPDATE/DELETE jen admin
-   - Seed: naimportuju 4 stávající alba
-
-2. **Storage** — nový bucket `album-covers` (public), nebo využiju existující `gallery` bucket s prefixem `albums/`
-
-3. **Admin UI** — nová karta v `/admin` „Externí alba":
-   - Tabulka s aktuálními alby (drag-and-drop pořadí pomocí `@dnd-kit`, stejně jako u menu items)
-   - Formulář „Přidat album": title, URL, upload cover image (s preview), rok
-   - Edit + smazat u každého řádku
-
-4. **Refactor `Gallery.tsx`**:
-   - Místo hardcoded pole načtu `external_albums` ze Supabase přes `useQuery`
-   - Skeleton během načítání
-   - Zachovám stávající vizuál (grid 3 sloupce, hover efekty, scroll animace)
-
-5. **Smazat** statické soubory `src/assets/albums/*.jpg` po migraci do Storage.
-
-**Soubory:**
-- `supabase/migrations/<ts>_external_albums.sql` (tabulka + RLS + seed + storage policy)
-- `src/components/admin/ExternalAlbumsAdmin.tsx` (nový)
-- `src/pages/Admin.tsx` (přidat tab)
-- `src/pages/Gallery.tsx` (načítat z DB)
-- `src/hooks/useExternalAlbums.ts` (nový — query hook)
-
----
-
-### Otázky k vyjasnění (jen pro variantu B)
-
-1. **Viditelnost alb** — mají být Google Photos alba viditelná i pro nečleny (anonymous návštěvníci homepage/galerie)? Aktuálně je celá `Gallery` stránka člensky chráněná přes `MemberOnlyContent`, takže alba stejně vidí jen členové. Necháváme stejně, nebo chceš alba zobrazit i veřejně?
-
-2. **Má jít cover obrázek nahrát i jako URL** (ne jen upload), pro případ, že by chtěl admin použít obrázek přímo z Google Photos? Default doporučuji jen upload (jednodušší, cache-friendly).
+**Upravené:**
+- `src/pages/Admin.tsx` (nový tab)
+- `src/pages/Gallery.tsx` (řazení)
+- `src/components/gallery/PhotoUpload.tsx` (auto sort_order pro nové fotky)
 
