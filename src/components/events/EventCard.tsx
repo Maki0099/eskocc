@@ -97,7 +97,11 @@ const EventCard = ({
     <Card
       className={`relative overflow-hidden transition-all hover:shadow-md hover:-translate-y-0.5 ${
         highlight ? "ring-1 ring-primary/30" : ""
-      } ${isStrava ? "border-l-4 border-l-[#FC4C02]" : ""}`}
+      } ${isStrava ? "border-l-4 border-l-[#FC4C02]" : ""} ${
+        event.is_participating && !isStrava
+          ? "border-l-4 border-l-green-500 bg-green-500/[0.03]"
+          : ""
+      }`}
     >
       <div className="p-4 sm:p-5">
         {/* Top meta row */}
