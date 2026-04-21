@@ -1,6 +1,23 @@
 import { useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useExternalAlbums, type ExternalAlbum } from "@/hooks/useExternalAlbums";
+import {
+  DndContext,
+  DragEndEvent,
+  DragStartEvent,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { SortableAlbumItem } from "./SortableAlbumItem";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,7 +40,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ImagePlus, Pencil, Trash2, Loader2, Plus, ArrowUp, ArrowDown, ExternalLink } from "lucide-react";
+import { ImagePlus, Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 const emptyForm = {
@@ -41,7 +58,13 @@ const ExternalAlbumsAdmin = () => {
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
 
   const openCreate = () => {
     setEditing(null);
@@ -135,20 +158,38 @@ const ExternalAlbumsAdmin = () => {
     }
   };
 
-  const move = async (album: ExternalAlbum, direction: -1 | 1) => {
-    const idx = albums.findIndex((a) => a.id === album.id);
-    const swapIdx = idx + direction;
-    if (swapIdx < 0 || swapIdx >= albums.length) return;
-    const other = albums[swapIdx];
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveDragId(event.active.id as string);
+  };
+
+  const handleDragCancel = () => {
+    setActiveDragId(null);
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    setActiveDragId(null);
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = albums.findIndex((a) => a.id === active.id);
+    const newIndex = albums.findIndex((a) => a.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reordered = arrayMove(albums, oldIndex, newIndex);
+
     try {
-      // Swap via two-step update to avoid unique-constraint issues (none here, but safe)
-      await supabase.from("external_albums").update({ sort_order: -1 }).eq("id", album.id);
-      await supabase.from("external_albums").update({ sort_order: album.sort_order }).eq("id", other.id);
-      await supabase.from("external_albums").update({ sort_order: other.sort_order }).eq("id", album.id);
+      for (let i = 0; i < reordered.length; i++) {
+        await supabase
+          .from("external_albums")
+          .update({ sort_order: i })
+          .eq("id", reordered[i].id);
+      }
+      toast.success("Pořadí uloženo");
       refetch();
     } catch (e: any) {
       console.error(e);
       toast.error("Přesun selhal");
+      refetch();
     }
   };
 
@@ -171,54 +212,31 @@ const ExternalAlbumsAdmin = () => {
         ) : albums.length === 0 ? (
           <p className="text-center text-muted-foreground py-8">Žádná alba</p>
         ) : (
-          <div className="space-y-2">
-            {albums.map((album, i) => (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            onDragCancel={handleDragCancel}
+          >
+            <SortableContext items={albums.map((a) => a.id)} strategy={verticalListSortingStrategy}>
               <div
-                key={album.id}
-                className="flex items-center gap-3 p-3 border rounded-lg bg-card"
+                className={`space-y-2 transition-all duration-200 ${
+                  activeDragId ? "rounded-lg ring-2 ring-primary/20 ring-offset-2 p-2 -m-2" : ""
+                }`}
               >
-                <div className="w-16 h-12 rounded overflow-hidden bg-muted flex-shrink-0">
-                  {album.cover_image_url ? (
-                    <img src={album.cover_image_url} alt={album.title} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                      <ImagePlus className="w-4 h-4" />
-                    </div>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium truncate">{album.title}</div>
-                  <a
-                    href={album.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-muted-foreground truncate hover:text-primary inline-flex items-center gap-1"
-                  >
-                    {album.url} <ExternalLink className="w-3 h-3" />
-                  </a>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Button variant="ghost" size="icon" className="h-8 w-8" disabled={i === 0} onClick={() => move(album, -1)}>
-                    <ArrowUp className="w-4 h-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8" disabled={i === albums.length - 1} onClick={() => move(album, 1)}>
-                    <ArrowDown className="w-4 h-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(album)}>
-                    <Pencil className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-destructive hover:text-destructive"
-                    onClick={() => setDeleteId(album.id)}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
+                {albums.map((album) => (
+                  <SortableAlbumItem
+                    key={album.id}
+                    album={album}
+                    onEdit={openEdit}
+                    onDelete={(id) => setDeleteId(id)}
+                    isDragActive={!!activeDragId}
+                  />
+                ))}
               </div>
-            ))}
-          </div>
+            </SortableContext>
+          </DndContext>
         )}
 
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
