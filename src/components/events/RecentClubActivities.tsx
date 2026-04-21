@@ -5,6 +5,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Activity, Mountain, Clock, MapPin } from "lucide-react";
 import { format, formatDistanceToNow, isToday, isYesterday, startOfDay } from "date-fns";
 import { cs } from "date-fns/locale";
