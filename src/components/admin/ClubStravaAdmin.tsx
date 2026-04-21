@@ -264,9 +264,15 @@ export const ClubStravaAdmin = ({ preselectedAthleteKey, onAthleteSelected }: Cl
   const hoursSinceSync = lastSyncAt
     ? (Date.now() - new Date(lastSyncAt).getTime()) / 3_600_000
     : null;
-  const tokenExpired = creds ? new Date(creds.expires_at).getTime() < Date.now() : false;
   const syncStale = hoursSinceSync === null || hoursSinceSync > 24;
-  const showStaleAlert = !loading && !needsReauth && (syncStale || tokenExpired);
+  const showStaleAlert = !loading && !needsReauth && syncStale;
+  const lastSuccessLog = syncLogs.find((l) => l.status === "success") || null;
+
+  const healthBadge: { label: string; className: string } = needsReauth
+    ? { label: "Vyžaduje přepojení", className: "bg-destructive/15 text-destructive border-destructive/30" }
+    : syncStale
+    ? { label: "Sync zastaralý", className: "bg-yellow-500/15 text-yellow-700 dark:text-yellow-400 border-yellow-500/30" }
+    : { label: "Aktivní", className: "bg-green-500/15 text-green-700 dark:text-green-400 border-green-500/30" };
 
   const selectValue = (a: AthleteRow): string => {
     if (a.ignored) return IGNORE_VALUE;
