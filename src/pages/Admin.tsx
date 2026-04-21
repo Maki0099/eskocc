@@ -13,6 +13,7 @@ import { RoutesImportAdmin } from "@/components/admin/RoutesImportAdmin";
 import { GpxBulkUploadAdmin } from "@/components/admin/GpxBulkUploadAdmin";
 import { StravaEventsSyncAdmin } from "@/components/admin/StravaEventsSyncAdmin";
 import { AiSettingsAdmin } from "@/components/admin/AiSettingsAdmin";
+import ExternalAlbumsAdmin from "@/components/admin/ExternalAlbumsAdmin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -44,7 +45,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Users, Shield, Loader2, Coffee, Target, Clock, KeyRound, Bell, Route, Sparkles, Trash2, Activity } from "lucide-react";
+import { Users, Shield, Loader2, Coffee, Target, Clock, KeyRound, Bell, Route, Sparkles, Trash2, Activity, Images } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ClubStravaAdmin } from "@/components/admin/ClubStravaAdmin";
 import { toast } from "sonner";
@@ -274,6 +275,10 @@ const Admin = () => {
               <TabsTrigger value="club-strava" className="gap-2">
                 <Activity className="w-4 h-4" />
                 Strava klub
+              </TabsTrigger>
+              <TabsTrigger value="albums" className="gap-2">
+                <Images className="w-4 h-4" />
+                Alba
               </TabsTrigger>
             </TabsList>
 
@@ -553,6 +558,10 @@ const Admin = () => {
 
             <TabsContent value="club-strava">
               <ClubStravaAdmin preselectedAthleteKey={preselectedAthleteKey} onAthleteSelected={() => setPreselectedAthleteKey(null)} />
+            </TabsContent>
+
+            <TabsContent value="albums">
+              <ExternalAlbumsAdmin />
             </TabsContent>
           </Tabs>
         </div>

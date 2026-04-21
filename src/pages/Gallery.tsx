@@ -13,10 +13,19 @@ import { SkeletonPhotoGrid } from "@/components/ui/skeleton";
 import { GalleryPageSkeleton } from "@/components/skeletons/PageSkeletons";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ExternalLink, ImageIcon } from "lucide-react";
+import { useExternalAlbums } from "@/hooks/useExternalAlbums";
 import mallorca2025 from "@/assets/albums/mallorca-2025.jpg";
 import mallorca2024 from "@/assets/albums/mallorca-2024.jpg";
 import vyjezd2024 from "@/assets/albums/vyjezd-2024.jpg";
 import mallorca2022 from "@/assets/albums/mallorca-2022.jpg";
+
+// Fallback obrázky pro alba bez nahraného coveru (legacy seed data)
+const FALLBACK_COVERS: Record<string, string> = {
+  "Mallorca 2025": mallorca2025,
+  "Mallorca 2024": mallorca2024,
+  "Mallorca 2023": vyjezd2024,
+  "Mallorca 2022": mallorca2022,
+};
 
 interface Photo {
   id: string;
@@ -34,33 +43,11 @@ interface Photo {
   } | null;
 }
 
-const externalAlbums = [
-  {
-    title: "Mallorca 2025",
-    url: "https://photos.app.goo.gl/Ma8bocoTRLdCebndA",
-    image: mallorca2025,
-  },
-  {
-    title: "Mallorca 2024",
-    url: "https://photos.app.goo.gl/RTPTPpkc1kPtMMgBA",
-    image: mallorca2024,
-  },
-  {
-    title: "Mallorca 2023",
-    url: "https://photos.app.goo.gl/EsoeTbv4AudTPitD9",
-    image: vyjezd2024,
-  },
-  {
-    title: "Mallorca 2022",
-    url: "https://photos.app.goo.gl/24M22WZEVDkG5osC8",
-    image: mallorca2022,
-  },
-];
-
 const Gallery = () => {
   const { user } = useAuth();
   const { isMember, loading: roleLoading } = useUserRole();
-  
+  const { albums: externalAlbums, loading: albumsLoading } = useExternalAlbums();
+
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -129,33 +116,55 @@ const Gallery = () => {
                 data-tour="gallery-albums"
               >
                 <h2 className="text-2xl font-semibold mb-4">Výjezdy - Google Foto</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {externalAlbums.map((album, index) => (
-                    <a
-                      key={album.title}
-                      href={album.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={`group block rounded-lg overflow-hidden border border-border bg-card hover:border-primary transition-all animate-on-scroll scale-in ${albumsVisible ? 'is-visible' : ''}`}
-                      style={{ transitionDelay: `${150 + index * 100}ms` }}
-                    >
-                      <div className="aspect-video overflow-hidden">
-                        <img 
-                          src={album.image} 
-                          alt={album.title} 
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
+                {albumsLoading ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {[0, 1, 2].map((i) => (
+                      <div key={i} className="rounded-lg border border-border bg-card overflow-hidden">
+                        <div className="aspect-video bg-muted animate-pulse" />
+                        <div className="p-4 h-16 bg-muted/30 animate-pulse" />
                       </div>
-                      <div className="p-4 flex items-center justify-between">
-                        <div>
-                          <h3 className="font-medium group-hover:text-primary transition-colors">{album.title}</h3>
-                          <p className="text-sm text-muted-foreground">Google Photos album</p>
-                        </div>
-                        <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                      </div>
-                    </a>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : externalAlbums.length === 0 ? (
+                  <p className="text-muted-foreground text-sm">Zatím žádná alba.</p>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {externalAlbums.map((album, index) => {
+                      const cover = album.cover_image_url || FALLBACK_COVERS[album.title];
+                      return (
+                        <a
+                          key={album.id}
+                          href={album.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={`group block rounded-lg overflow-hidden border border-border bg-card hover:border-primary transition-all animate-on-scroll scale-in ${albumsVisible ? 'is-visible' : ''}`}
+                          style={{ transitionDelay: `${150 + index * 100}ms` }}
+                        >
+                          <div className="aspect-video overflow-hidden bg-muted">
+                            {cover ? (
+                              <img
+                                src={cover}
+                                alt={album.title}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                                <ImageIcon className="w-8 h-8" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="p-4 flex items-center justify-between">
+                            <div>
+                              <h3 className="font-medium group-hover:text-primary transition-colors">{album.title}</h3>
+                              <p className="text-sm text-muted-foreground">Google Photos album</p>
+                            </div>
+                            <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                          </div>
+                        </a>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               <div
