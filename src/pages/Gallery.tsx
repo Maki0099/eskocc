@@ -52,6 +52,7 @@ const Gallery = () => {
           profile:profiles(full_name),
           event:events(title)
         `)
+        .order("sort_order", { ascending: true })
         .order("created_at", { ascending: false });
 
       if (error) throw error;

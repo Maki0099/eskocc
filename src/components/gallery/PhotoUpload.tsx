@@ -67,6 +67,15 @@ const PhotoUpload = ({ eventId, routeId, onUploadComplete }: PhotoUploadProps) =
         .from("gallery")
         .getPublicUrl(fileName);
 
+      // Compute sort_order so new photo appears first (min - 1, default -1)
+      const { data: minRow } = await supabase
+        .from("gallery_items")
+        .select("sort_order")
+        .order("sort_order", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      const newSortOrder = (minRow?.sort_order ?? 0) - 1;
+
       // Save to database
       const { error: dbError } = await supabase.from("gallery_items").insert({
         event_id: eventId || null,
@@ -75,6 +84,7 @@ const PhotoUpload = ({ eventId, routeId, onUploadComplete }: PhotoUploadProps) =
         file_url: urlData.publicUrl,
         file_name: selectedFile.name,
         caption: caption || null,
+        sort_order: newSortOrder,
       });
 
       if (dbError) throw dbError;
