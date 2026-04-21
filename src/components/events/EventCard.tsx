@@ -65,6 +65,34 @@ const EventCard = ({
     ? { href: stravaUrl!, target: "_blank", rel: "noopener noreferrer" }
     : { to: `/events/${event.id}` };
 
+  const adminButtons = isAdmin && !isStrava && (
+    <>
+      <EditEventDialog
+        event={event as any}
+        onEventUpdated={onChanged || (() => {})}
+        trigger={
+          <Button variant="ghost" size="icon" className="h-9 w-9">
+            <Pencil className="w-4 h-4" />
+          </Button>
+        }
+      />
+      {onDeleteRequest && (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9 text-destructive hover:text-destructive hover:bg-destructive/10"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onDeleteRequest(event);
+          }}
+        >
+          <Trash2 className="w-4 h-4" />
+        </Button>
+      )}
+    </>
+  );
+
   return (
     <Card
       className={`relative overflow-hidden transition-all hover:shadow-md hover:-translate-y-0.5 ${
@@ -72,7 +100,7 @@ const EventCard = ({
       } ${isStrava ? "border-l-4 border-l-[#FC4C02]" : ""}`}
     >
       <div className="p-4 sm:p-5">
-        {/* Meta row: date + participants + CTA */}
+        {/* Top meta row */}
         <div className="flex items-start justify-between gap-3 mb-2">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground min-w-0">
             <span className="font-medium text-foreground/80 capitalize">{dateLabel}</span>
@@ -91,34 +119,9 @@ const EventCard = ({
             )}
           </div>
 
-          <div className="flex items-center gap-1 shrink-0">
-            {isAdmin && !isStrava && (
-              <>
-                <EditEventDialog
-                  event={event as any}
-                  onEventUpdated={onChanged || (() => {})}
-                  trigger={
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <Pencil className="w-3.5 h-3.5" />
-                    </Button>
-                  }
-                />
-                {onDeleteRequest && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      onDeleteRequest(event);
-                    }}
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </Button>
-                )}
-              </>
-            )}
+          {/* Desktop CTA + admin (hidden on mobile) */}
+          <div className="hidden sm:flex items-center gap-1 shrink-0">
+            {adminButtons}
             {isStrava ? (
               <Button asChild size="sm" variant="outline" className="gap-1.5">
                 <a href={stravaUrl!} target="_blank" rel="noopener noreferrer">
@@ -138,16 +141,13 @@ const EventCard = ({
         </div>
 
         {/* Title */}
-        <TitleWrap
-          {...titleProps}
-          className="block group"
-        >
+        <TitleWrap {...titleProps} className="block group">
           <h3 className="text-base sm:text-lg font-semibold leading-tight group-hover:text-primary transition-colors line-clamp-2">
             {event.title}
           </h3>
         </TitleWrap>
 
-        {/* Meta line: location + metrics */}
+        {/* Meta line */}
         <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
           <span className="inline-flex items-center gap-1.5 min-w-0">
             <MapPin className="w-3.5 h-3.5 shrink-0" />
@@ -175,11 +175,36 @@ const EventCard = ({
           )}
         </div>
 
-        {event.is_participating && !isStrava && (
-          <div className="mt-2">
-            <Badge variant="default" className="text-xs">Jdeš ✓</Badge>
-          </div>
-        )}
+        {/* Mobile CTA — full width below content */}
+        <div className="sm:hidden mt-4 space-y-2">
+          {isStrava ? (
+            <Button
+              asChild
+              size="lg"
+              className="w-full gap-2 bg-[#FC4C02] hover:bg-[#E34402] text-white h-12"
+            >
+              <a href={stravaUrl!} target="_blank" rel="noopener noreferrer">
+                Otevřít na Stravě
+                <ExternalLink className="w-4 h-4" />
+              </a>
+            </Button>
+          ) : userId ? (
+            <EventParticipationToggle
+              eventId={event.id}
+              userId={userId}
+              isParticipating={event.is_participating}
+              onToggle={onChanged || (() => {})}
+              fullWidth
+              size="lg"
+              showFullText
+              className="h-12"
+            />
+          ) : null}
+
+          {adminButtons && (
+            <div className="flex justify-end gap-1 pt-1">{adminButtons}</div>
+          )}
+        </div>
       </div>
     </Card>
   );

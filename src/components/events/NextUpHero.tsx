@@ -98,9 +98,13 @@ const NextUpHero = ({ event, userId, onChanged }: NextUpHeroProps) => {
           </div>
         )}
 
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3">
           {isStrava ? (
-            <Button asChild size="lg" className="gap-2 bg-[#FC4C02] hover:bg-[#E34402] text-white">
+            <Button
+              asChild
+              size="lg"
+              className="gap-2 bg-[#FC4C02] hover:bg-[#E34402] text-white w-full sm:w-auto h-12"
+            >
               <a href={stravaUrl!} target="_blank" rel="noopener noreferrer">
                 Otevřít na Stravě
                 <ExternalLink className="w-4 h-4" />
@@ -112,15 +116,15 @@ const NextUpHero = ({ event, userId, onChanged }: NextUpHeroProps) => {
               userId={userId}
               isParticipating={event.is_participating}
               onToggle={onChanged || (() => {})}
+              size="lg"
+              showFullText
+              className="w-full sm:w-auto h-12"
             />
           ) : null}
           {!isStrava && (
-            <Button asChild variant="outline" size="lg">
+            <Button asChild variant="outline" size="lg" className="w-full sm:w-auto h-12">
               <Link to={`/events/${event.id}`}>Detail vyjížďky</Link>
             </Button>
-          )}
-          {event.is_participating && !isStrava && (
-            <Badge variant="default" className="text-sm py-1.5 px-3">Jdeš ✓</Badge>
           )}
         </div>
       </div>

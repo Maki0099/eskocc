@@ -1,28 +1,37 @@
 import { useState } from "react";
-import { UserPlus, UserMinus, Loader2 } from "lucide-react";
+import { UserPlus, Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 interface EventParticipationToggleProps {
   eventId: string;
   userId: string;
   isParticipating: boolean;
   onToggle: () => void;
+  fullWidth?: boolean;
+  size?: "sm" | "default" | "lg";
+  showFullText?: boolean;
+  className?: string;
 }
 
-const EventParticipationToggle = ({ 
-  eventId, 
-  userId, 
-  isParticipating, 
-  onToggle 
+const EventParticipationToggle = ({
+  eventId,
+  userId,
+  isParticipating,
+  onToggle,
+  fullWidth = false,
+  size = "sm",
+  showFullText = false,
+  className,
 }: EventParticipationToggleProps) => {
   const [loading, setLoading] = useState(false);
 
   const handleToggle = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     setLoading(true);
     try {
       if (isParticipating) {
@@ -51,25 +60,37 @@ const EventParticipationToggle = ({
     }
   };
 
+  const labelGoing = "Jdeš ✓ — odhlásit";
+  const labelJoin = "Jdu na vyjížďku";
+
   return (
     <Button
       variant={isParticipating ? "secondary" : "default"}
-      size="sm"
+      size={size}
       onClick={handleToggle}
       disabled={loading}
-      className="gap-1.5 shrink-0"
+      className={cn(
+        "gap-2 shrink-0",
+        fullWidth && "w-full",
+        isParticipating && "ring-1 ring-green-500/40 text-green-700 dark:text-green-400",
+        className,
+      )}
     >
       {loading ? (
         <Loader2 className="w-4 h-4 animate-spin" />
       ) : isParticipating ? (
         <>
-          <UserMinus className="w-4 h-4" />
-          <span className="hidden sm:inline">Odhlásit</span>
+          <Check className="w-4 h-4" />
+          <span className={showFullText ? "inline" : "hidden sm:inline"}>
+            {showFullText ? labelGoing : "Odhlásit"}
+          </span>
         </>
       ) : (
         <>
           <UserPlus className="w-4 h-4" />
-          <span className="hidden sm:inline">Přihlásit</span>
+          <span className={showFullText ? "inline" : "hidden sm:inline"}>
+            {showFullText ? labelJoin : "Přihlásit"}
+          </span>
         </>
       )}
     </Button>
