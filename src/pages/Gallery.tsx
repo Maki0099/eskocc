@@ -8,6 +8,7 @@ import Footer from "@/components/layout/Footer";
 import PhotoGrid from "@/components/gallery/PhotoGrid";
 import PhotoUpload from "@/components/gallery/PhotoUpload";
 import MemberOnlyContent from "@/components/MemberOnlyContent";
+import WeeklyHighlights from "@/components/gallery/WeeklyHighlights";
 import { Card, CardContent } from "@/components/ui/card";
 import { SkeletonPhotoGrid } from "@/components/ui/skeleton";
 import { GalleryPageSkeleton } from "@/components/skeletons/PageSkeletons";
@@ -97,6 +98,9 @@ const Gallery = () => {
             />
           ) : (
             <>
+              {/* Weekly highlights from Strava club activities */}
+              <WeeklyHighlights />
+
               {/* External Google Photos Albums */}
               <div 
                 ref={albumsRef}
