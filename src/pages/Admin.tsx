@@ -14,6 +14,7 @@ import { GpxBulkUploadAdmin } from "@/components/admin/GpxBulkUploadAdmin";
 import { StravaEventsSyncAdmin } from "@/components/admin/StravaEventsSyncAdmin";
 import { AiSettingsAdmin } from "@/components/admin/AiSettingsAdmin";
 import ExternalAlbumsAdmin from "@/components/admin/ExternalAlbumsAdmin";
+import GalleryPhotosAdmin from "@/components/admin/GalleryPhotosAdmin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -279,6 +280,10 @@ const Admin = () => {
               <TabsTrigger value="albums" className="gap-2">
                 <Images className="w-4 h-4" />
                 Alba
+              </TabsTrigger>
+              <TabsTrigger value="gallery-photos" className="gap-2">
+                <Images className="w-4 h-4" />
+                Fotky
               </TabsTrigger>
             </TabsList>
 
@@ -562,6 +567,10 @@ const Admin = () => {
 
             <TabsContent value="albums">
               <ExternalAlbumsAdmin />
+            </TabsContent>
+
+            <TabsContent value="gallery-photos">
+              <GalleryPhotosAdmin />
             </TabsContent>
           </Tabs>
         </div>
