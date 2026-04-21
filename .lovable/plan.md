@@ -1,77 +1,36 @@
 
 
-## Otázka: "Connect Strava to pull member activities into the events page and gallery highlights"
+## Vyčistit matoucí stav „Token expiruje" v admin panelu Strava klub
 
-### Krátká odpověď
-**Z velké části už to máš.** Jen není povrchově vidět na `/events` a `/galerie`. Stačí ty existující data (která už taháme přes `sync-club-activities` cron každých 24h) **vystavit** v UI jako dvě nové sekce. Žádný nový OAuth, žádné nové API permissions.
+### Diagnóza
+Propojení **funguje správně**. Sync proběhl dnes ve 14:03 lokál (82 aktivit, status success), `needs_reauth = false`, žádná chyba. Hodnota „Token expiruje 21. 4. 2026 20:03" v UI je jen **6hodinová expirace short-lived access tokenu**, který se automaticky refreshne při každém syncu (cron každé 4h + manuální tlačítko). Není to deadline pro re-autorizaci.
 
-### Co už dnes funguje v pozadí
-- **Klubový OAuth** (`club_api_credentials`) — admin propojený jednorázově se Stravou.
-- **Cron 24h** (`sync-club-activities`) — stahuje až 200 nejnovějších klubových aktivit.
-- **`club_activities` tabulka** — fingerprint, jméno, distance, čas, převýšení, sport, datum, `matched_user_id` (mapováno na našeho usera přes `club_athlete_mappings`).
-- **YTD agregace** — `recalc_club_ytd()` plní `profiles.strava_ytd_distance/count`, dnes využité jen na `/statistiky` a v homepage teaseru.
+### Změny v UI (`src/components/admin/ClubStravaAdmin.tsx`)
 
-**Co Strava klubový endpoint NEvrací:** fotky, GPS trasu (polyline) ani odkaz na konkrétní aktivitu. To je hard limit Strava API — pro fotky/polyline by musel **každý člen** propojit svůj osobní Strava účet (= jiný projekt, viz sekce „Co NENÍ realistické").
+**1. Nahradit zavádějící „Token expiruje X" jasnějším textem o stavu**
+Místo:
+> Athlete ID: 1344015 · Token expiruje 21. 4. 2026 20:03
 
----
+Zobrazit:
+> Athlete ID: 1344015 · Poslední úspěšný sync: před 2 hodinami (82 aktivit) · Auto-refresh ✓
 
-### Co reálně postavíme
+Tím se admin dozví **to, co ho reálně zajímá** (sync funguje), místo technického detailu o krátkodobém access tokenu.
 
-#### 1. „Nedávné klubové jízdy" sekce na `/events`
-Nový blok mezi „Nadcházející" a „Historie" tabem (nebo jako třetí tab **„Nedávné jízdy"**):
-- Posledních 14 dní aktivit z `club_activities`, seskupeno podle dne.
-- Karta jízdy: jméno člena (klikatelné na `/member/:userId` pokud `matched_user_id` existuje, jinak jen text), sport ikona (silnička/MTB/gravel/run), distance, čas, převýšení, relativní čas („před 2 dny").
-- Filter pill: **Vše / Silnice / MTB / Gravel** (podle `sport_type`).
-- Zobrazí se členům (`member`/`active_member`/`admin`) — RLS už to umožňuje.
+**2. Odstranit „Strava token vypršel" alert z `showStaleAlert`**
+Aktuální logika `tokenExpired = creds.expires_at < Date.now()` zobrazí strašidelný červený alert pokaždé, když uplyne 6 hodin od posledního syncu (což je normální stav před dalším cronem). Odstranit `tokenExpired` z podmínky alertu — spoléhat **pouze** na:
+- `needs_reauth === true` (skutečný problém — refresh token byl odvolán)
+- `lastSyncAt` starší než 24h (cron neběží)
 
-#### 2. „Highlights týdne" widget v `/galerie`
-Banner nahoře nad tabbed galerií:
-- **Top 3 jízdy minulého týdne** podle distance (z `club_activities` WHERE `activity_date >= now()-7d`).
-- Karty: jméno + iniciála, distance, převýšení, datum, sport.
-- Plus jeden „leaderboard chip" — kdo má nejvíc km za posledních 7 dní celkově.
-- Cíl: galerie přestane být jen statická fotka-grid, dostane „život klubu".
-
-#### 3. Manuální „Sync teď" tlačítko
-V adminu (Strava klub tab) už existuje. Přidat ho i do Dashboardu pro adminy, aby nemuseli do `/admin` (drobný UX bonus, žádná nová logika).
-
----
-
-### Co NENÍ realistické (a proč)
-
-| Požadavek | Proč to nejde |
-|---|---|
-| Fotky z aktivit členů v galerii | Strava klubový endpoint fotky nevrací. Per-user OAuth + scope `activity:read_all` by teoreticky šel, ale Strava App je momentálně omezená na 1 athlete (viz mem `strava-api-app-misconfiguration`). |
-| GPS trasa konkrétní jízdy na mapě | Stejný důvod — `polyline` chybí v klubovém endpointu. |
-| Real-time push „Petr právě dojel 80 km" | Strava neposkytuje webhooks pro klubové aktivity. Max co můžeme = 24h cron + manuální sync. |
-| Aktivity starší než ~200 nejnovějších | Strava klubový endpoint vrací jen poslední stránku (~200). Historie před tím je nedostupná. |
-
----
+**3. Drobný „token health" indikátor (volitelné, decentní)**
+Pod info o athlete ID zobrazit malý šedý badge:
+- Zelený `Aktivní` pokud `needs_reauth = false` a sync ≤ 24h
+- Žlutý `Sync zastaralý` pokud sync > 24h, ale refresh token OK
+- Červený `Vyžaduje přepojení` pokud `needs_reauth = true`
 
 ### Soubory
+- `src/components/admin/ClubStravaAdmin.tsx` — text propojeného stavu (řádky 346–361), `showStaleAlert` logika (řádky 264–269, 300–333)
 
-**Nové:**
-- `src/components/events/RecentClubActivities.tsx` — sekce/tab s posledními aktivitami
-- `src/components/gallery/WeeklyHighlights.tsx` — banner top 3 jízd v galerii
-- `src/lib/sport-type-utils.ts` — mapování `sport_type` → ikona + lokalizovaný název (silnička/MTB/gravel/běh/…)
-
-**Upravené:**
-- `src/pages/Events.tsx` — nový tab „Nedávné jízdy" (member-only)
-- `src/pages/Gallery.tsx` — `<WeeklyHighlights />` nad tabbed obsah
-- `src/components/dashboard/StravaWidget.tsx` (nebo nová karta) — admin „Sync teď" shortcut
-
-**Beze změny:**
-- Edge funkce, DB schema, cron, RLS — vše už je hotové a funguje.
-
----
-
-### Technická poznámka
-Dotaz pro „nedávné jízdy" bude jednoduchý:
-```ts
-supabase.from("club_activities")
-  .select("*, profiles:matched_user_id(id, full_name, nickname, avatar_url)")
-  .gte("activity_date", subDays(new Date(), 14).toISOString())
-  .order("activity_date", { ascending: false })
-  .limit(50);
-```
-Foreign key `matched_user_id → profiles(id)` v DB chybí (tabulka nemá FK), takže join udělám přes ruční dotaz na `profiles` IN (...ids) a mapping client-side. Žádná migrace.
+### Co se NEmění
+- Edge funkce `sync-club-activities` — refresh logika je správná, nic neopravuju.
+- DB schema, cron, OAuth flow.
 
