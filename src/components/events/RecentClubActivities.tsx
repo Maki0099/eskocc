@@ -58,7 +58,16 @@ const dayLabel = (date: Date): string => {
   return format(date, "EEEE d. MMMM", { locale: cs });
 };
 
-const RecentClubActivities = () => {
+interface RecentClubActivitiesProps {
+  /** Compact mode: hide filters, smaller card density. */
+  compact?: boolean;
+  /** Limit to last N days (default 14). */
+  maxDays?: number;
+  /** Max number of cards to render (default unlimited). */
+  maxItems?: number;
+}
+
+const RecentClubActivities = ({ compact = false, maxDays = 14, maxItems }: RecentClubActivitiesProps = {}) => {
   const [activities, setActivities] = useState<ClubActivity[]>([]);
   const [profiles, setProfiles] = useState<Record<string, MemberProfile>>({});
   const [loading, setLoading] = useState(true);
@@ -69,7 +78,7 @@ const RecentClubActivities = () => {
     const fetchData = async () => {
       try {
         const since = new Date();
-        since.setDate(since.getDate() - 14);
+        since.setDate(since.getDate() - maxDays);
 
         const { data, error } = await supabase
           .from("club_activities")
