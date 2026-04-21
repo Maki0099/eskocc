@@ -645,6 +645,7 @@ export type Database = {
           file_url: string
           id: string
           route_id: string | null
+          sort_order: number
           user_id: string
         }
         Insert: {
@@ -655,6 +656,7 @@ export type Database = {
           file_url: string
           id?: string
           route_id?: string | null
+          sort_order?: number
           user_id: string
         }
         Update: {
@@ -665,6 +667,7 @@ export type Database = {
           file_url?: string
           id?: string
           route_id?: string | null
+          sort_order?: number
           user_id?: string
         }
         Relationships: [
