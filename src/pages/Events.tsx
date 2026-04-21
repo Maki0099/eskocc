@@ -31,8 +31,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Calendar, MapPin, Users, ChevronRight, Camera, History, Loader2, Route, Mountain, Gauge, Heart, MapIcon, RefreshCw, ExternalLink, Trash2, Pencil, Activity } from "lucide-react";
+import { Calendar, MapPin, Users, ChevronRight, Camera, History, Loader2, Route, Mountain, Gauge, Heart, MapIcon, RefreshCw, ExternalLink, Trash2, Pencil, Activity, ArrowRight } from "lucide-react";
 import RecentClubActivities from "@/components/events/RecentClubActivities";
+import NextUpHero from "@/components/events/NextUpHero";
+import UpcomingEventsList from "@/components/events/UpcomingEventsList";
+import { getNextUpEvent } from "@/lib/event-utils";
 import { format, isSameMonth, isSameYear } from "date-fns";
 import { cs } from "date-fns/locale";
 import { toast } from "sonner";
@@ -668,16 +671,11 @@ const Events = () => {
             />
           ) : (
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-4 mb-6" data-tour="events-tabs">
+              <TabsList className="grid w-full grid-cols-3 mb-6" data-tour="events-tabs">
                 <TabsTrigger value="upcoming" className="flex items-center gap-2">
                   <Calendar className="w-4 h-4" />
-                  <span className="hidden sm:inline">Nadcházející</span>
+                  <span className="hidden sm:inline">Vyjížďky</span>
                   <span className="sm:hidden">Plán</span>
-                </TabsTrigger>
-                <TabsTrigger value="recent" className="flex items-center gap-2">
-                  <Activity className="w-4 h-4" />
-                  <span className="hidden sm:inline">Nedávné jízdy</span>
-                  <span className="sm:hidden">Jízdy</span>
                 </TabsTrigger>
                 <TabsTrigger value="history" className="flex items-center gap-2">
                   <History className="w-4 h-4" />
@@ -720,17 +718,72 @@ const Events = () => {
                     </CardContent>
                   </Card>
                 ) : (
-                  <div className="space-y-4" data-tour="event-list">
-                    {upcomingEvents.map((event, index) => (
-                      <div key={event.id} data-tour={index === 0 ? "event-card" : undefined}>
-                        {renderEventCard(event, index, false)}
+                  <div data-tour="event-list">
+                    {(() => {
+                      const next = getNextUpEvent(upcomingEvents as any, 7) as Event | null;
+                      const rest = next
+                        ? upcomingEvents.filter((e) => e.id !== next.id)
+                        : upcomingEvents;
+                      return (
+                        <>
+                          {next && (
+                            <NextUpHero
+                              event={next as any}
+                              userId={user?.id}
+                              onChanged={fetchUpcomingEvents}
+                            />
+                          )}
+                          <UpcomingEventsList
+                            events={rest as any}
+                            userId={user?.id}
+                            isAdmin={isAdmin}
+                            onChanged={fetchUpcomingEvents}
+                            onDeleteRequest={(e) => setEventToDelete(e as any)}
+                          />
+                        </>
+                      );
+                    })()}
+
+                    {/* Recent club activities snapshot */}
+                    <section className="mt-12 pt-8 border-t">
+                      <div className="flex items-baseline justify-between mb-4">
+                        <div>
+                          <h2 className="text-xl font-semibold flex items-center gap-2">
+                            <Activity className="w-5 h-5" />
+                            Co klub jezdil
+                          </h2>
+                          <p className="text-sm text-muted-foreground mt-0.5">
+                            Poslední dva dny aktivit ze Stravy
+                          </p>
+                        </div>
                       </div>
-                    ))}
+                      <RecentClubActivities compact maxDays={2} maxItems={6} />
+                      <div className="mt-4 flex justify-center">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setActiveTab("recent-full")}
+                          className="gap-1"
+                        >
+                          Zobrazit celý přehled (14 dní)
+                          <ArrowRight className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </section>
                   </div>
                 )}
               </TabsContent>
 
-              <TabsContent value="recent">
+              <TabsContent value="recent-full">
+                <div className="mb-4 flex items-center justify-between">
+                  <div>
+                    <h2 className="text-xl font-semibold">Nedávné jízdy klubu</h2>
+                    <p className="text-sm text-muted-foreground">Posledních 14 dní</p>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => setActiveTab("upcoming")}>
+                    Zpět na vyjížďky
+                  </Button>
+                </div>
                 <RecentClubActivities />
               </TabsContent>
 

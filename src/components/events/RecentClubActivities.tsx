@@ -58,7 +58,16 @@ const dayLabel = (date: Date): string => {
   return format(date, "EEEE d. MMMM", { locale: cs });
 };
 
-const RecentClubActivities = () => {
+interface RecentClubActivitiesProps {
+  /** Compact mode: hide filters, smaller card density. */
+  compact?: boolean;
+  /** Limit to last N days (default 14). */
+  maxDays?: number;
+  /** Max number of cards to render (default unlimited). */
+  maxItems?: number;
+}
+
+const RecentClubActivities = ({ compact = false, maxDays = 14, maxItems }: RecentClubActivitiesProps = {}) => {
   const [activities, setActivities] = useState<ClubActivity[]>([]);
   const [profiles, setProfiles] = useState<Record<string, MemberProfile>>({});
   const [loading, setLoading] = useState(true);
@@ -69,7 +78,7 @@ const RecentClubActivities = () => {
     const fetchData = async () => {
       try {
         const since = new Date();
-        since.setDate(since.getDate() - 14);
+        since.setDate(since.getDate() - maxDays);
 
         const { data, error } = await supabase
           .from("club_activities")
@@ -106,7 +115,7 @@ const RecentClubActivities = () => {
       }
     };
     fetchData();
-  }, []);
+  }, [maxDays]);
 
   const userOptions = useMemo(() => {
     const map = new Map<string, string>();
@@ -134,15 +143,16 @@ const RecentClubActivities = () => {
   }, [activities, filter, userFilter]);
 
   const grouped = useMemo(() => {
+    const limited = typeof maxItems === "number" ? filtered.slice(0, maxItems) : filtered;
     const groups = new Map<string, { date: Date; items: ClubActivity[] }>();
-    filtered.forEach((a) => {
+    limited.forEach((a) => {
       const d = startOfDay(new Date(a.activity_date));
       const key = d.toISOString();
       if (!groups.has(key)) groups.set(key, { date: d, items: [] });
       groups.get(key)!.items.push(a);
     });
     return Array.from(groups.values()).sort((a, b) => b.date.getTime() - a.date.getTime());
-  }, [filtered]);
+  }, [filtered, maxItems]);
 
   if (loading) {
     return (
@@ -156,34 +166,36 @@ const RecentClubActivities = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-wrap gap-2">
-          {FILTERS.map((f) => (
-            <Button
-              key={f.value}
-              variant={filter === f.value ? "default" : "outline"}
-              size="sm"
-              onClick={() => setFilter(f.value)}
-              className="rounded-full"
-            >
-              {f.label}
-            </Button>
-          ))}
-        </div>
-        <Select value={userFilter} onValueChange={setUserFilter}>
-          <SelectTrigger className="w-full sm:w-64">
-            <SelectValue placeholder="Všichni jezdci" />
-          </SelectTrigger>
-          <SelectContent className="max-h-72">
-            <SelectItem value="all">Všichni jezdci</SelectItem>
-            {userOptions.map((u) => (
-              <SelectItem key={u.value} value={u.value}>
-                {u.label}
-              </SelectItem>
+      {!compact && (
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap gap-2">
+            {FILTERS.map((f) => (
+              <Button
+                key={f.value}
+                variant={filter === f.value ? "default" : "outline"}
+                size="sm"
+                onClick={() => setFilter(f.value)}
+                className="rounded-full"
+              >
+                {f.label}
+              </Button>
             ))}
-          </SelectContent>
-        </Select>
-      </div>
+          </div>
+          <Select value={userFilter} onValueChange={setUserFilter}>
+            <SelectTrigger className="w-full sm:w-64">
+              <SelectValue placeholder="Všichni jezdci" />
+            </SelectTrigger>
+            <SelectContent className="max-h-72">
+              <SelectItem value="all">Všichni jezdci</SelectItem>
+              {userOptions.map((u) => (
+                <SelectItem key={u.value} value={u.value}>
+                  {u.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
 
       {grouped.length === 0 ? (
         <Card>
