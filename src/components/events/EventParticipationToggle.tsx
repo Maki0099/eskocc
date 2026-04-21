@@ -70,9 +70,10 @@ const EventParticipationToggle = ({
       onClick={handleToggle}
       disabled={loading}
       className={cn(
-        "gap-2 shrink-0",
+        "gap-2 shrink-0 transition-colors",
         fullWidth && "w-full",
-        isParticipating && "ring-1 ring-green-500/40 text-green-700 dark:text-green-400",
+        isParticipating &&
+          "bg-green-500/10 hover:bg-green-500/15 ring-2 ring-green-500/60 text-green-700 dark:text-green-400 dark:bg-green-500/15",
         className,
       )}
     >
