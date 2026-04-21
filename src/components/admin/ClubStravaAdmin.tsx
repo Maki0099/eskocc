@@ -307,21 +307,12 @@ export const ClubStravaAdmin = ({ preselectedAthleteKey, onAthleteSelected }: Cl
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>
-            {tokenExpired
-              ? "Strava token vypršel"
-              : hoursSinceSync === null
+            {hoursSinceSync === null
               ? "Sync ještě neproběhl"
               : "Sync neproběhl déle než 24 hodin"}
           </AlertTitle>
           <AlertDescription>
-            {tokenExpired ? (
-              <>
-                Token vypršel{" "}
-                {formatDistanceToNow(new Date(creds!.expires_at), { addSuffix: true, locale: cs })}.
-                Refresh by měl proběhnout automaticky při nejbližším syncu — pokud chyba přetrvává,
-                klikni na <strong>Přepojit</strong> a obnov OAuth autorizaci.
-              </>
-            ) : hoursSinceSync === null ? (
+            {hoursSinceSync === null ? (
               <>
                 V databázi nejsou žádné synchronizované aktivity. Spusť ručně „Sync teď" a zkontroluj
                 logy. Pokud sync selže, zkontroluj propojení Strava účtu níže.
