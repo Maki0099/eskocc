@@ -111,56 +111,64 @@ const UpcomingEventsList = ({
             ? "Žádné nadcházející vyjížďky"
             : "V této kategorii nic není. Zkus jiný filtr."}
         </p>
-      ) : view === "calendar" ? (
-        <EventsCalendarView
-          events={filtered as EventCardEvent[]}
-          userId={userId}
-          isAdmin={isAdmin}
-          highlightId={highlightId}
-          onChanged={onChanged}
-          onDeleteRequest={onDeleteRequest}
-        />
       ) : (
-        <div className="space-y-8">
-          {dayGroups.map((group, idx) => {
-            const prev = dayGroups[idx - 1];
-            const monthChanged =
-              !prev || prev.date.getMonth() !== group.date.getMonth() ||
-              prev.date.getFullYear() !== group.date.getFullYear();
-            const showMonthDivider = monthChanged && idx > 0;
+        <div className="space-y-6">
+          {view === "calendar" && (
+            <EventsCalendarView
+              events={filtered as EventCardEvent[]}
+              onDaySelect={(key) => {
+                const el = document.getElementById(`day-${key}`);
+                if (!el) return;
+                el.scrollIntoView({ behavior: "smooth", block: "start" });
+                el.classList.add("ring-2", "ring-primary", "rounded-md");
+                window.setTimeout(() => {
+                  el.classList.remove("ring-2", "ring-primary", "rounded-md");
+                }, 1600);
+              }}
+            />
+          )}
 
-            return (
-              <div key={group.key}>
-                {showMonthDivider && (
-                  <div className="flex items-center gap-3 mb-6 mt-2">
-                    <div className="h-px flex-1 bg-border" />
-                    <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                      {format(group.date, "LLLL yyyy", { locale: cs })}
-                    </span>
-                    <div className="h-px flex-1 bg-border" />
+          <div className="space-y-8">
+            {dayGroups.map((group, idx) => {
+              const prev = dayGroups[idx - 1];
+              const monthChanged =
+                !prev || prev.date.getMonth() !== group.date.getMonth() ||
+                prev.date.getFullYear() !== group.date.getFullYear();
+              const showMonthDivider = monthChanged && idx > 0;
+
+              return (
+                <div key={group.key}>
+                  {showMonthDivider && (
+                    <div className="flex items-center gap-3 mb-6 mt-2">
+                      <div className="h-px flex-1 bg-border" />
+                      <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                        {format(group.date, "LLLL yyyy", { locale: cs })}
+                      </span>
+                      <div className="h-px flex-1 bg-border" />
+                    </div>
+                  )}
+                  <DayHeader
+                    date={group.date}
+                    count={group.events.length}
+                    id={`day-${group.key}`}
+                  />
+                  <div className="space-y-3">
+                    {group.events.map((e) => (
+                      <EventCard
+                        key={e.id}
+                        event={e}
+                        userId={userId}
+                        isAdmin={isAdmin}
+                        highlight={highlightId === e.id}
+                        onChanged={onChanged}
+                        onDeleteRequest={onDeleteRequest}
+                      />
+                    ))}
                   </div>
-                )}
-                <DayHeader
-                  date={group.date}
-                  count={group.events.length}
-                  id={`day-${group.key}`}
-                />
-                <div className="space-y-3">
-                  {group.events.map((e) => (
-                    <EventCard
-                      key={e.id}
-                      event={e}
-                      userId={userId}
-                      isAdmin={isAdmin}
-                      highlight={highlightId === e.id}
-                      onChanged={onChanged}
-                      onDeleteRequest={onDeleteRequest}
-                    />
-                  ))}
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       )}
     </div>
