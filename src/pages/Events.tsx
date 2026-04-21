@@ -31,7 +31,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Calendar, MapPin, Users, ChevronRight, Camera, History, Loader2, Route, Mountain, Gauge, Heart, MapIcon, RefreshCw, ExternalLink, Trash2, Pencil } from "lucide-react";
+import { Calendar, MapPin, Users, ChevronRight, Camera, History, Loader2, Route, Mountain, Gauge, Heart, MapIcon, RefreshCw, ExternalLink, Trash2, Pencil, Activity } from "lucide-react";
+import RecentClubActivities from "@/components/events/RecentClubActivities";
 import { format, isSameMonth, isSameYear } from "date-fns";
 import { cs } from "date-fns/locale";
 import { toast } from "sonner";
@@ -667,11 +668,16 @@ const Events = () => {
             />
           ) : (
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-3 mb-6" data-tour="events-tabs">
+              <TabsList className="grid w-full grid-cols-4 mb-6" data-tour="events-tabs">
                 <TabsTrigger value="upcoming" className="flex items-center gap-2">
                   <Calendar className="w-4 h-4" />
                   <span className="hidden sm:inline">Nadcházející</span>
                   <span className="sm:hidden">Plán</span>
+                </TabsTrigger>
+                <TabsTrigger value="recent" className="flex items-center gap-2">
+                  <Activity className="w-4 h-4" />
+                  <span className="hidden sm:inline">Nedávné jízdy</span>
+                  <span className="sm:hidden">Jízdy</span>
                 </TabsTrigger>
                 <TabsTrigger value="history" className="flex items-center gap-2">
                   <History className="w-4 h-4" />
@@ -722,6 +728,10 @@ const Events = () => {
                     ))}
                   </div>
                 )}
+              </TabsContent>
+
+              <TabsContent value="recent">
+                <RecentClubActivities />
               </TabsContent>
 
               <TabsContent value="history">
