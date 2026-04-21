@@ -14,18 +14,6 @@ import { GalleryPageSkeleton } from "@/components/skeletons/PageSkeletons";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ExternalLink, ImageIcon } from "lucide-react";
 import { useExternalAlbums } from "@/hooks/useExternalAlbums";
-import mallorca2025 from "@/assets/albums/mallorca-2025.jpg";
-import mallorca2024 from "@/assets/albums/mallorca-2024.jpg";
-import vyjezd2024 from "@/assets/albums/vyjezd-2024.jpg";
-import mallorca2022 from "@/assets/albums/mallorca-2022.jpg";
-
-// Fallback obrázky pro alba bez nahraného coveru (legacy seed data)
-const FALLBACK_COVERS: Record<string, string> = {
-  "Mallorca 2025": mallorca2025,
-  "Mallorca 2024": mallorca2024,
-  "Mallorca 2023": vyjezd2024,
-  "Mallorca 2022": mallorca2022,
-};
 
 interface Photo {
   id: string;
@@ -130,7 +118,7 @@ const Gallery = () => {
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {externalAlbums.map((album, index) => {
-                      const cover = album.cover_image_url || FALLBACK_COVERS[album.title];
+                      const cover = album.cover_image_url;
                       return (
                         <a
                           key={album.id}
