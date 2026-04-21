@@ -1,76 +1,68 @@
 
 
-## Reset hesla – odkaz vede na 404 / „Email link is invalid or has expired"
+## Přidání nového Google Photos alba do galerie
 
-### Co se reálně děje (z auth logů)
-```
-GET /verify  →  403  "One-time token not found"
-referer: https://www.eskocc.cz/reset-password
-```
+### Stav teď
+Alba jsou hardcoded v `src/pages/Gallery.tsx` v poli `externalAlbums` (4 alba: Mallorca 2022–2025). Cover obrázky jsou statické importy z `src/assets/albums/*.jpg`. Pro každé nové album je potřeba zásah do kódu **a** nahrání cover fotky do repa.
 
-Toto **není** 404 z React Routeru — je to chyba ze Supabase `/verify` endpointu. Supabase odkazy pro reset hesla fungují tak, že email obsahuje URL ve tvaru:
-
-```
-https://<project>.supabase.co/auth/v1/verify?token=...&type=recovery&redirect_to=<vaše-stránka>
-```
-
-Supabase token ověří, vymění ho za session a teprve pak přesměruje na `redirect_to`. Chyba „One-time token not found" znamená jednu ze tří věcí:
-
-1. **Email security scanner odkaz prokliknul jako první** (Microsoft Defender, Proofpoint, Outlook Safe Links atd.) — token je jednorázový, takže když ho otevře skener kvůli kontrole, uživatel pak dostane 403.
-2. **Odkaz vypršel** — výchozí TTL je 1 hodina a začíná běžet okamžikem odeslání.
-3. **`redirect_to` doména není ve whitelistu** Supabase Auth (Site URL + Additional Redirect URLs), takže Supabase odkaz odmítne.
-
-V kódu vše vypadá správně:
-- `Login.tsx` ř. 160: `redirectTo: ${window.location.origin}${ROUTES.RESET_PASSWORD}` ✓
-- Route `/reset-password` v `App.tsx` existuje a je veřejná ✓
-- `ResetPassword.tsx` poslouchá `PASSWORD_RECOVERY` event a volá `updateUser({ password })` ✓
-
-Žádné vlastní auth email šablony nejsou — používá se výchozí Lovable/Supabase email.
+### Dvě možnosti — vyber jednu
 
 ---
 
-### Plán řešení (3 nezávislé vrstvy, doporučuji udělat všechny)
+### Varianta A — Rychle: přidat další album do kódu (5 minut)
 
-#### 1. Ověřit a doplnit Auth Redirect URLs (nejčastější příčina)
-V Supabase Auth Settings musí být:
-- **Site URL**: `https://www.eskocc.cz`
-- **Additional Redirect URLs** (každá zvlášť):
-  - `https://www.eskocc.cz/**`
-  - `https://eskocc.cz/**`
-  - `https://eskocc.lovable.app/**`
-  - `https://id-preview--a7252d34-9091-4957-bfd7-9e5b5f02c1aa.lovable.app/**`
-  - `http://localhost:5173/**` (pro dev)
+Vhodné, pokud alba přibývají max 1–2× ročně a nevadí, že to dělá vývojář.
 
-Pokud chybí `https://www.eskocc.cz/**`, Supabase odkaz odmítne i s validním tokenem.
+**Co udělám:**
+1. Ty mi dodáš:
+   - Název alba (např. „Mallorca 2026")
+   - Sdílecí URL z Google Photos (`https://photos.app.goo.gl/...`)
+   - Cover obrázek (JPG, ideálně 1600×900, max 500 KB) — nahraj do chatu
+2. Já:
+   - Uložím obrázek do `src/assets/albums/<slug>.jpg`
+   - Přidám položku do pole `externalAlbums` v `Gallery.tsx` (nahoru, aby bylo nejnovější první)
 
-→ Po přepnutí do default modu otevřu **Cloud → Users → Auth Settings** a doplním URLs (případně odkážu uživatele, ať to udělá sám).
-
-#### 2. Nasadit vlastní šablonu reset emailu s explicitním varováním + použít token-based flow
-Místo magic linku přejít na **6-místný OTP kód v emailu + zadání kódu na stránce**. Tím se obchází problém s email scannery, protože není co prokliknout. Implementačně:
-- `scaffold_auth_email_templates` → vytvoří šablony pro 6 typů auth emailů včetně `recovery.tsx`
-- Recovery šablona zobrazí jak **odkaz**, tak i **OTP kód** (`{{ .Token }}`)
-- `ResetPassword.tsx` rozšířit o variantu „Mám kód z emailu" → input pro kód + email → `supabase.auth.verifyOtp({ email, token, type: 'recovery' })` → po úspěchu zobrazit form pro nové heslo
-- Branding šablon na klubové barvy (#B7A99A primary, kulaté logo, Inter font, bílé pozadí)
-- Deploy `auth-email-hook`
-
-Bonus: emaily půjdou z `notify.eskocc.cz` (pokud je email domain nastavená), což výrazně zlepší doručitelnost a zabrání tomu, aby spam filtry „přebraly" odkaz.
-
-#### 3. Drobné UX vylepšení v `ResetPassword.tsx`
-- Když je v URL hashi `error=access_denied&error_code=otp_expired`, místo redirectu na `/login` zobrazit jasnou hlášku „Tvůj odkaz vypršel nebo už byl použit. Požádej o nový." s tlačítkem zpět na forgot-password formulář.
-- Aktuálně se při neplatném odkazu uživatel přesměruje na `/login` s toastem — ale toast často zmizí dřív, než si ho stihne přečíst.
+**Soubory:** `src/pages/Gallery.tsx` + nový soubor v `src/assets/albums/`.
 
 ---
 
-### Co potřebuji od tebe rozhodnout
+### Varianta B — Lépe: admin panel pro správu alb (≈ 1 hodina práce)
 
-**Otázka A — Redirect URLs**: Mám ti otevřít Auth Settings, ať doplníš URLs ručně, nebo to mám zkusit doplnit přes nástroje Lovable Cloud automaticky?
+Vhodné, pokud chceš alba přidávat sám/sama bez vývojáře, případně častěji.
 
-**Otázka B — Email s OTP kódem**: Chceš, abych nasadil vlastní brandované auth email šablony s OTP kódem (řeší 95 % případů „odkaz neplatí"), nebo zatím jen opravíme redirect URLs a počkáme, jestli to stačí?
+**Co vytvořím:**
 
-### Soubory, které se případně změní
-- `src/pages/ResetPassword.tsx` — lepší error handling + volitelně OTP varianta
-- `supabase/functions/auth-email-hook/index.ts` (nový) — auth email hook
-- `supabase/functions/_shared/email-templates/recovery.tsx` (nový) — brandovaná šablona
-- `supabase/functions/_shared/email-templates/*` (5 dalších, jeden balík)
-- Žádné DB migrace nejsou potřeba.
+1. **DB migrace** — nová tabulka `external_albums`:
+   - `id`, `title`, `url`, `cover_image_url`, `sort_order`, `year` (int, nullable, pro řazení), `created_at`
+   - RLS: SELECT pro všechny (alba se ukazují i nečlenům? — viz otázka níž), INSERT/UPDATE/DELETE jen admin
+   - Seed: naimportuju 4 stávající alba
+
+2. **Storage** — nový bucket `album-covers` (public), nebo využiju existující `gallery` bucket s prefixem `albums/`
+
+3. **Admin UI** — nová karta v `/admin` „Externí alba":
+   - Tabulka s aktuálními alby (drag-and-drop pořadí pomocí `@dnd-kit`, stejně jako u menu items)
+   - Formulář „Přidat album": title, URL, upload cover image (s preview), rok
+   - Edit + smazat u každého řádku
+
+4. **Refactor `Gallery.tsx`**:
+   - Místo hardcoded pole načtu `external_albums` ze Supabase přes `useQuery`
+   - Skeleton během načítání
+   - Zachovám stávající vizuál (grid 3 sloupce, hover efekty, scroll animace)
+
+5. **Smazat** statické soubory `src/assets/albums/*.jpg` po migraci do Storage.
+
+**Soubory:**
+- `supabase/migrations/<ts>_external_albums.sql` (tabulka + RLS + seed + storage policy)
+- `src/components/admin/ExternalAlbumsAdmin.tsx` (nový)
+- `src/pages/Admin.tsx` (přidat tab)
+- `src/pages/Gallery.tsx` (načítat z DB)
+- `src/hooks/useExternalAlbums.ts` (nový — query hook)
+
+---
+
+### Otázky k vyjasnění (jen pro variantu B)
+
+1. **Viditelnost alb** — mají být Google Photos alba viditelná i pro nečleny (anonymous návštěvníci homepage/galerie)? Aktuálně je celá `Gallery` stránka člensky chráněná přes `MemberOnlyContent`, takže alba stejně vidí jen členové. Necháváme stejně, nebo chceš alba zobrazit i veřejně?
+
+2. **Má jít cover obrázek nahrát i jako URL** (ne jen upload), pro případ, že by chtěl admin použít obrázek přímo z Google Photos? Default doporučuji jen upload (jednodušší, cache-friendly).
 
