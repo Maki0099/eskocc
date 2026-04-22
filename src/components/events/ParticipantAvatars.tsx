@@ -38,18 +38,22 @@ const ParticipantAvatars = ({ eventId, count, max = 3, className }: ParticipantA
 
   const load = async () => {
     if (loaded) return;
-    const { data, error } = await supabase
+    const { data: parts } = await supabase
       .from("event_participants")
-      .select("user_id, profile:member_profiles_public!event_participants_user_id_fkey(id, full_name, nickname, avatar_url)")
+      .select("user_id")
       .eq("event_id", eventId)
       .eq("status", "going")
       .limit(50);
-    if (!error && data) {
-      const list: Participant[] = data
-        .map((row: any) => row.profile)
-        .filter(Boolean);
-      setParticipants(list);
+    const userIds = (parts || []).map((p: any) => p.user_id);
+    if (userIds.length === 0) {
+      setLoaded(true);
+      return;
     }
+    const { data: profiles } = await supabase
+      .from("member_profiles_public")
+      .select("id, full_name, nickname, avatar_url")
+      .in("id", userIds);
+    setParticipants((profiles || []) as Participant[]);
     setLoaded(true);
   };
 
