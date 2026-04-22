@@ -571,16 +571,6 @@ const EventDetail = () => {
                   </>
                 )}
 
-                {user && !isPastEvent(event.event_date) && (
-                  <EventParticipationToggle
-                    eventId={id!}
-                    userId={user.id}
-                    isParticipating={isParticipating}
-                    onToggle={fetchEvent}
-                    size="default"
-                    showFullText
-                  />
-                )}
               </div>
             </CardContent>
           </Card>
