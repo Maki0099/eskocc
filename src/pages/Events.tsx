@@ -711,12 +711,17 @@ const Events = () => {
                     ))}
                   </div>
                 ) : upcomingEvents.length === 0 ? (
-                  <Card className={`animate-on-scroll scale-in ${listVisible ? "is-visible" : ""}`}>
-                    <CardContent className="py-12 text-center">
-                      <Calendar className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                      <p className="text-muted-foreground">Žádné nadcházející vyjížďky</p>
-                    </CardContent>
-                  </Card>
+                  <div className={`animate-on-scroll scale-in ${listVisible ? "is-visible" : ""}`}>
+                    <EventsEmptyState
+                      variant="no-events"
+                      canCreate={!!isMember && !!canCreateEvents}
+                    />
+                    {isMember && canCreateEvents && (
+                      <div className="hidden">
+                        {/* Mounted to allow CTA inside EventsEmptyState; below is the actual creation entrypoint via header button */}
+                      </div>
+                    )}
+                  </div>
                 ) : (
                   <div data-tour="event-list">
                     {(() => {
