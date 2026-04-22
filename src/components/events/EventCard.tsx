@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import EventParticipationToggle from "@/components/events/EventParticipationToggle";
 import StravaEventBadge from "@/components/events/StravaEventBadge";
 import EditEventDialog from "@/components/events/EditEventDialog";
-import { pluralizeGoing } from "@/lib/event-utils";
+import ParticipantAvatars from "@/components/events/ParticipantAvatars";
 
 export interface EventCardEvent {
   id: string;
