@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRegisterSW } from "virtual:pwa-register/react";
 
 const UpdatePrompt = () => {
   const [showPrompt, setShowPrompt] = useState(false);
+  const cleanupRef = useRef<(() => void) | null>(null);
 
   const {
     needRefresh: [needRefresh, setNeedRefresh],
@@ -12,17 +13,44 @@ const UpdatePrompt = () => {
   } = useRegisterSW({
     onRegisteredSW(swUrl, r) {
       console.log("Service Worker registered:", swUrl);
-      // Check for updates every 5 minutes
-      if (r) {
-        setInterval(() => {
-          r.update();
-        }, 5 * 60 * 1000);
-      }
+      if (!r) return;
+
+      // (a) Check immediately after registration
+      r.update().catch(() => {});
+
+      // (b) Periodic check every 60 minutes (battery friendly)
+      const interval = setInterval(() => {
+        r.update().catch(() => {});
+      }, 60 * 60 * 1000);
+
+      // (c) Check when user returns to the app (key for installed PWA)
+      const onVisible = () => {
+        if (document.visibilityState === "visible") {
+          r.update().catch(() => {});
+        }
+      };
+      const onFocus = () => {
+        r.update().catch(() => {});
+      };
+      document.addEventListener("visibilitychange", onVisible);
+      window.addEventListener("focus", onFocus);
+
+      cleanupRef.current = () => {
+        clearInterval(interval);
+        document.removeEventListener("visibilitychange", onVisible);
+        window.removeEventListener("focus", onFocus);
+      };
     },
     onRegisterError(error) {
       console.error("Service Worker registration error:", error);
     },
   });
+
+  useEffect(() => {
+    return () => {
+      cleanupRef.current?.();
+    };
+  }, []);
 
   useEffect(() => {
     if (needRefresh) {
@@ -31,6 +59,20 @@ const UpdatePrompt = () => {
   }, [needRefresh]);
 
   const handleUpdate = async () => {
+    // Nuke runtime caches so user sees fresh data after reload.
+    // Workbox precache is managed by the SW itself — leave it alone.
+    if ("caches" in window) {
+      try {
+        const keys = await caches.keys();
+        await Promise.all(
+          keys
+            .filter((k) => !k.startsWith("workbox-precache"))
+            .map((k) => caches.delete(k))
+        );
+      } catch (err) {
+        console.warn("Cache cleanup failed:", err);
+      }
+    }
     await updateServiceWorker(true);
   };
 
