@@ -1,3 +1,4 @@
+import { ReactNode } from "react";
 import { Calendar, Filter, Map, Plus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,7 +7,7 @@ import { Link } from "react-router-dom";
 interface EventsEmptyStateProps {
   variant: "no-events" | "filtered" | "guest";
   canCreate?: boolean;
-  onCreate?: () => void;
+  createTrigger?: ReactNode;
   onClearFilter?: () => void;
 }
 
