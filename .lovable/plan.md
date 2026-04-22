@@ -1,88 +1,108 @@
 
 
-## Mobilní optimalizace karet vyjížděk + výrazné CTA „Jdu/Nejdu"
+## Návrhy dalších UX/UI vylepšení
 
-### Diagnóza
-Na mobilu (≤640px) se v `EventCard` skládá do jednoho řádku datum, počet účastníků, badge Strava/Pouze ženy, admin ikony **a** participation toggle. Toggle se zmenší (skryje text „Přihlásit"), splývá s ostatními chipy a přestává být primární akcí. Title je až pod meta řádkem, takže CTA je vizuálně schované.
-
-### Cíl
-Na mobilu udělat z **„Jdu/Nejdu"** dominantní akci — full-width tlačítko pod obsahem karty, vždy viditelné, s jasným barevným stavem. Na desktopu zachovat kompaktní řádek vpravo nahoře.
+Na základě analýzy aktuálního stavu (zejména Events flow, Dashboard, karty) navrhuji následující vylepšení seřazená podle dopadu vs. úsilí. Vyber, co chceš implementovat — nemusíme dělat vše najednou.
 
 ---
 
-### Návrh
+### 🥇 Tier 1 — Vysoký dopad, nízké úsilí
 
-#### 1. Restrukturace `EventCard` — mobile-first stack
+#### 1. Sticky day header v seznamu vyjížděk
+Při scrollování dlouhým seznamem ztrácíš kontext, ve kterém dni jsi. `DayHeader` udělat `sticky top-16` (pod navbarem) s `backdrop-blur` pozadím. Plynulý orientační prvek bez nutnosti scrollovat zpět.
 
-**Mobil (`<sm`):**
-```
-┌──────────────────────────────────┐
-│ ČT 24. 4. · 18:00  · 5 jede      │  ← meta (bez CTA)
-│ [Strava] [Pouze ženy]            │
-│                                  │
-│ Vyjížďka okolo Brna              │  ← title (větší, výraznější)
-│                                  │
-│ 📍 Brno  🛣 45 km  ⛰ 600 m       │  ← meta line
-│                                  │
-│ ┌──────────────────────────────┐ │
-│ │   ✓  Jdu na vyjížďku         │ │  ← full-width CTA
-│ └──────────────────────────────┘ │
-│ [✏ admin] [🗑 admin]   (vpravo)  │  ← admin akce zvlášť, malé
-└──────────────────────────────────┘
-```
+#### 2. Empty states s akcí
+Aktuálně: „Žádné nadcházející vyjížďky" — suchá věta. Navrhuji ilustraci/ikonu + text + **CTA tlačítko** podle role:
+- Admin/active_member: „Naplánuj první vyjížďku" → otevře `CreateEventDialog`
+- Member: „Zatím nic — mrkni na oblíbené trasy" → link na Routes
+- Při aktivním filtru: „V kategorii X nic není" + tlačítko „Zrušit filtr"
 
-**Desktop (`≥sm`):** zachovat současný layout — CTA vpravo nahoře vedle meta řádku.
+#### 3. Kompaktní filtry → segmented control
+5 pill tlačítek (`Vše / Silnice / MTB / Gravel / S GPX`) zabírá celý řádek. Nahradit jedním `Tabs`/`ToggleGroup` ve stylu iOS segmented controlu — kompaktnější, přirozenější přepínání.
 
-#### 2. Vylepšený participation button
+#### 4. Skeleton loadery místo spinnerů
+Pro Events list, Dashboard widgety a Gallery použít `Skeleton` komponenty kopírující strukturu finálního obsahu. Vnímaná rychlost ↑, žádný „flash" prázdné stránky.
 
-`EventParticipationToggle` dostane prop `fullWidth?: boolean` a `size?: "sm" | "default" | "lg"`:
-
-- **Mobil**: `size="lg"`, `fullWidth`, vždy viditelný text („Jdu na vyjížďku" / „Už nejdu"), výrazná barva:
-  - Nepřihlášen: `variant="default"` (primární, plná barva) + ikona `UserPlus`
-  - Přihlášen: `variant="secondary"` se zeleným ringem + ikona `Check` + text „Jdeš ✓ — odhlásit"
-- **Desktop**: současné chování (sm, ikona + text)
-
-Odstranit oddělený `Badge` „Jdeš ✓" z karty — stav je vyjádřený samotným tlačítkem.
-
-#### 3. Strava karty na mobilu
-
-Pro Strava události (kde nelze toggle) udělat **full-width „Otevřít na Stravě"** tlačítko ve stejné pozici, oranžové (`bg-[#FC4C02]`). Konzistentní vizuální rytmus — uživatel vždy ví, kde je primární akce.
-
-#### 4. Admin akce
-
-Na mobilu přesunout `Pencil` + `Trash2` ikony do pravého spodního rohu karty (malý řádek pod CTA, justify-end). Na desktopu zůstávají vpravo nahoře. Nebudou konkurovat hlavnímu CTA.
-
-#### 5. NextUpHero (hero karta)
-
-Stejný princip: na mobilu CTA full-width pod metadaty. „Detail vyjížďky" pod hlavním CTA jako sekundární odkaz (text-only `link` variant nebo `outline` full-width).
-
-#### 6. Touch targety
-
-Hlavní CTA min. `h-12` (48px) — Apple/Material guideline. Admin ikony min. `h-9 w-9` s rozumným paddingem mezi nimi (gap-2).
-
-#### 7. Vizuální stavy
-
-Stav „přihlášen" musí být okamžitě čitelný:
-- Tlačítko `secondary` + thin levý border `border-l-4 border-l-green-500` na celé kartě (subtilně)
-- Nebo: jen výrazné tlačítko se zeleným ✓ a textem „Jdeš — odhlásit"
-
-Volím variantu s tlačítkem (méně vizuálního šumu na kartě, akce zůstává dominantní).
+#### 5. Toast → optimistic UI pro participation
+Dnes: klik → loading spinner → DB → toast → refresh. Navrhuji **optimistický update**: tlačítko se přepne okamžitě, na pozadí volá DB, při chybě rollback + toast. Pocit instantní odezvy.
 
 ---
 
-### Soubory
+### 🥈 Tier 2 — Střední dopad
 
-**Upravené:**
-- `src/components/events/EventCard.tsx` — restrukturace na mobile-first: meta nahoře (bez CTA/admin), title, meta line, full-width CTA blok dole, admin akce v patičce. Použití `useIsMobile` nebo čisté Tailwind responsive třídy (`sm:` breakpoint).
-- `src/components/events/EventParticipationToggle.tsx` — přidat props `fullWidth`, `size`, `showFullText`. Vždy zobrazit text na mobilu. Lepší vizuální stavy (ikona + text podle stavu).
-- `src/components/events/NextUpHero.tsx` — full-width CTA na mobilu, sekundární akce pod ním.
+#### 6. Quick filters „Tento víkend / Příští týden"
+Nad seznamem přidat rychlé time-based filtry. Většina uživatelů hledá „co se jede teď v sobotu" — ne procházení celého kalendáře.
 
-**Beze změny:**
-- `UpcomingEventsList`, `DayHeader`, `EventsCalendarView`, `event-utils.ts`, edge funkce, DB.
+#### 7. Avatar stack účastníků na kartě
+Místo „5 jede" zobrazit malý stack 3 avatarů + „+2". Sociální důkaz, vidíš s kým pojedeš. Klik → modal/popover se seznamem.
 
-### Otevřené otázky
+#### 8. Search bar pro vyjížďky a trasy
+Když je událostí 20+, jednoduchý fulltext search nad title + location. `cmd+K` paleta později.
 
-1. **Zachovat tlačítko vpravo nahoře i na desktopu**, nebo přesunout full-width CTA i na desktop pro konzistenci napříč zařízeními?
-2. **Vizuální označení „jsem přihlášen"**: stačí změna stavu tlačítka (varianta A), nebo přidat i jemný levý border na kartě (varianta B)?
-3. **Admin akce na mobilu** — pod CTA v patičce karty (jak navrhuji), nebo radši v meta řádku nahoře (jako dnes), jen menší?
+#### 9. Pull-to-refresh na mobilu
+Na PWA/mobilu nativní gesto pro refresh dat na Events, Dashboard, Gallery, Notifications. Standard mobile pattern, který chybí.
+
+#### 10. Inline edit profilu
+Account page: místo „Editovat" módu udělat inline editovatelná pole s jemnou hover indikací (ikona tužky). Méně klikání.
+
+#### 11. Compact mode pro hustý kalendář
+V `EventsCalendarView` při >2 jízdách v týdnu přepnout na denser layout. Aktuální spacing je vzdušný, ale pro power-usery zbytečně velký.
+
+#### 12. Breadcrumbs na detailních stránkách
+`/events/:id`, `/routes/:id`, `/member/:id` — přidat breadcrumb navigaci. Lepší orientace v hierarchii.
+
+---
+
+### 🥉 Tier 3 — Polish & delight
+
+#### 13. Mikrointerakce a haptika
+- Confetti/checkmark animace při přihlášení na vyjížďku
+- Haptic feedback (`navigator.vibrate`) na mobilu při toggle akcích
+- Subtle bounce na nové notifikace v `NotificationBell`
+
+#### 14. Gradient meshes / glow accenty
+Hero sekce a Next-Up Hero karta: jemné animované gradient meshe v pozadí (Apple-style). Přidá premium pocit bez vizuálního šumu.
+
+#### 15. Fokus a accessibility audit
+- Visible focus rings na všech interaktivních prvcích
+- Skip-to-content link
+- ARIA labels na ikonových tlačítkách
+- Prefers-reduced-motion respekt pro animace
+
+#### 16. Komentáře/diskuze pod vyjížďkou
+Detail vyjížďky: jednoduché vlákno komentářů (sraz na jiném místě, otázky na tempo, atd.). Real-time přes Supabase channels. **Větší feature** — vyžaduje DB tabulku.
+
+#### 17. Kalendář export (.ics)
+Tlačítko „Přidat do kalendáře" na detailu vyjížďky — generuje `.ics` soubor pro Google/Apple Calendar. Lehká retence.
+
+#### 18. Dashboard personalizace
+Přesouvatelné widgety (drag & drop), uživatel si poskládá pořadí. Uloženo v profile preferencích. **Větší práce** — má smysl až bude víc widgetů.
+
+#### 19. Mapa všech aktivních vyjížděk
+Nová sekce/tab: mapa Česka s pinami všech nadcházejících vyjížděk. Klik na pin → karta. Vizuálně atraktivní pro orientaci podle regionu.
+
+#### 20. Theme transition animation
+Při přepnutí dark/light módu plynulý radial-wipe efekt z místa kliknutí (View Transitions API). Drobnost, ale pamatovatelné.
+
+---
+
+### Doporučený first batch
+
+Pokud chceš začít, navrhuji **balíček „Quick Wins"** (1 implementační kolo):
+
+- ✅ #1 Sticky day headers
+- ✅ #2 Empty states s CTA
+- ✅ #4 Skeleton loadery (Events list)
+- ✅ #5 Optimistic participation toggle
+- ✅ #7 Avatar stack účastníků
+
+Tyto vylepšení znatelně pozvednou pocit z používání bez nutnosti DB migrací (kromě #7, kde stačí JOIN na profiles).
+
+---
+
+### Otázky
+
+1. Který **tier / konkrétní položky** chceš implementovat? (Můžeš vybrat napříč.)
+2. Mám rovnou jít s doporučeným „Quick Wins" balíčkem (#1, #2, #4, #5, #7), nebo si vybereš vlastní kombinaci?
+3. U avatar stacku (#7) — chceš zobrazovat **iniciály**, nebo **profilové fotky** (pokud nejsou, fallback na iniciály)?
 
