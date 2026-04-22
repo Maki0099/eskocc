@@ -1,104 +1,78 @@
 
 
-## Vylepšení flow „Aktualizovat" — čistý reload bez starých stavů
+## Zabezpečení Realtime kanálů — notifications & event_subscriptions
 
-### Proč to chceš
+### Problém
 
-Když uživatel klikne „Aktualizovat", aktuálně se:
-1. Smažou runtime caches
-2. Zavolá `updateServiceWorker(true)` → workbox pošle `SKIP_WAITING` novému SW a reloadne **aktuální tab**.
+Tabulky `notifications` a `event_subscriptions` jsou publikovány do Supabase Realtime. Table-level RLS sice omezuje `SELECT` jen na vlastníka, ale **Realtime channel subscription** to neřeší — jakýkoli přihlášený uživatel se může přihlásit k libovolnému topicu (např. cizímu `user_id`) a odposlouchávat změny řádků v reálném čase, včetně obsahu cizích notifikací.
 
-**Problém:** Pokud má uživatel otevřených víc tabů/oken PWA (typicky na desktopu nebo v PWA na Androidu se zachovaným stavem), ostatní instance dál běží na **staré JS verzi**, ale nový SW už servíruje **nové assety**. Vznikne nekonzistence: chunk load errors, nefunkční lazy routes, divné chování dokud uživatel ručně nezavře ostatní taby.
-
-### Návrh řešení
-
-V `handleUpdate` (v `UpdatePrompt.tsx`) udělat **explicitně tento sled kroků**:
-
-1. **Vyčistit runtime caches** (už máme).
-2. **Najít všechny otevřené clients (taby/okna)** přes `navigator.serviceWorker.controller` a zavřít/přesměrovat je — ve skutečnosti **nemůžeme zavřít cizí taby z window kontextu** (browser security). Ale můžeme **poslat zprávu SW**, který zná všechny clients, a ten je „kopne" k reloadu.
-3. **Aktivovat nový SW** přes `updateServiceWorker(true)` — pošle `SKIP_WAITING`.
-4. **Po `controllerchange`** (nový SW převzal kontrolu) → poslat všem clients zprávu `RELOAD_NOW`.
-5. **Service Worker** (`sw-push.js`) zachytí message, projde `clients.matchAll()` a zavolá `client.navigate(client.url)` na všech → každý tab se reloadne na čerstvou verzi.
-
-### Konkrétní změny
-
-#### A) `src/components/pwa/UpdatePrompt.tsx` — handleUpdate
-
+Aktuálně používaný kanál v `useNotifications.ts`:
 ```ts
-const handleUpdate = async () => {
-  // 1. Vyčistit runtime caches (kromě precache, tu řeší SW)
-  if ("caches" in window) {
-    try {
-      const keys = await caches.keys();
-      await Promise.all(
-        keys
-          .filter((k) => !k.startsWith("workbox-precache"))
-          .map((k) => caches.delete(k))
-      );
-    } catch (err) {
-      console.warn("Cache cleanup failed:", err);
-    }
-  }
-
-  // 2. Po převzetí kontroly novým SW → reload všech clients
-  //    (musíme listener registrovat PŘED skipWaiting)
-  const onControllerChange = () => {
-    navigator.serviceWorker.controller?.postMessage({ type: "RELOAD_ALL_CLIENTS" });
-    // Současný tab reloadneme pro jistotu sami (SW message je async)
-    setTimeout(() => window.location.reload(), 100);
-  };
-  navigator.serviceWorker.addEventListener("controllerchange", onControllerChange, { once: true });
-
-  // 3. Aktivovat čekající SW (skipWaiting)
-  await updateServiceWorker(true);
-};
+supabase.channel('notifications-changes')
+  .on('postgres_changes', { ... filter: `user_id=eq.${user.id}` }, ...)
 ```
 
-#### B) `public/sw-push.js` — přidat handler
+Filter je jen klientský — server stejně pošle všechny změny, na které je kanál „napojen", a navíc Realtime broadcast topic není autorizován vůbec.
 
-Přidat na konec souboru:
+### Řešení — dvouvrstvá oprava
 
-```js
-// Reload all open clients when prompted from the page after SW update
-self.addEventListener("message", (event) => {
-  if (event.data && event.data.type === "RELOAD_ALL_CLIENTS") {
-    event.waitUntil(
-      self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
-        return Promise.all(
-          clientList.map((client) => {
-            // navigate() vrátí klienta na stejnou URL → čerstvý load z nového SW
-            return client.navigate(client.url).catch(() => client.focus());
-          })
-        );
-      })
-    );
-  }
-});
+#### 1. RLS na `realtime.messages` (server-side authz pro topicy)
+
+Přidat migraci s politikou, která dovolí `SELECT` na `realtime.messages` jen tehdy, když název topicu obsahuje `auth.uid()` přihlášeného uživatele:
+
+```sql
+-- Enable RLS on realtime.messages (already enabled by default, ensure it)
+ALTER TABLE realtime.messages ENABLE ROW LEVEL SECURITY;
+
+-- Allow users to subscribe ONLY to topics scoped to their own user_id
+CREATE POLICY "Users can only subscribe to their own user-scoped topics"
+ON realtime.messages
+FOR SELECT
+TO authenticated
+USING (
+  -- Topic must contain the authenticated user's UID
+  realtime.topic() LIKE '%' || auth.uid()::text || '%'
+);
 ```
 
-> Pozn.: `client.navigate()` funguje jen pro same-origin URL a klienta, který je „controlled" novým SW. Po `skipWaiting` + `clients.claim` (workbox to dělá automaticky při `updateServiceWorker(true)`) jsou všechny taby pod kontrolou nového SW → bude to fungovat.
+> Pozn.: `realtime.topic()` je helper funkce, která vrací název topicu pro aktuální subscription. Pattern matching s `auth.uid()` zajistí, že se uživatel může přihlásit jen k topicu, který obsahuje jeho UUID.
+
+#### 2. Klient — přejmenovat kanály na user-scoped topicy
+
+Aby výše uvedené pravidlo fungovalo, musí mít každý kanál v názvu UUID uživatele:
+
+**`src/hooks/useNotifications.ts`** (řádek ~63):
+```ts
+// PŘED:
+const channel = supabase.channel('notifications-changes')
+
+// PO:
+const channel = supabase.channel(`notifications:${user.id}`)
+```
+
+**Ostatní real-time subscribery** — projít a opravit:
+- `src/components/events/EventNotificationToggle.tsx` — pokud používá realtime (zkontrolovat, aktuálně dělá jen `select`/`insert`/`delete`, **realtime nepoužívá** → beze změny).
+- Ostatní výskyty `supabase.channel(...)` v projektu — projdu při implementaci a každý kanál, který přenáší user-private data, dostane `user_id` v názvu.
 
 ### Co to vyřeší
 
-- **Desktop PWA s víc okny** → všechna se reloadnou současně, žádný tab nezůstane na staré verzi.
-- **Mobil PWA + browser tab otevřený paralelně** → oba se synchronizují.
-- **Race condition** mezi cache, SW aktivací a reloadem → eliminována (controllerchange = jistota, že nový SW vládne).
+- **Cizí uživatel se nemůže přihlásit k tvému notification kanálu** — `realtime.topic()` nebude obsahovat jeho UID, RLS pravidlo zablokuje.
+- **Vlastní notifikace nadále chodí v reálném čase** — topic `notifications:<vlastní-uid>` projde RLS bez problému.
+- **Žádný dopad na veřejné kanály** (kdyby v budoucnu vznikly broadcast/presence kanály bez user_id, dostanou samostatnou politiku).
 
-### Co zůstává
+### Co zůstává beze změny
 
-- `vite.config.ts` — beze změny.
-- `CheckForUpdatesButton.tsx` — beze změny (jen detekuje, nereloaduje).
-- Runtime caching strategie, push handlery v `sw-push.js` — beze změny.
+- Table-level RLS na `notifications` a `event_subscriptions` — je správně, neřešíme.
+- `event_subscriptions` aktuálně nemá realtime listener v UI, ale ochrana přes `realtime.messages` ho preventivně pokryje, kdyby vznikl.
+- Push notifikace, edge funkce — beze změny.
 
 ### Soubory ke změně
 
-- `src/components/pwa/UpdatePrompt.tsx` — upravit `handleUpdate` (controllerchange listener + reload trigger).
-- `public/sw-push.js` — přidat `message` listener pro `RELOAD_ALL_CLIENTS`.
+- **Nová migrace** — `ALTER TABLE realtime.messages ENABLE RLS` + `CREATE POLICY` s `realtime.topic() LIKE '%' || auth.uid()::text || '%'`.
+- **`src/hooks/useNotifications.ts`** — přejmenovat `'notifications-changes'` → `` `notifications:${user.id}` ``.
+- **Audit ostatních `supabase.channel(...)` volání** — pokud najdu další user-scoped kanály bez UID v názvu, opravím stejným způsobem; dokončím při implementaci.
 
-### Testování
+### Po nasazení
 
-Pouze v produkci (`eskocc.lovable.app` / `eskocc.cz`):
-1. Otevřít PWA ve dvou tabech.
-2. Nasadit novou verzi.
-3. V jednom tabu kliknout „Aktualizovat" → **oba** taby by se měly reloadnout na novou verzi do 1–2 s.
+Security finding `notifications_realtime_no_channel_authz` označit jako vyřešený přes `manage_security_finding` → `mark_as_fixed`.
 
