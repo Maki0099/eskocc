@@ -561,14 +561,16 @@ const EventDetail = () => {
                   </>
                 )}
 
-                {user && !isPastEvent(event.event_date) &&
-                  (isParticipating ? (
-                    <Button variant="outline" onClick={handleLeave}>
-                      Odhlásit se
-                    </Button>
-                  ) : (
-                    <Button onClick={handleJoin}>Přihlásit se</Button>
-                  ))}
+                {user && !isPastEvent(event.event_date) && (
+                  <EventParticipationToggle
+                    eventId={id!}
+                    userId={user.id}
+                    isParticipating={isParticipating}
+                    onToggle={fetchEvent}
+                    size="default"
+                    showFullText
+                  />
+                )}
               </div>
             </CardContent>
           </Card>
