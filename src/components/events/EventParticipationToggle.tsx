@@ -27,34 +27,44 @@ const EventParticipationToggle = ({
   className,
 }: EventParticipationToggleProps) => {
   const [loading, setLoading] = useState(false);
+  const [optimistic, setOptimistic] = useState<boolean | null>(null);
+  const effective = optimistic ?? isParticipating;
 
   const handleToggle = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
+    const next = !effective;
+    setOptimistic(next);
     setLoading(true);
+    // Haptic feedback on supported devices
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+      try { navigator.vibrate?.(next ? 15 : 8); } catch { /* ignore */ }
+    }
+
     try {
-      if (isParticipating) {
+      if (effective) {
         const { error } = await supabase
           .from("event_participants")
           .delete()
           .eq("event_id", eventId)
           .eq("user_id", userId);
-
         if (error) throw error;
         toast.success("Odhlášeno z vyjížďky");
       } else {
         const { error } = await supabase
           .from("event_participants")
           .insert({ event_id: eventId, user_id: userId, status: "going" });
-
         if (error) throw error;
         toast.success("Přihlášeno na vyjížďku");
       }
       onToggle();
+      // Clear optimistic once parent state catches up on next render
+      setOptimistic(null);
     } catch (error: any) {
       console.error("Error toggling participation:", error);
-      toast.error(isParticipating ? "Nepodařilo se odhlásit" : "Nepodařilo se přihlásit");
+      toast.error(effective ? "Nepodařilo se odhlásit" : "Nepodařilo se přihlásit");
+      setOptimistic(null); // rollback
     } finally {
       setLoading(false);
     }
