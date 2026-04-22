@@ -35,6 +35,7 @@ import { Calendar, MapPin, Users, ChevronRight, Camera, History, Loader2, Route,
 import RecentClubActivities from "@/components/events/RecentClubActivities";
 import NextUpHero from "@/components/events/NextUpHero";
 import UpcomingEventsList from "@/components/events/UpcomingEventsList";
+import EventsEmptyState from "@/components/events/EventsEmptyState";
 import { getNextUpEvent } from "@/lib/event-utils";
 import { format, isSameMonth, isSameYear } from "date-fns";
 import { cs } from "date-fns/locale";
@@ -715,12 +716,20 @@ const Events = () => {
                     <EventsEmptyState
                       variant="no-events"
                       canCreate={!!isMember && !!canCreateEvents}
+                      createTrigger={
+                        isMember && canCreateEvents ? (
+                          <CreateEventDialog
+                            onEventCreated={fetchUpcomingEvents}
+                            customTrigger={
+                              <Button className="gap-2">
+                                <Plus className="w-4 h-4" />
+                                Naplánovat vyjížďku
+                              </Button>
+                            }
+                          />
+                        ) : undefined
+                      }
                     />
-                    {isMember && canCreateEvents && (
-                      <div className="hidden">
-                        {/* Mounted to allow CTA inside EventsEmptyState; below is the actual creation entrypoint via header button */}
-                      </div>
-                    )}
                   </div>
                 ) : (
                   <div data-tour="event-list">
