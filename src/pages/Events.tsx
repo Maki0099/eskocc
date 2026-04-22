@@ -31,7 +31,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Calendar, MapPin, Users, ChevronRight, Camera, History, Loader2, Route, Mountain, Gauge, Heart, MapIcon, RefreshCw, ExternalLink, Trash2, Pencil, Activity, ArrowRight } from "lucide-react";
+import { Calendar, MapPin, Users, ChevronRight, Camera, History, Loader2, Route, Mountain, Gauge, Heart, MapIcon, RefreshCw, ExternalLink, Trash2, Pencil, Activity, ArrowRight, Plus } from "lucide-react";
 import RecentClubActivities from "@/components/events/RecentClubActivities";
 import NextUpHero from "@/components/events/NextUpHero";
 import UpcomingEventsList from "@/components/events/UpcomingEventsList";
