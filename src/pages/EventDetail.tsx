@@ -240,49 +240,6 @@ const EventDetail = () => {
     fetchPhotos();
   }, [id, user]);
 
-  const handleJoin = async () => {
-    if (!user || !id) {
-      toast.error("Pro přihlášení se musíte přihlásit");
-      return;
-    }
-
-    try {
-      const { error } = await supabase.from("event_participants").insert({
-        event_id: id,
-        user_id: user.id,
-        status: "going",
-      });
-
-      if (error) throw error;
-
-      toast.success("Úspěšně přihlášeno na vyjížďku");
-      fetchEvent();
-    } catch (error: any) {
-      console.error("Error joining event:", error);
-      toast.error(error.message || "Nepodařilo se přihlásit");
-    }
-  };
-
-  const handleLeave = async () => {
-    if (!user || !id) return;
-
-    try {
-      const { error } = await supabase
-        .from("event_participants")
-        .delete()
-        .eq("event_id", id)
-        .eq("user_id", user.id);
-
-      if (error) throw error;
-
-      toast.success("Odhlášeno z vyjížďky");
-      fetchEvent();
-    } catch (error: any) {
-      console.error("Error leaving event:", error);
-      toast.error("Nepodařilo se odhlásit");
-    }
-  };
-
   const handleDelete = async () => {
     if (!id) return;
 
