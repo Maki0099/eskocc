@@ -45,7 +45,7 @@ const CheckForUpdatesButton = () => {
       if (hasNewVersion) {
         toast({
           title: "Je dostupná nová verze",
-          description: "Klikni na „Aktualizovat" v promptu pro nasazení.",
+          description: "Klikni na „Aktualizovat“ v promptu pro nasazení.",
         });
       } else {
         toast({
