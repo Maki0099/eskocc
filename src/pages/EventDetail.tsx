@@ -378,7 +378,17 @@ const EventDetail = () => {
                 </Badge>
               )}
               {user && !isPastEvent(event.event_date) && (
-                <EventNotificationToggle eventId={id!} userId={user.id} />
+                <>
+                  <EventParticipationToggle
+                    eventId={id!}
+                    userId={user.id}
+                    isParticipating={isParticipating}
+                    onToggle={fetchEvent}
+                    size="sm"
+                    showFullText
+                  />
+                  <EventNotificationToggle eventId={id!} userId={user.id} />
+                </>
               )}
             </div>
             {canEdit && (
@@ -561,16 +571,6 @@ const EventDetail = () => {
                   </>
                 )}
 
-                {user && !isPastEvent(event.event_date) && (
-                  <EventParticipationToggle
-                    eventId={id!}
-                    userId={user.id}
-                    isParticipating={isParticipating}
-                    onToggle={fetchEvent}
-                    size="default"
-                    showFullText
-                  />
-                )}
               </div>
             </CardContent>
           </Card>
