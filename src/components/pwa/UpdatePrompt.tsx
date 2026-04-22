@@ -59,8 +59,8 @@ const UpdatePrompt = () => {
   }, [needRefresh]);
 
   const handleUpdate = async () => {
-    // Nuke runtime caches so user sees fresh data after reload.
-    // Workbox precache is managed by the SW itself — leave it alone.
+    // 1. Nuke runtime caches so user sees fresh data after reload.
+    //    Workbox precache is managed by the SW itself — leave it alone.
     if ("caches" in window) {
       try {
         const keys = await caches.keys();
@@ -73,6 +73,26 @@ const UpdatePrompt = () => {
         console.warn("Cache cleanup failed:", err);
       }
     }
+
+    // 2. Once the new SW takes control, ask it to reload ALL open clients
+    //    (other tabs/windows of the PWA) so nothing stays on stale JS.
+    //    Listener must be registered BEFORE skipWaiting fires.
+    if ("serviceWorker" in navigator) {
+      const onControllerChange = () => {
+        navigator.serviceWorker.controller?.postMessage({
+          type: "RELOAD_ALL_CLIENTS",
+        });
+        // Reload current tab too — SW message is async and may race.
+        setTimeout(() => window.location.reload(), 100);
+      };
+      navigator.serviceWorker.addEventListener(
+        "controllerchange",
+        onControllerChange,
+        { once: true }
+      );
+    }
+
+    // 3. Activate the waiting SW (skipWaiting + clientsClaim).
     await updateServiceWorker(true);
   };
 
