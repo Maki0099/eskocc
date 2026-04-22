@@ -11,7 +11,7 @@ interface EventsEmptyStateProps {
   onClearFilter?: () => void;
 }
 
-const EventsEmptyState = ({ variant, canCreate, onCreate, onClearFilter }: EventsEmptyStateProps) => {
+const EventsEmptyState = ({ variant, canCreate, createTrigger, onClearFilter }: EventsEmptyStateProps) => {
   if (variant === "filtered") {
     return (
       <Card>
@@ -49,19 +49,16 @@ const EventsEmptyState = ({ variant, canCreate, onCreate, onClearFilter }: Event
               : "Zatím nic neběží. Mrkni na oblíbené trasy a inspiruj se."}
           </p>
         </div>
-        {canCreate && onCreate ? (
-          <Button onClick={onCreate} className="gap-2">
-            <Plus className="w-4 h-4" />
-            Naplánovat vyjížďku
-          </Button>
-        ) : (
+        {canCreate && createTrigger ? (
+          createTrigger
+        ) : !canCreate ? (
           <Button asChild variant="outline" className="gap-2">
             <Link to="/events?tab=routes">
               <Map className="w-4 h-4" />
               Oblíbené trasy
             </Link>
           </Button>
-        )}
+        ) : null}
       </CardContent>
     </Card>
   );
