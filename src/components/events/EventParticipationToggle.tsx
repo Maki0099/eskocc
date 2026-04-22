@@ -75,30 +75,34 @@ const EventParticipationToggle = ({
 
   return (
     <Button
-      variant={isParticipating ? "secondary" : "default"}
+      variant={effective ? "secondary" : "default"}
       size={size}
       onClick={handleToggle}
       disabled={loading}
       className={cn(
-        "gap-2 shrink-0 transition-colors",
+        "gap-2 shrink-0 transition-all",
         fullWidth && "w-full",
-        isParticipating &&
+        effective &&
           "bg-green-500/10 hover:bg-green-500/15 ring-2 ring-green-500/60 text-green-700 dark:text-green-400 dark:bg-green-500/15",
+        loading && "opacity-90",
         className,
       )}
+      aria-pressed={effective}
     >
-      {loading ? (
-        <Loader2 className="w-4 h-4 animate-spin" />
-      ) : isParticipating ? (
+      {effective ? (
         <>
-          <Check className="w-4 h-4" />
+          <Check className={cn("w-4 h-4", loading && "animate-pulse")} />
           <span className={showFullText ? "inline" : "hidden sm:inline"}>
             {showFullText ? labelGoing : "Odhlásit"}
           </span>
         </>
       ) : (
         <>
-          <UserPlus className="w-4 h-4" />
+          {loading ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <UserPlus className="w-4 h-4" />
+          )}
           <span className={showFullText ? "inline" : "hidden sm:inline"}>
             {showFullText ? labelJoin : "Přihlásit"}
           </span>
