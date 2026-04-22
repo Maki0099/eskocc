@@ -19,6 +19,7 @@ import { PushNotificationToggle } from "@/components/notifications/PushNotificat
 import { useTour } from "@/hooks/useTour";
 import TourProvider from "@/components/tour/TourProvider";
 import { AccountPageSkeleton } from "@/components/skeletons/PageSkeletons";
+import CheckForUpdatesButton from "@/components/pwa/CheckForUpdatesButton";
 
 interface Profile {
   full_name: string | null;
