@@ -20,8 +20,8 @@ const DayHeader = ({ date, count, sticky = true, id }: DayHeaderProps) => {
     <div
       id={id}
       className={cn(
-        "flex items-baseline justify-between gap-3 mb-3 py-2",
-        sticky && "sticky top-14 z-20 bg-background/85 backdrop-blur-sm border-b border-border/40"
+        "flex items-baseline justify-between gap-3 mb-3 py-2 px-1 -mx-1",
+        sticky && "sticky top-16 z-30 bg-background/85 backdrop-blur-md border-b border-border/40 shadow-[0_1px_0_0_hsl(var(--border)/0.3)]"
       )}
     >
       <div className="flex items-baseline gap-2 min-w-0">
