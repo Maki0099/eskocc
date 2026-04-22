@@ -7,6 +7,7 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import EditEventDialog from "@/components/events/EditEventDialog";
 import EventNotificationToggle from "@/components/events/EventNotificationToggle";
+import EventParticipationToggle from "@/components/events/EventParticipationToggle";
 import PhotoGrid from "@/components/gallery/PhotoGrid";
 import PhotoUpload from "@/components/gallery/PhotoUpload";
 import GpxMap from "@/components/map/GpxMap";
