@@ -72,6 +72,20 @@ self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'CLEAR_BADGE') {
     updateBadge(0);
   }
+
+  // Reload all open clients (tabs/windows) after a SW update so no
+  // tab stays on stale JS while the new SW serves new assets.
+  if (event.data && event.data.type === 'RELOAD_ALL_CLIENTS') {
+    event.waitUntil(
+      self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+        return Promise.all(
+          clientList.map((client) => {
+            return client.navigate(client.url).catch(() => client.focus());
+          })
+        );
+      })
+    );
+  }
 });
 
 self.addEventListener('push', (event) => {
