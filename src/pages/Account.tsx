@@ -19,6 +19,7 @@ import { PushNotificationToggle } from "@/components/notifications/PushNotificat
 import { useTour } from "@/hooks/useTour";
 import TourProvider from "@/components/tour/TourProvider";
 import { AccountPageSkeleton } from "@/components/skeletons/PageSkeletons";
+import CheckForUpdatesButton from "@/components/pwa/CheckForUpdatesButton";
 
 interface Profile {
   full_name: string | null;
@@ -420,6 +421,14 @@ const Account = () => {
             </Button>
             <p className="text-xs text-muted-foreground mt-2">
               Průvodce se znovu zobrazí při další návštěvě dashboardu
+            </p>
+          </div>
+
+          <div className="mt-8 pt-8 border-t border-border/40">
+            <h2 className="font-medium mb-4">Aplikace</h2>
+            <CheckForUpdatesButton />
+            <p className="text-xs text-muted-foreground mt-2">
+              Ověří, zda je dostupná novější verze aplikace
             </p>
           </div>
 
