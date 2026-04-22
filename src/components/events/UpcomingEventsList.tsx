@@ -7,6 +7,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import EventCard, { type EventCardEvent } from "@/components/events/EventCard";
 import DayHeader from "@/components/events/DayHeader";
 import EventsCalendarView from "@/components/events/EventsCalendarView";
+import EventsEmptyState from "@/components/events/EventsEmptyState";
 import { groupEventsByDay, matchesSportFilter, type SportFilter } from "@/lib/event-utils";
 
 interface UpcomingEventsListProps {
@@ -106,11 +107,13 @@ const UpcomingEventsList = ({
       </div>
 
       {dayGroups.length === 0 ? (
-        <p className="text-sm text-muted-foreground py-8 text-center">
-          {filter === "all"
-            ? "Žádné nadcházející vyjížďky"
-            : "V této kategorii nic není. Zkus jiný filtr."}
-        </p>
+        events.length === 0 ? (
+          <p className="text-sm text-muted-foreground py-8 text-center">
+            Žádné nadcházející vyjížďky
+          </p>
+        ) : (
+          <EventsEmptyState variant="filtered" onClearFilter={() => setFilter("all")} />
+        )
       ) : (
         <div className="space-y-6">
           {view === "calendar" && (

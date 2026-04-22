@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import EventParticipationToggle from "@/components/events/EventParticipationToggle";
 import StravaEventBadge from "@/components/events/StravaEventBadge";
 import EditEventDialog from "@/components/events/EditEventDialog";
-import { pluralizeGoing } from "@/lib/event-utils";
+import ParticipantAvatars from "@/components/events/ParticipantAvatars";
 
 export interface EventCardEvent {
   id: string;
@@ -109,7 +109,7 @@ const EventCard = ({
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground min-w-0">
             <span className="font-medium text-foreground/80 capitalize">{dateLabel}</span>
             <span aria-hidden>·</span>
-            <span>{pluralizeGoing(event.participant_count)}</span>
+            <ParticipantAvatars eventId={event.id} count={event.participant_count} />
             {isStrava && (
               <>
                 <span aria-hidden>·</span>

@@ -31,10 +31,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Calendar, MapPin, Users, ChevronRight, Camera, History, Loader2, Route, Mountain, Gauge, Heart, MapIcon, RefreshCw, ExternalLink, Trash2, Pencil, Activity, ArrowRight } from "lucide-react";
+import { Calendar, MapPin, Users, ChevronRight, Camera, History, Loader2, Route, Mountain, Gauge, Heart, MapIcon, RefreshCw, ExternalLink, Trash2, Pencil, Activity, ArrowRight, Plus } from "lucide-react";
 import RecentClubActivities from "@/components/events/RecentClubActivities";
 import NextUpHero from "@/components/events/NextUpHero";
 import UpcomingEventsList from "@/components/events/UpcomingEventsList";
+import EventsEmptyState from "@/components/events/EventsEmptyState";
 import { getNextUpEvent } from "@/lib/event-utils";
 import { format, isSameMonth, isSameYear } from "date-fns";
 import { cs } from "date-fns/locale";
@@ -711,12 +712,25 @@ const Events = () => {
                     ))}
                   </div>
                 ) : upcomingEvents.length === 0 ? (
-                  <Card className={`animate-on-scroll scale-in ${listVisible ? "is-visible" : ""}`}>
-                    <CardContent className="py-12 text-center">
-                      <Calendar className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                      <p className="text-muted-foreground">Žádné nadcházející vyjížďky</p>
-                    </CardContent>
-                  </Card>
+                  <div className={`animate-on-scroll scale-in ${listVisible ? "is-visible" : ""}`}>
+                    <EventsEmptyState
+                      variant="no-events"
+                      canCreate={!!isMember && !!canCreateEvents}
+                      createTrigger={
+                        isMember && canCreateEvents ? (
+                          <CreateEventDialog
+                            onEventCreated={fetchUpcomingEvents}
+                            customTrigger={
+                              <Button className="gap-2">
+                                <Plus className="w-4 h-4" />
+                                Naplánovat vyjížďku
+                              </Button>
+                            }
+                          />
+                        ) : undefined
+                      }
+                    />
+                  </div>
                 ) : (
                   <div data-tour="event-list">
                     {(() => {

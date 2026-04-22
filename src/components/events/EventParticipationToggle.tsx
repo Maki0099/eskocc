@@ -27,34 +27,44 @@ const EventParticipationToggle = ({
   className,
 }: EventParticipationToggleProps) => {
   const [loading, setLoading] = useState(false);
+  const [optimistic, setOptimistic] = useState<boolean | null>(null);
+  const effective = optimistic ?? isParticipating;
 
   const handleToggle = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
+    const next = !effective;
+    setOptimistic(next);
     setLoading(true);
+    // Haptic feedback on supported devices
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+      try { navigator.vibrate?.(next ? 15 : 8); } catch { /* ignore */ }
+    }
+
     try {
-      if (isParticipating) {
+      if (effective) {
         const { error } = await supabase
           .from("event_participants")
           .delete()
           .eq("event_id", eventId)
           .eq("user_id", userId);
-
         if (error) throw error;
         toast.success("Odhlášeno z vyjížďky");
       } else {
         const { error } = await supabase
           .from("event_participants")
           .insert({ event_id: eventId, user_id: userId, status: "going" });
-
         if (error) throw error;
         toast.success("Přihlášeno na vyjížďku");
       }
       onToggle();
+      // Clear optimistic once parent state catches up on next render
+      setOptimistic(null);
     } catch (error: any) {
       console.error("Error toggling participation:", error);
-      toast.error(isParticipating ? "Nepodařilo se odhlásit" : "Nepodařilo se přihlásit");
+      toast.error(effective ? "Nepodařilo se odhlásit" : "Nepodařilo se přihlásit");
+      setOptimistic(null); // rollback
     } finally {
       setLoading(false);
     }
@@ -65,30 +75,34 @@ const EventParticipationToggle = ({
 
   return (
     <Button
-      variant={isParticipating ? "secondary" : "default"}
+      variant={effective ? "secondary" : "default"}
       size={size}
       onClick={handleToggle}
       disabled={loading}
       className={cn(
-        "gap-2 shrink-0 transition-colors",
+        "gap-2 shrink-0 transition-all",
         fullWidth && "w-full",
-        isParticipating &&
+        effective &&
           "bg-green-500/10 hover:bg-green-500/15 ring-2 ring-green-500/60 text-green-700 dark:text-green-400 dark:bg-green-500/15",
+        loading && "opacity-90",
         className,
       )}
+      aria-pressed={effective}
     >
-      {loading ? (
-        <Loader2 className="w-4 h-4 animate-spin" />
-      ) : isParticipating ? (
+      {effective ? (
         <>
-          <Check className="w-4 h-4" />
+          <Check className={cn("w-4 h-4", loading && "animate-pulse")} />
           <span className={showFullText ? "inline" : "hidden sm:inline"}>
             {showFullText ? labelGoing : "Odhlásit"}
           </span>
         </>
       ) : (
         <>
-          <UserPlus className="w-4 h-4" />
+          {loading ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <UserPlus className="w-4 h-4" />
+          )}
           <span className={showFullText ? "inline" : "hidden sm:inline"}>
             {showFullText ? labelJoin : "Přihlásit"}
           </span>
