@@ -425,6 +425,14 @@ const Account = () => {
           </div>
 
           <div className="mt-8 pt-8 border-t border-border/40">
+            <h2 className="font-medium mb-4">Aplikace</h2>
+            <CheckForUpdatesButton />
+            <p className="text-xs text-muted-foreground mt-2">
+              Ověří, zda je dostupná novější verze aplikace
+            </p>
+          </div>
+
+          <div className="mt-8 pt-8 border-t border-border/40">
             <h2 className="font-medium mb-4">Změna hesla</h2>
             <Button
               variant="outline"
