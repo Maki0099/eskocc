@@ -568,6 +568,7 @@ const EventDetail = () => {
                     isParticipating={isParticipating}
                     onToggle={fetchEvent}
                     size="default"
+                    showFullText
                   />
                 )}
               </div>
