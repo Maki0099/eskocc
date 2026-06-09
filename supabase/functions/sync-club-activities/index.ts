@@ -121,6 +121,9 @@ async function authorize(
   if (anonKey && token === anonKey && triggerSource === "pg-cron") {
     return { ok: true, triggeredBy: "cron" };
   }
+  if (triggerSource === "pg-cron") {
+    console.log(`[authorize] pg-cron header present but token mismatch. token.len=${token.length} anonKey.len=${anonKey.length} match=${token === anonKey}`);
+  }
 
   if (!anonKey) return { ok: false, reason: "server_misconfig", triggeredBy: "unknown" };
   const userClient = createClient(Deno.env.get("SUPABASE_URL")!, anonKey, {
