@@ -106,10 +106,21 @@ async function authorize(
   const authHeader = req.headers.get("Authorization") || "";
   const token = authHeader.replace(/^Bearer\s+/i, "");
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
-  const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
+  const anonKey =
+    Deno.env.get("SUPABASE_ANON_KEY") ||
+    Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ||
+    "";
+  const triggerSource = (req.headers.get("x-trigger-source") || "").toLowerCase();
 
   if (!token) return { ok: false, reason: "missing_auth", triggeredBy: "unknown" };
-  if (token === serviceKey) return { ok: true, triggeredBy: "cron" };
+
+  // Service role = trusted internal caller (e.g. manual deploy script).
+  if (serviceKey && token === serviceKey) return { ok: true, triggeredBy: "cron" };
+
+  // pg_cron triggers send the anon key + a custom header. Treat as cron.
+  if (anonKey && token === anonKey && triggerSource === "pg-cron") {
+    return { ok: true, triggeredBy: "cron" };
+  }
 
   if (!anonKey) return { ok: false, reason: "server_misconfig", triggeredBy: "unknown" };
   const userClient = createClient(Deno.env.get("SUPABASE_URL")!, anonKey, {
