@@ -106,10 +106,8 @@ async function authorize(
   const authHeader = req.headers.get("Authorization") || "";
   const token = authHeader.replace(/^Bearer\s+/i, "");
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
-  const anonKey =
-    Deno.env.get("SUPABASE_ANON_KEY") ||
-    Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ||
-    "";
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
+  const publishableKey = Deno.env.get("SUPABASE_PUBLISHABLE_KEY") || "";
   const triggerSource = (req.headers.get("x-trigger-source") || "").toLowerCase();
 
   if (!token) return { ok: false, reason: "missing_auth", triggeredBy: "unknown" };
@@ -117,12 +115,16 @@ async function authorize(
   // Service role = trusted internal caller (e.g. manual deploy script).
   if (serviceKey && token === serviceKey) return { ok: true, triggeredBy: "cron" };
 
-  // pg_cron triggers send the anon key + a custom header. Treat as cron.
-  if (anonKey && token === anonKey && triggerSource === "pg-cron") {
+  // pg_cron triggers send a publishable/anon key + a custom header. Treat as cron.
+  // Accept either the legacy anon JWT or the new publishable key format.
+  if (
+    triggerSource === "pg-cron" &&
+    ((anonKey && token === anonKey) || (publishableKey && token === publishableKey))
+  ) {
     return { ok: true, triggeredBy: "cron" };
   }
   if (triggerSource === "pg-cron") {
-    console.log(`[authorize] pg-cron header present but token mismatch. token.len=${token.length} anonKey.len=${anonKey.length} match=${token === anonKey}`);
+    console.log(`[authorize] pg-cron header present but token mismatch. token.len=${token.length} anon.len=${anonKey.length} pub.len=${publishableKey.length}`);
   }
 
   if (!anonKey) return { ok: false, reason: "server_misconfig", triggeredBy: "unknown" };
