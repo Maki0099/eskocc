@@ -236,56 +236,87 @@ const Admin = () => {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="flex-wrap">
-              <TabsTrigger value="users" className="gap-2">
-                <Users className="w-4 h-4" />
-                Uživatelé
-                {pendingCount > 0 && (
-                  <Badge 
-                    variant="destructive" 
-                    className="ml-1 h-5 min-w-5 px-1.5 text-xs font-bold"
-                  >
-                    {pendingCount}
-                  </Badge>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="cafe" className="gap-2">
-                <Coffee className="w-4 h-4" />
-                Kavárna
-              </TabsTrigger>
-              <TabsTrigger value="challenge" className="gap-2">
-                <Target className="w-4 h-4" />
-                Výzva roku
-              </TabsTrigger>
-              <TabsTrigger value="cron" className="gap-2">
-                <Clock className="w-4 h-4" />
-                Úlohy
-              </TabsTrigger>
-              <TabsTrigger value="notifications" className="gap-2">
-                <Bell className="w-4 h-4" />
-                Notifikace
-              </TabsTrigger>
-              <TabsTrigger value="routes" className="gap-2">
-                <Route className="w-4 h-4" />
-                Trasy
-              </TabsTrigger>
-              <TabsTrigger value="ai" className="gap-2">
-                <Sparkles className="w-4 h-4" />
-                AI
-              </TabsTrigger>
-              <TabsTrigger value="club-strava" className="gap-2">
-                <Activity className="w-4 h-4" />
-                Strava klub
-              </TabsTrigger>
-              <TabsTrigger value="albums" className="gap-2">
-                <Images className="w-4 h-4" />
-                Alba
-              </TabsTrigger>
-              <TabsTrigger value="gallery-photos" className="gap-2">
-                <Images className="w-4 h-4" />
-                Fotky
-              </TabsTrigger>
-            </TabsList>
+            {(() => {
+              const adminTabs = [
+                { id: "users", label: "Uživatelé", icon: Users },
+                { id: "cafe", label: "Kavárna", icon: Coffee },
+                { id: "challenge", label: "Výzva roku", icon: Target },
+                { id: "cron", label: "Úlohy", icon: Clock },
+                { id: "notifications", label: "Notifikace", icon: Bell },
+                { id: "routes", label: "Trasy", icon: Route },
+                { id: "ai", label: "AI", icon: Sparkles },
+                { id: "club-strava", label: "Strava klub", icon: Activity },
+                { id: "albums", label: "Alba", icon: Images },
+                { id: "gallery-photos", label: "Fotky", icon: Images },
+              ];
+              const activeTabConfig = adminTabs.find((t) => t.id === activeTab) ?? adminTabs[0];
+              const ActiveIcon = activeTabConfig.icon;
+              return (
+                <>
+                  {/* Mobile: dropdown selector */}
+                  <div className="md:hidden">
+                    <Select value={activeTab} onValueChange={setActiveTab}>
+                      <SelectTrigger className="w-full">
+                        <span className="flex items-center gap-2 truncate">
+                          <ActiveIcon className="w-4 h-4 shrink-0" />
+                          <span className="truncate">{activeTabConfig.label}</span>
+                          {activeTabConfig.id === "users" && pendingCount > 0 && (
+                            <Badge
+                              variant="destructive"
+                              className="ml-1 h-5 min-w-5 px-1.5 text-xs font-bold"
+                            >
+                              {pendingCount}
+                            </Badge>
+                          )}
+                        </span>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {adminTabs.map((t) => {
+                          const Icon = t.icon;
+                          return (
+                            <SelectItem key={t.id} value={t.id}>
+                              <span className="flex items-center gap-2">
+                                <Icon className="w-4 h-4" />
+                                {t.label}
+                                {t.id === "users" && pendingCount > 0 && (
+                                  <Badge
+                                    variant="destructive"
+                                    className="ml-1 h-5 min-w-5 px-1.5 text-xs font-bold"
+                                  >
+                                    {pendingCount}
+                                  </Badge>
+                                )}
+                              </span>
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Desktop: tab list */}
+                  <TabsList className="hidden md:flex flex-wrap h-auto">
+                    {adminTabs.map((t) => {
+                      const Icon = t.icon;
+                      return (
+                        <TabsTrigger key={t.id} value={t.id} className="gap-2">
+                          <Icon className="w-4 h-4" />
+                          {t.label}
+                          {t.id === "users" && pendingCount > 0 && (
+                            <Badge
+                              variant="destructive"
+                              className="ml-1 h-5 min-w-5 px-1.5 text-xs font-bold"
+                            >
+                              {pendingCount}
+                            </Badge>
+                          )}
+                        </TabsTrigger>
+                      );
+                    })}
+                  </TabsList>
+                </>
+              );
+            })()}
 
             <TabsContent value="users" className="space-y-6">
               <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
