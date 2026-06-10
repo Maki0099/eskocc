@@ -267,20 +267,28 @@ const PruvodceBeskydy = () => {
                             <span className="bg-muted px-2 py-0.5 rounded">{TERRAIN_LABEL[r.terrain]}</span>
                           </div>
                           <p className="text-sm text-muted-foreground leading-relaxed mb-4 flex-1">{r.description}</p>
-                          <div className="flex flex-wrap gap-2 mt-auto">
-                            {r.mapyUrl && (
-                              <a href={r.mapyUrl} target="_blank" rel="noopener noreferrer"
-                                className="text-xs inline-flex items-center gap-1 text-primary hover:underline">
-                                Mapy.cz <ExternalLink className="h-3 w-3" />
+                          <div className="flex flex-col gap-3 mt-auto">
+                            <Button asChild size="sm" variant="default" className="w-full sm:w-auto">
+                              <a href={r.gpxUrl} download={`${r.slug}.gpx`}>
+                                <Download className="mr-2 h-4 w-4" /> Stáhnout GPX
                               </a>
-                            )}
-                            {r.komootUrl && (
-                              <a href={r.komootUrl} target="_blank" rel="noopener noreferrer"
-                                className="text-xs inline-flex items-center gap-1 text-primary hover:underline">
-                                Komoot <ExternalLink className="h-3 w-3" />
-                              </a>
-                            )}
+                            </Button>
+                            <div className="flex flex-wrap gap-3 text-xs">
+                              {r.mapyUrl && (
+                                <a href={r.mapyUrl} target="_blank" rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 text-primary hover:underline">
+                                  Mapy.cz <ExternalLink className="h-3 w-3" />
+                                </a>
+                              )}
+                              {r.komootUrl && (
+                                <a href={r.komootUrl} target="_blank" rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 text-primary hover:underline">
+                                  Komoot <ExternalLink className="h-3 w-3" />
+                                </a>
+                              )}
+                            </div>
                           </div>
+
                         </CardContent>
                       </Card>
                     ))}
