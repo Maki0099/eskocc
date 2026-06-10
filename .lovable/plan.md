@@ -1,25 +1,21 @@
-Upravím `.github/workflows/deploy.yml` tak, aby odstranil pravděpodobnou příčinu chyby `FTPError: 550 assets: No such file or directory` a zároveň ošetřil varování k Node.js.
+## Proč nevidíš /pruvodce-beskydy
 
-Plán:
-1. Odstranit `dangerous-clean-slate: true`
-   - Aktuálně je ve workflow stále zapnuté.
-   - To může při mazání/synchronizaci vzdálené složky narazit na neexistující adresář `assets` a deploy spadne.
+Route je v kódu správně definovaná (`App.tsx` → `ROUTES.GUIDE_BESKYDY = '/pruvodce-beskydy'`), stránka `src/pages/PruvodceBeskydy.tsx` i všechny assety existují.
 
-2. Použít cílovou složku a port ze secretů
-   - `port: ${{ secrets.SFTP_PORT || 21 }}`
-   - `server-dir: ${{ secrets.SFTP_TARGET || '/' }}`
-   - Tím bude možné nastavit správný Active24 webroot bez další změny workflow.
-   - Důležité: `SFTP_TARGET` by měl být adresář, kde má po deploy ležet `index.html`, typicky například `/www/`, pokud ho Active24 používá.
+Z konzolového logu je vidět, že prohlížeč načítá **starý buildovaný bundle** (`index-CbzT9YWb.js`, `NotFound-ChkWJafP.js`) z `id-preview--…lovable.app`. Ten byl vytvořen ještě před přidáním této routy, takže React Router pro `/pruvodce-beskydy` spadne do catch-all `*` → `NotFound`.
 
-3. Resetovat FTP deploy sync stav
-   - Přidat nový `state-name`, například `.ftp-deploy-sync-state-active24.json`.
-   - Pokud na serveru zůstal starý/rozbitý sync stav po předchozích pokusech, akce ho nebude používat.
+Jinými slovy: kód je OK, jen **publikovaný/nasazený build je zastaralý**.
 
-4. Ošetřit Node.js 20 deprecation warning
-   - Přepnout build runtime z `node-version: 20` na novější verzi.
-   - Přidat `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true`, aby GitHub Actions běžely už teď v režimu kompatibilním s nadcházející změnou.
-   - Samotné varování není příčinou chyby `550 assets`, ale je dobré ho vyřešit při stejné úpravě.
+## Plán
 
-Technická poznámka:
-- Nevracel bych `v4.3.7`, protože ta verze FTP akce neexistuje / nejde resolve-nout.
-- `SamKirkland/FTP-Deploy-Action@v4.3.6` necháme, pokud deploy po úpravě projde.
+1. **Re-publish v Lovable** – přebuilduje preview bundle, nová routa se dostane do `index-*.js`. Po publishi `/pruvodce-beskydy` bude na `id-preview--…lovable.app` i na `eskocc.lovable.app` fungovat.
+2. **Re-deploy na Active24** – GitHub Action po push na `main` přebuildí `dist/` a nahraje na FTP, takže i `www.eskocc.cz/pruvodce-beskydy` se aktualizuje.
+3. **Ověření** – po publishi otevřít `/pruvodce-beskydy` a zkontrolovat, že se načte nová verze JS (jiný hash než `CbzT9YWb`) a stránka se vyrenderuje.
+
+## Co dělat nechci
+
+- Neměnit `App.tsx` / `routes.ts` – jsou v pořádku.
+- Nesahat na `NotFound` – chová se správně, jen dostává neexistující routu z prošlého buildu.
+- Nepřidávat `_redirects` ani jiné hosting configy – Lovable SPA fallback funguje sám.
+
+Pokud chceš, abych po přepnutí do build módu jen znovu spustil publish a deploy (případně přidal drobnou změnu, která vynutí rebuild), dej vědět.
