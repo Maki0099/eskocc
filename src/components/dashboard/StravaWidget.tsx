@@ -18,19 +18,23 @@ const formatDistance = (km: number): string => {
 export const StravaWidget = ({ userId, isClubMember = false }: StravaWidgetProps) => {
   const [ytdDistance, setYtdDistance] = useState<number>(0);
   const [ytdCount, setYtdCount] = useState<number>(0);
+  const [personalDistance, setPersonalDistance] = useState<number | null>(null);
+  const [personalCount, setPersonalCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchStats = async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("strava_ytd_distance, strava_ytd_count")
+        .select("strava_ytd_distance, strava_ytd_count, personal_ytd_distance, personal_ytd_count")
         .eq("id", userId)
         .maybeSingle();
 
       if (data) {
         setYtdDistance(data.strava_ytd_distance ?? 0);
         setYtdCount(data.strava_ytd_count ?? 0);
+        setPersonalDistance((data as any).personal_ytd_distance ?? null);
+        setPersonalCount((data as any).personal_ytd_count ?? null);
       }
       setLoading(false);
     };
@@ -42,12 +46,16 @@ export const StravaWidget = ({ userId, isClubMember = false }: StravaWidgetProps
     return <StravaWidgetSkeleton />;
   }
 
+  const hasPersonal = personalDistance !== null || personalCount !== null;
+
   return (
     <div className="group p-6 rounded-2xl border border-orange-500/20 bg-gradient-to-br from-orange-500/10 to-orange-600/5 hover:border-orange-500/40 transition-colors">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <img src={stravaLogo} alt="Strava" className="h-5 w-auto" />
-          <span className="text-xs text-muted-foreground">Z klubu ESKO.cc</span>
+          <span className="text-xs text-muted-foreground">
+            {hasPersonal ? "Klub vs. osobní Strava" : "Z klubu ESKO.cc"}
+          </span>
         </div>
         <a
           href={STRAVA_CLUB_URL}
@@ -62,21 +70,52 @@ export const StravaWidget = ({ userId, isClubMember = false }: StravaWidgetProps
         </a>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 mb-4">
-        <div className="text-center">
-          <div className="flex items-center justify-center mb-1">
-            <Bike className="w-4 h-4 text-orange-600" />
+      <div className="space-y-3 mb-4">
+        <div className="rounded-xl bg-background/40 p-3">
+          <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-2">
+            Z klubového feedu
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="text-center">
+              <div className="flex items-center justify-center mb-1">
+                <Bike className="w-4 h-4 text-orange-600" />
+              </div>
+              <p className="text-2xl font-bold">{ytdCount}</p>
+              <p className="text-xs text-muted-foreground">jízd letos</p>
+            </div>
+            <div className="text-center">
+              <div className="flex items-center justify-center mb-1">
+                <TrendingUp className="w-4 h-4 text-orange-600" />
+              </div>
+              <p className="text-2xl font-bold">{formatDistance(ytdDistance)}</p>
+              <p className="text-xs text-muted-foreground">km letos</p>
+            </div>
           </div>
-          <p className="text-2xl font-bold">{ytdCount}</p>
-          <p className="text-xs text-muted-foreground">jízd letos</p>
         </div>
-        <div className="text-center">
-          <div className="flex items-center justify-center mb-1">
-            <TrendingUp className="w-4 h-4 text-orange-600" />
+
+        {hasPersonal && (
+          <div className="rounded-xl bg-background/40 p-3 border border-orange-500/20">
+            <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-2">
+              Z mého Strava účtu
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="text-center">
+                <div className="flex items-center justify-center mb-1">
+                  <Bike className="w-4 h-4 text-orange-600" />
+                </div>
+                <p className="text-2xl font-bold">{personalCount ?? 0}</p>
+                <p className="text-xs text-muted-foreground">jízd letos</p>
+              </div>
+              <div className="text-center">
+                <div className="flex items-center justify-center mb-1">
+                  <TrendingUp className="w-4 h-4 text-orange-600" />
+                </div>
+                <p className="text-2xl font-bold">{formatDistance(personalDistance ?? 0)}</p>
+                <p className="text-xs text-muted-foreground">km letos</p>
+              </div>
+            </div>
           </div>
-          <p className="text-2xl font-bold">{formatDistance(ytdDistance)}</p>
-          <p className="text-xs text-muted-foreground">km letos</p>
-        </div>
+        )}
       </div>
 
       <div className="pt-3 border-t border-border/40">
