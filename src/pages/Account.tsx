@@ -20,6 +20,7 @@ import { useTour } from "@/hooks/useTour";
 import TourProvider from "@/components/tour/TourProvider";
 import { AccountPageSkeleton } from "@/components/skeletons/PageSkeletons";
 import CheckForUpdatesButton from "@/components/pwa/CheckForUpdatesButton";
+import { StravaConnectionCard } from "@/components/strava/StravaConnectionCard";
 
 interface Profile {
   full_name: string | null;
@@ -394,6 +395,11 @@ const Account = () => {
             >
               {saving ? "Ukládám..." : "Uložit změny"}
             </Button>
+          </div>
+
+          <div className="mt-12 pt-8 border-t border-border/40">
+            <h2 className="font-medium mb-4">Strava</h2>
+            <StravaConnectionCard />
           </div>
 
           <div className="mt-12 pt-8 border-t border-border/40" data-tour="notifications-section">
