@@ -1,6 +1,6 @@
 import { Helmet } from "react-helmet-async";
 
-const SITE_URL = "https://eskocc.lovable.app";
+const SITE_URL = "https://www.eskocc.cz";
 const DEFAULT_OG_IMAGE = `${SITE_URL}/pwa-512x512.png`;
 
 interface SeoProps {

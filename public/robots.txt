@@ -13,4 +13,4 @@ Allow: /
 User-agent: *
 Allow: /
 
-Sitemap: https://eskocc.lovable.app/sitemap.xml
+Sitemap: https://www.eskocc.cz/sitemap.xml
