@@ -10,9 +10,12 @@ export interface BeskydyRoute {
   terrain: BeskydyTerrain;
   difficulty: BeskydyDifficulty;
   description: string;
+  gpxUrl: string;
   mapyUrl?: string;
   komootUrl?: string;
 }
+
+const gpx = (slug: string) => `/gpx/beskydy/${slug}.gpx`;
 
 export const BESKYDY_ROUTES: BeskydyRoute[] = [
   {
