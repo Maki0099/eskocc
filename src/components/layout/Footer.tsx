@@ -35,6 +35,7 @@ const Footer = () => {
               <li><Link to={ROUTES.EVENTS} className="text-sm text-muted-foreground hover:text-foreground transition-colors">Vyjížďky</Link></li>
               <li><Link to={ROUTES.GALLERY} className="text-sm text-muted-foreground hover:text-foreground transition-colors">Galerie</Link></li>
               <li><Link to={ROUTES.ABOUT} className="text-sm text-muted-foreground hover:text-foreground transition-colors">O klubu</Link></li>
+              <li><Link to={ROUTES.GUIDE_BESKYDY} className="text-sm text-muted-foreground hover:text-foreground transition-colors">Průvodce Beskydy</Link></li>
               <li><Link to={ROUTES.INSTALL} className="text-sm text-muted-foreground hover:text-foreground transition-colors">Nainstalovat aplikaci</Link></li>
             </ul>
           </div>
