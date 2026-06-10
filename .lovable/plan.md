@@ -1,45 +1,66 @@
-## Cíl
+## Kontext
 
-Vytvořit novou veřejnou SEO landing page na `/pruvodce-beskydy` — obsáhlý průvodce cyklistikou v Beskydech, který cílí na vyhledávací dotazy typu „cyklistika Beskydy", „cyklotrasy Beskydy", „kolo Beskydy" a přivádí návštěvníky na klubový web s odkazy do interních sekcí (Trasy, Akce, Statistiky, Kavárna, O nás).
+V `favorite_routes` aktuálně nejsou žádné beskydské trasy (jen Mallorca + jedna „Na pržno"). Sekce „Doporučené trasy z naší databáze" tedy zobrazuje irelevantní obsah. Níže navrhuju komplexní rozšíření článku, aby působil jako plnohodnotný průvodce a zároveň lépe vyhovoval SEO i návštěvníkům.
 
-## Struktura stránky
+## Hlavní změny
 
-Jeden semantický `<article>` s jedním `<h1>` a logickou hierarchií `<h2>`/`<h3>`. Obsah v češtině, tón věcný a přátelský, délka cca 1500–2000 slov.
+### 1. Nahradit dynamický blok kurátorovaným seznamem beskydských tras
+- Odebrat dotaz na `favorite_routes` (nebo ho zúžit přes nový sloupec `region` – viz volitelný bod B níže).
+- Zavést **statický pole 6 ručně sestavených beskydských tras** s popisem, profilem (km, převýšení, povrch), startem a externími odkazy (Mapy.cz/Komoot/Strava segment).
+  - Příklady: Karolinka → Soláň → Velké Karlovice (okruh, ~45 km/900 m), Pustevny od Trojanovic (15 km/700 m), Lysá hora od Krásné (11 km/1100 m), Bečva Cyklostezka (rovinatá rodinná), Bumbálka okruh, gravel přes Javorníky.
+- Každá karta: ikona terénu, obtížnost (badge), tlačítka „GPX (Mapy.cz)" a „Komoot".
 
-### Sekce
+### 2. Interaktivní mapa regionu (Mapbox)
+- Použít existující `MAPBOX_PUBLIC_TOKEN` a vzor z `src/components/map/ClubLocationMap.tsx`.
+- Nová komponenta `BeskydyOverviewMap.tsx`: výchozí pohled na Moravskoslezské Beskydy, **markery POI** (Karolinka – klubovna, Soláň, Pustevny, Lysá hora, Radhošť, Bumbálka, kavárna ESKO.cc) s popupy a odkazy na příslušné sekce.
+- Výška ~420 px, lazy-loaded přes `React.lazy` aby neblokovala LCP.
 
-1. **Hero** — H1 „Průvodce Beskydy na kole", krátký lead, CTA na `/trasy` (oblíbené trasy) a `/akce` (klubové akce).
-2. **Proč jezdit v Beskydech** (H2) — krajina, terén, sezóna.
-3. **Nejlepší cyklotrasy v Beskydech** (H2) — H3 podsekce pro silnici, gravel a MTB. Dynamicky vypsat 6 položek z `favorite_routes` (řazeno podle `is_featured`/`created_at`) jako karty s odkazy na `/trasy/:slug`.
-4. **Sezóna a počasí** (H2) — jaro/léto/podzim, doporučené měsíce.
-5. **Co si vzít s sebou** (H2) — kolo, vybavení, bezpečnost.
-6. **Kde se občerstvit** (H2) — odkaz na `/kavarna` (klubová kavárna) + tipy na místa.
-7. **Klubové akce a vyjížďky** (H2) — odkaz na `/akce`, krátký popis společných jízd.
-8. **Připojte se ke klubu** (H2) — odkaz na `/o-nas` a `/registrace`.
-9. **Často kladené otázky (FAQ)** (H2) — 6–8 otázek (např. „Kde začít s cyklistikou v Beskydech?", „Která trasa je nejlehčí?", „Kdy je nejlepší sezóna?", „Potřebuji horské kolo?", „Jak najdu parťáky na vyjížďku?"). Každá Q jako H3.
-10. **Závěr + CTA** — odkaz na `/trasy` a `/registrace`.
+### 3. Fotogalerie Beskyd
+- 4–6 AI generovaných fotek (krajina, klikatá silnice, podzim, cyklista u kavárny) – `src/assets/pruvodce-beskydy-{1..6}.jpg`, ~1200×800.
+- Komponenta s mřížkou (2 sl. mobile, 3 sl. desktop), `loading="lazy"`, `aspect-[4/3]`, `object-cover`, hover zoom.
+- Alt texty s relevantními klíčovými slovy.
 
-### Interní odkazy (povinné v textu)
+### 4. Lepší struktura a čitelnost
+- **Sticky table of contents** vlevo na desktopu (anchor odkazy na H2 sekce) – zlepšuje UX a featured snippets.
+- **Breadcrumbs** (Domů › Průvodce › Beskydy) + `BreadcrumbList` JSON-LD.
+- **Reading time + datum aktualizace** pod H1.
+- **„Klíčové výjezdy" srovnávací tabulka** (název, výchozí bod, km, převýšení, povrch, náročnost) – dobré pro snippety.
 
-`/trasy`, `/akce`, `/statistiky`, `/kavarna`, `/o-nas`, `/galerie`, `/registrace`, plus minimálně 3 odkazy na konkrétní trasy z DB.
+### 5. Sezónní detail a počasí
+- Pod sekcí „Sezóna" přidat **odkaz na ČHMÚ Beskydy** a **upozornění na lavinové/uzávěrkové info** v zimě (zmínka, že silnice na Pustevny/Bílou bývají v zimě nesjízdné).
+- Krátký box „Doporučené měsíce" jako vizuální timeline (leden–prosinec barevný strip).
+
+### 6. SEO doplňky
+- Rozšířit JSON-LD: přidat `BreadcrumbList` a `TouristAttraction` pro každý významný výjezd.
+- `<link rel="prev/next">` pokud později vzniknou další průvodci (placeholder, nyní neaktivní).
+- Vylepšit interní prolinkování: přidat odkazy z `/o-nas`, `/akce` a hero homepage na `/pruvodce-beskydy`.
+- Přidat čistý anchor link „Sdílet článek" (Web Share API fallback).
+
+### 7. CTA blok nahoře
+- Pod hero přidat **3 dlaždice rychlých odkazů**: „Klubové vyjížďky", „Naše trasy", „Kavárna v Karolince" – pomáhá konverzi a snižuje bounce rate.
+
+### 8. FAQ rozšíření
+- Přidat 2–3 otázky: „Jaké jsou výjezdy pro elektrokola?", „Kde nechat auto při výjezdu na Soláň?", „Existují v Beskydech bikeparky?".
 
 ## Technická implementace
 
-- **Nová stránka** `src/pages/PruvodceBeskydy.tsx`:
-  - `useQuery` na `favorite_routes` (limit 6, veřejně čitelné dle stávajících RLS).
-  - `<Seo>` komponenta: title „Průvodce Beskydy na kole | ESKO CC", description ~155 znaků, canonical `/pruvodce-beskydy`, OG image (hero z `src/assets`), JSON-LD typu `Article` + `FAQPage` (otázky/odpovědi z FAQ sekce).
-  - Layout: existující `Header` + `Footer`, kontejner s typografií jako `/o-nas`.
-- **Route** v `src/App.tsx`: přidat `<Route path="/pruvodce-beskydy" element={<PruvodceBeskydy />} />` nad catch-all. Konstanta `ROUTES.GUIDE_BESKYDY = "/pruvodce-beskydy"` v `src/constants/routes.ts`.
-- **Sitemap** (`public/sitemap.xml`): přidat URL `https://www.eskocc.cz/pruvodce-beskydy`, `changefreq=monthly`, `priority=0.8`.
-- **Interní prolinkování zpět**: přidat textový odkaz na průvodce do patičky (`Footer`) v sekci „Užitečné" a z `/trasy` hlavičky (krátká věta „Inspirace najdeš v našem [průvodci Beskydy](/pruvodce-beskydy)").
-- **Hero obrázek**: vygenerovat 1 fotorealistický obrázek beskydské krajiny s cyklistou (`src/assets/pruvodce-beskydy-hero.jpg`, ~1600×900, `fetchPriority="high"`).
+Soubory:
+- `src/pages/PruvodceBeskydy.tsx` – přestavba: nahradit dynamický blok, přidat TOC, breadcrumbs, mapu, galerii, tabulku.
+- `src/components/map/BeskydyOverviewMap.tsx` – nová Mapbox komponenta s POI markery.
+- `src/data/beskydyRoutes.ts` – kurátorovaný seznam tras (typed).
+- `src/data/beskydyPois.ts` – seznam POI pro mapu.
+- `src/assets/pruvodce-beskydy-{1..6}.jpg` – AI generované fotky (`imagegen` standard quality).
+- `src/components/Seo.tsx` – beze změny, jen nové JSON-LD pole v page.
+- `src/components/home/HeroSection.tsx` (volitelně) – přidat malý odkaz na průvodce.
 
 ## Mimo rozsah
 
-- Vícejazyčné verze.
-- Blog/CMS systém pro další články (pouze tato jedna stránka).
-- Změny v stávajících SEO tagech jiných stránek.
+- Plnohodnotná CMS pro další průvodce (jen tato stránka).
+- Import skutečných GPX beskydských tras do `favorite_routes` (řešitelné samostatně přes existující Route Import Wizard – pokud chceš, můžu to navrhnout zvlášť).
+- Skutečné fotky od členů (lze přidat později místo AI obrázků).
 
-## Otázka k potvrzení
+## Otázky k potvrzení
 
-Text vygeneruji sám na základě dat z `favorite_routes` a obecných znalostí o Beskydech. Pokud máš vlastní formulace nebo konkrétní tipy (lokality, parťácká místa, oblíbené kavárny), pošli je teď a zapracuji je — jinak pokračuji s vlastním návrhem.
+1. **Kurátorovaný seznam tras** – chceš čistě statický (rychlé, žádné DB napojení), nebo přidat do `favorite_routes` sloupec `region` a filtrovat na `region = 'Beskydy'` (do budoucna škálovatelné, ale vyžaduje migraci a doplnění dat)?
+2. **Fotky** – AI generované (rychle, hned), nebo počkáme až dodáš vlastní z klubového archivu / Google Photos alba?
+3. **Mapa** – stačí přehledová mapa s POI markery, nebo chceš i zakreslené hlavní trasy (linie GPX)? Linky vyžadují buď reálné GPX soubory, nebo ručně nakreslené souřadnice.
