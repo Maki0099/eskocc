@@ -32,7 +32,7 @@ export const StravaConnectionCard = () => {
       .select("athlete_id, needs_reauth, last_synced_at, last_error")
       .eq("user_id", user.id)
       .maybeSingle();
-    setRow((data as TokenRow | null) ?? null);
+    setRow(((data as unknown) as TokenRow | null) ?? null);
     setLoading(false);
   }, [user]);
 
