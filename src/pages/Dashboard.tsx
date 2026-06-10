@@ -1,3 +1,4 @@
+import Seo from "@/components/Seo";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";

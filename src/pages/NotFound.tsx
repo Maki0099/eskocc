@@ -1,3 +1,4 @@
+import Seo from "@/components/Seo";
 import { useLocation, Link } from "react-router-dom";
 import { useEffect } from "react";
 
