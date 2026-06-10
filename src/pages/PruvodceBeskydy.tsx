@@ -18,6 +18,7 @@ import photo2 from "@/assets/pruvodce-beskydy-2.jpg";
 import photo3 from "@/assets/pruvodce-beskydy-3.jpg";
 import photo4 from "@/assets/pruvodce-beskydy-4.jpg";
 import { BESKYDY_ROUTES } from "@/data/beskydyRoutes";
+import RouteGpxPreview from "@/components/map/RouteGpxPreview";
 
 const BeskydyOverviewMap = lazy(() => import("@/components/map/BeskydyOverviewMap"));
 
