@@ -1,0 +1,19 @@
+# ESKO.cc
+
+> Cyklistický klub z Karolinky v Beskydech. Pořádáme společné vyjížďky, sdílíme cyklotrasy a budujeme komunitu cyklistů.
+
+## Pages
+
+- [Domů](/): Přehled klubu, aktuality a statistiky.
+- [Vyjížďky](/events): Nadcházející i minulé společné vyjížďky klubu.
+- [Statistiky](/statistiky): Roční přehled najetých kilometrů a aktivit členů.
+- [Kavárna](/cafe): Informace o klubové kavárně v Karolince — menu a otevírací doba.
+- [Galerie](/gallery): Fotografie z vyjížďek a akcí.
+- [O klubu](/about): Historie, hodnoty a poslání klubu ESKO.cc.
+- [Dokumenty](/dokumenty): Stanovy a oficiální dokumenty klubu.
+
+## Optional
+
+- [Instalace aplikace](/install): Návod na instalaci PWA aplikace ESKO.cc.
+- [Přihlášení](/login): Přihlášení pro členy klubu.
+- [Registrace](/register): Žádost o členství v klubu.
