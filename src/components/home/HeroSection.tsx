@@ -44,13 +44,14 @@ const HeroSection = () => {
             Cyklistický klub Esko.cc
           </p>
 
-          <h1 className="text-hero font-semibold mb-4 opacity-0 animate-fade-up animation-delay-200">
+          <h1 className="sr-only">Cyklistický klub ESKO.cc Karolinka — Jezdi tak dlouho, jak zvládáš</h1>
+          <div aria-hidden="true" className="text-hero font-semibold mb-4 opacity-0 animate-fade-up animation-delay-200">
             Jezdi tak dlouho,
             <br />
             <span className="text-muted-foreground">nebo krátce jak zvládáš.</span>
             <br />
             <span className="text-gradient">Ale jezdi.</span>
-          </h1>
+          </div>
 
           <p className="text-xs text-muted-foreground mb-10 opacity-0 animate-fade-up animation-delay-250">
             — Eddy Merckx
