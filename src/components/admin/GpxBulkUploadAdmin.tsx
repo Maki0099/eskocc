@@ -65,8 +65,10 @@ export function GpxBulkUploadAdmin() {
       // Parse GPX to extract stats
       const gpxStats = await parseGpxFile(file);
       
-      // Upload file to storage
-      const fileName = `${routeId}-${Date.now()}.gpx`;
+      // Upload file to storage (scoped to admin's user folder)
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+      const fileName = `${user.id}/${routeId}-${Date.now()}.gpx`;
       const { error: uploadError } = await supabase.storage
         .from("routes")
         .upload(fileName, file, {
