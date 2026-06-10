@@ -47,7 +47,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Users, Shield, Loader2, Coffee, Target, Clock, KeyRound, Bell, Route, Sparkles, Trash2, Activity, Images } from "lucide-react";
+import { Users, Shield, Loader2, Coffee, Target, Clock, KeyRound, Bell, Route, Sparkles, Trash2, Activity, Images, Mountain } from "lucide-react";
+import BeskydyRoutesAdmin from "@/components/admin/BeskydyRoutesAdmin";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ClubStravaAdmin } from "@/components/admin/ClubStravaAdmin";
 import { toast } from "sonner";
@@ -247,6 +248,7 @@ const Admin = () => {
                 { id: "cron", label: "Úlohy", icon: Clock },
                 { id: "notifications", label: "Notifikace", icon: Bell },
                 { id: "routes", label: "Trasy", icon: Route },
+                { id: "beskydy", label: "Beskydy", icon: Mountain },
                 { id: "ai", label: "AI", icon: Sparkles },
                 { id: "club-strava", label: "Strava klub", icon: Activity },
                 { id: "albums", label: "Alba", icon: Images },
@@ -583,6 +585,10 @@ const Admin = () => {
 
             <TabsContent value="notifications">
               <PushNotificationsAdmin />
+            </TabsContent>
+
+            <TabsContent value="beskydy" className="space-y-6">
+              <BeskydyRoutesAdmin />
             </TabsContent>
 
             <TabsContent value="routes" className="space-y-6">
