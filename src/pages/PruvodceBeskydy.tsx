@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   Mountain, Bike, Calendar, Coffee, MapPin, Users, ArrowRight,
-  Clock, Home, ChevronRight, ExternalLink, AlertTriangle,
+  Clock, Home, ChevronRight, ExternalLink, AlertTriangle, Download,
+
 } from "lucide-react";
 import { ROUTES } from "@/lib/routes";
 import heroImage from "@/assets/pruvodce-beskydy-hero.jpg";
@@ -242,10 +243,17 @@ const PruvodceBeskydy = () => {
                   <h2 className="text-3xl font-bold mb-6 flex items-center gap-3">
                     <Bike className="h-7 w-7 text-primary" /> Nejlepší cyklotrasy v Beskydech
                   </h2>
-                  <p className="text-muted-foreground mb-8 leading-relaxed">
+                  <p className="text-muted-foreground mb-4 leading-relaxed">
                     Šest ověřených tras, které pravidelně jezdíme z naší klubovny v Karolince.
                     Pokrývají všechny úrovně od rodinné cyklostezky až po nejtěžší výjezd na Lysou horu.
+                    U každé trasy najdete <strong>stažitelný GPX soubor</strong> kompatibilní s Garmin Edge,
+                    Wahoo, Komoot i Mapy.cz.
                   </p>
+                  <p className="text-xs text-muted-foreground mb-8 italic">
+                    Poznámka: GPX soubory obsahují orientační průběh s klíčovými body. Před vyjížďkou
+                    doporučujeme zkontrolovat detail trasy ve vaší navigaci.
+                  </p>
+
 
                   <div className="grid gap-4 md:grid-cols-2 mb-8">
                     {BESKYDY_ROUTES.map((r) => (
@@ -266,20 +274,28 @@ const PruvodceBeskydy = () => {
                             <span className="bg-muted px-2 py-0.5 rounded">{TERRAIN_LABEL[r.terrain]}</span>
                           </div>
                           <p className="text-sm text-muted-foreground leading-relaxed mb-4 flex-1">{r.description}</p>
-                          <div className="flex flex-wrap gap-2 mt-auto">
-                            {r.mapyUrl && (
-                              <a href={r.mapyUrl} target="_blank" rel="noopener noreferrer"
-                                className="text-xs inline-flex items-center gap-1 text-primary hover:underline">
-                                Mapy.cz <ExternalLink className="h-3 w-3" />
+                          <div className="flex flex-col gap-3 mt-auto">
+                            <Button asChild size="sm" variant="default" className="w-full sm:w-auto">
+                              <a href={r.gpxUrl} download={`${r.slug}.gpx`}>
+                                <Download className="mr-2 h-4 w-4" /> Stáhnout GPX
                               </a>
-                            )}
-                            {r.komootUrl && (
-                              <a href={r.komootUrl} target="_blank" rel="noopener noreferrer"
-                                className="text-xs inline-flex items-center gap-1 text-primary hover:underline">
-                                Komoot <ExternalLink className="h-3 w-3" />
-                              </a>
-                            )}
+                            </Button>
+                            <div className="flex flex-wrap gap-3 text-xs">
+                              {r.mapyUrl && (
+                                <a href={r.mapyUrl} target="_blank" rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 text-primary hover:underline">
+                                  Mapy.cz <ExternalLink className="h-3 w-3" />
+                                </a>
+                              )}
+                              {r.komootUrl && (
+                                <a href={r.komootUrl} target="_blank" rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 text-primary hover:underline">
+                                  Komoot <ExternalLink className="h-3 w-3" />
+                                </a>
+                              )}
+                            </div>
                           </div>
+
                         </CardContent>
                       </Card>
                     ))}

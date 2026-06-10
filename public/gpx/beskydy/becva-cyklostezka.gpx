@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="ESKO.cc Pruvodce Beskydy" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata>
+    <name>Bečva cyklostezka</name>
+    <desc>Rovinatá asfaltová cyklostezka podél Bečvy z Karolinky do Valašského Meziříčí.</desc>
+    <time>2026-06-10T08:03:18Z</time>
+  </metadata>
+  <trk>
+    <name>Bečva cyklostezka</name>
+    <trkseg>
+      <trkpt lat="49.3513" lon="18.2401"><ele>410</ele></trkpt>
+      <trkpt lat="49.345" lon="18.15"><ele>380</ele></trkpt>
+      <trkpt lat="49.34" lon="18.07"><ele>355</ele></trkpt>
+      <trkpt lat="49.3389" lon="17.9966"><ele>340</ele></trkpt>
+      <trkpt lat="49.4" lon="17.98"><ele>320</ele></trkpt>
+      <trkpt lat="49.4717" lon="17.9706"><ele>290</ele></trkpt>
+    </trkseg>
+  </trk>
+  <wpt lat="49.3513" lon="18.2401"><ele>410</ele><name>Karolinka</name></wpt>
+  <wpt lat="49.345" lon="18.15"><ele>380</ele><name>Halenkov</name></wpt>
+  <wpt lat="49.34" lon="18.07"><ele>355</ele><name>Hovězí</name></wpt>
+  <wpt lat="49.3389" lon="17.9966"><ele>340</ele><name>Vsetín</name></wpt>
+  <wpt lat="49.4" lon="17.98"><ele>320</ele><name>Jablůnka</name></wpt>
+  <wpt lat="49.4717" lon="17.9706"><ele>290</ele><name>Valašské Meziříčí</name></wpt>
+</gpx>

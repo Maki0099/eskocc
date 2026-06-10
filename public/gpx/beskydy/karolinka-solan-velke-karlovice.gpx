@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="ESKO.cc Pruvodce Beskydy" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata>
+    <name>Karolinka – Soláň – Velké Karlovice</name>
+    <desc>Klubový okruh z Karolinky přes Soláň do Velkých Karlovic. Přibližná trasa – upřesněte v navigaci.</desc>
+    <time>2026-06-10T08:03:18Z</time>
+  </metadata>
+  <trk>
+    <name>Karolinka – Soláň – Velké Karlovice</name>
+    <trkseg>
+      <trkpt lat="49.3513" lon="18.2401"><ele>410</ele></trkpt>
+      <trkpt lat="49.365" lon="18.27"><ele>450</ele></trkpt>
+      <trkpt lat="49.4" lon="18.26"><ele>620</ele></trkpt>
+      <trkpt lat="49.4267" lon="18.257"><ele>861</ele></trkpt>
+      <trkpt lat="49.415" lon="18.29"><ele>720</ele></trkpt>
+      <trkpt lat="49.385" lon="18.305"><ele>540</ele></trkpt>
+      <trkpt lat="49.365" lon="18.27"><ele>450</ele></trkpt>
+      <trkpt lat="49.3513" lon="18.2401"><ele>410</ele></trkpt>
+    </trkseg>
+  </trk>
+  <wpt lat="49.3513" lon="18.2401"><ele>410</ele><name>Karolinka – start</name></wpt>
+  <wpt lat="49.365" lon="18.27"><ele>450</ele><name>Údolím Bečvy</name></wpt>
+  <wpt lat="49.4" lon="18.26"><ele>620</ele><name>Stoupání na Soláň</name></wpt>
+  <wpt lat="49.4267" lon="18.257"><ele>861</ele><name>Soláň – vrchol</name></wpt>
+  <wpt lat="49.415" lon="18.29"><ele>720</ele><name>Hutisko-Solanec</name></wpt>
+  <wpt lat="49.385" lon="18.305"><ele>540</ele><name>Sjezd</name></wpt>
+  <wpt lat="49.365" lon="18.27"><ele>450</ele><name>Velké Karlovice</name></wpt>
+  <wpt lat="49.3513" lon="18.2401"><ele>410</ele><name>Karolinka – cíl</name></wpt>
+</gpx>

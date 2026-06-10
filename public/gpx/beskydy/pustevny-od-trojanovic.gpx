@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="ESKO.cc Pruvodce Beskydy" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata>
+    <name>Pustevny od Trojanovic</name>
+    <desc>Klasický výjezd na Pustevny od Trojanovic-Ráztoky.</desc>
+    <time>2026-06-10T08:03:18Z</time>
+  </metadata>
+  <trk>
+    <name>Pustevny od Trojanovic</name>
+    <trkseg>
+      <trkpt lat="49.555" lon="18.298"><ele>480</ele></trkpt>
+      <trkpt lat="49.535" lon="18.295"><ele>620</ele></trkpt>
+      <trkpt lat="49.515" lon="18.293"><ele>780</ele></trkpt>
+      <trkpt lat="49.5" lon="18.291"><ele>920</ele></trkpt>
+      <trkpt lat="49.4906" lon="18.2922"><ele>1018</ele></trkpt>
+    </trkseg>
+  </trk>
+  <wpt lat="49.555" lon="18.298"><ele>480</ele><name>Trojanovice – start</name></wpt>
+  <wpt lat="49.535" lon="18.295"><ele>620</ele><name>Ráztoka</name></wpt>
+  <wpt lat="49.515" lon="18.293"><ele>780</ele><name>Strmé stoupání</name></wpt>
+  <wpt lat="49.5" lon="18.291"><ele>920</ele><name>Předposlední serpentýny</name></wpt>
+  <wpt lat="49.4906" lon="18.2922"><ele>1018</ele><name>Pustevny – vrchol</name></wpt>
+</gpx>
