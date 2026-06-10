@@ -67,7 +67,13 @@ const Install = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <Seo
+        title="Instalace aplikace ESKO.cc | PWA pro iOS i Android"
+        description="Návod, jak si ESKO.cc nainstalovat jako aplikaci do mobilu nebo počítače. Funguje offline, podporuje push notifikace."
+        path="/install"
+      />
       <Header />
+
       
       <main className="flex-1 pt-24 pb-16">
         <div className="container max-w-4xl mx-auto px-4">

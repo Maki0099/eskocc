@@ -43,7 +43,13 @@ const Documents = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <Seo
+        title="Klubové dokumenty | ESKO.cc"
+        description="Stanovy, ustanovující dekret a další oficiální dokumenty cyklistického klubu ESKO.cc z Karolinky."
+        path="/dokumenty"
+      />
       <Header />
+
       
       <main className="flex-1">
         <section className="py-16 md:py-24">

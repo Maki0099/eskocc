@@ -310,7 +310,13 @@ const Cafe = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <Seo
+        title="Kavárna ESKO.cc Karolinka | Menu a otevírací doba"
+        description="Klubová kavárna ESKO.cc v Karolince. Káva, snídaně a posezení pro cyklisty i veřejnost. Aktuální menu a otevírací doba."
+        path="/cafe"
+      />
       <Header />
+
       
       {/* Hero Section with Parallax */}
       <section className="relative h-[50vh] min-h-[400px] flex items-center justify-center overflow-hidden pt-14">
