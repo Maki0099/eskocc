@@ -138,7 +138,7 @@ const PruvodceBeskydy = () => {
               />
               <div className="absolute inset-0 bg-gradient-to-b from-background/30 via-background/60 to-background" />
             </div>
-            <div className="container mx-auto px-4 pt-32 pb-16 md:pt-44 md:pb-24 min-h-[55vh] md:min-h-[65vh] flex flex-col justify-end">
+            <div className="container mx-auto px-4 pt-20 pb-16 md:pt-24 md:pb-24 min-h-[55vh] md:min-h-[65vh] flex flex-col justify-end">
               <div className="max-w-3xl">
                 {/* Breadcrumbs */}
                 <nav aria-label="Drobečková navigace" className="mb-4 text-sm text-muted-foreground flex items-center gap-1.5">
