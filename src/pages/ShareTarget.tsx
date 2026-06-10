@@ -101,8 +101,8 @@ const ShareTarget = () => {
     setSaving(true);
 
     try {
-      // Upload GPX file to storage
-      const fileName = `${Date.now()}-${gpxFile.name}`;
+      // Upload GPX file to storage (scoped to user folder)
+      const fileName = `${user.id}/${Date.now()}-${gpxFile.name}`;
       const { error: uploadError } = await supabase.storage
         .from('routes')
         .upload(fileName, gpxFile);
