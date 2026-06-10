@@ -201,14 +201,14 @@ const EditRouteDialog = ({ route, onRouteUpdated, open: controlledOpen, onOpenCh
 
       if (coverImage) {
         const ext = coverImage.name.split(".").pop();
-        const path = `covers/${timestamp}_${route.id}.${ext}`;
+        const path = `${user.id}/covers/${timestamp}_${route.id}.${ext}`;
         coverImageUrl = await uploadFile(coverImage, path);
       } else if (coverPreview === null) {
         coverImageUrl = null;
       }
 
       if (gpxFile) {
-        const path = `gpx/${timestamp}_${route.id}.gpx`;
+        const path = `${user.id}/gpx/${timestamp}_${route.id}.gpx`;
         gpxFileUrl = await uploadFile(gpxFile, path);
       } else if (existingGpx === null && !gpxFile) {
         gpxFileUrl = null;
