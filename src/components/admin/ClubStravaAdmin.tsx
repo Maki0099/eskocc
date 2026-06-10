@@ -103,10 +103,7 @@ export const ClubStravaAdmin = ({ preselectedAthleteKey, onAthleteSelected }: Cl
     setLoading(true);
     try {
       const [credsRes, actsRes, mapRes, profilesRes, lastSyncRes, logsRes] = await Promise.all([
-        supabase
-          .from("club_api_credentials")
-          .select("athlete_id, expires_at, updated_at, needs_reauth, last_error")
-          .maybeSingle(),
+        supabase.rpc("get_club_strava_status"),
         supabase
           .from("club_activities")
           .select("*")
@@ -127,7 +124,7 @@ export const ClubStravaAdmin = ({ preselectedAthleteKey, onAthleteSelected }: Cl
           .limit(10),
       ]);
 
-      setCreds(credsRes.data);
+      setCreds((credsRes.data as any[])?.[0] ?? null);
       const acts = (actsRes.data || []) as ClubActivity[];
       setActivities(acts);
       setMembers(profilesRes.data || []);
