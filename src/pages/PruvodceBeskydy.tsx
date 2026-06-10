@@ -17,7 +17,9 @@ import photo1 from "@/assets/pruvodce-beskydy-1.jpg";
 import photo2 from "@/assets/pruvodce-beskydy-2.jpg";
 import photo3 from "@/assets/pruvodce-beskydy-3.jpg";
 import photo4 from "@/assets/pruvodce-beskydy-4.jpg";
-import { BESKYDY_ROUTES } from "@/data/beskydyRoutes";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { mapRowToRoute, type BeskydyRouteRow } from "@/lib/beskydy-routes";
 import RouteGpxPreview from "@/components/map/RouteGpxPreview";
 
 const BeskydyOverviewMap = lazy(() => import("@/components/map/BeskydyOverviewMap"));
@@ -57,6 +59,19 @@ const UPDATED_DATE = "2026-06-10";
 const READING_TIME = "10 min čtení";
 
 const PruvodceBeskydy = () => {
+  const { data: routes = [], isLoading: routesLoading } = useQuery({
+    queryKey: ["beskydy-routes"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("beskydy_routes")
+        .select("*")
+        .eq("is_published", true)
+        .order("sort_order", { ascending: true })
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return ((data ?? []) as BeskydyRouteRow[]).map(mapRowToRoute);
+    },
+  });
   const articleJsonLd = {
     "@context": "https://schema.org",
     "@type": "Article",
@@ -257,7 +272,15 @@ const PruvodceBeskydy = () => {
 
 
                   <div className="grid gap-4 md:grid-cols-2 mb-8">
-                    {BESKYDY_ROUTES.map((r) => (
+                    {routesLoading && Array.from({ length: 6 }).map((_, i) => (
+                      <Card key={`sk-${i}`} className="animate-pulse">
+                        <CardContent className="p-5 h-[420px] bg-muted/30" />
+                      </Card>
+                    ))}
+                    {!routesLoading && routes.length === 0 && (
+                      <p className="text-sm text-muted-foreground md:col-span-2">Zatím tu nejsou žádné trasy.</p>
+                    )}
+                    {routes.map((r) => (
                       <Card key={r.slug} className="hover:shadow-md transition-shadow flex flex-col">
                         <CardContent className="p-5 flex flex-col h-full">
                           <div className="flex items-start justify-between gap-2 mb-2">
