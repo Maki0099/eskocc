@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { MapOff } from "lucide-react";
+import { MapPinOff } from "lucide-react";
 
 const MAPBOX_TOKEN =
   "pk.eyJ1IjoibWFraTA5OSIsImEiOiJjbWdydmlmYTgwN3NvMnNyNXg0NjgzYW5iIn0.AiNtdl1RlCCszZnRDT8zUw";
@@ -132,7 +132,7 @@ const RouteGpxPreview = ({ gpxUrl, title, className }: Props) => {
       )}
       {error && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-xs text-foreground/70 bg-background/80">
-          <MapOff className="h-4 w-4" aria-hidden />
+          <MapPinOff className="h-4 w-4" aria-hidden />
           <span>{error}</span>
         </div>
       )}
