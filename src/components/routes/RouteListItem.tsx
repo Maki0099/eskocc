@@ -106,7 +106,7 @@ const RouteListItem = ({ route, canEdit, onEdit, onDelete }: RouteListItemProps)
       {/* Actions Dropdown */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" aria-label="Možnosti trasy">
             <MoreVertical className="w-4 h-4" />
           </Button>
         </DropdownMenuTrigger>
