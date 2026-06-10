@@ -170,7 +170,7 @@ const MemberProfile = () => {
       <Seo
         title={`${member.full_name || "Profil člena"} | ESKO.cc`}
         description="Profil člena cyklistického klubu ESKO.cc."
-        path={`/member/${member.id}`}
+        path={userId ? `/member/${userId}` : undefined}
         noindex
       />
       <header className="border-b border-border bg-card">
