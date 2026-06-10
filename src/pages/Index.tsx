@@ -7,11 +7,18 @@ import ClubhouseSection from "@/components/home/ClubhouseSection";
 import CTASection from "@/components/home/CTASection";
 import TeaserSection from "@/components/home/TeaserSection";
 import InstallBanner from "@/components/pwa/InstallBanner";
+import Seo from "@/components/Seo";
 
 const Index = () => {
   return (
     <div className="min-h-screen bg-background">
+      <Seo
+        title="ESKO.cc | Cyklistický klub Karolinka, Beskydy"
+        description="Cyklistický klub z Karolinky v Beskydech. Společné vyjížďky, cyklotrasy s GPX a komunita nadšenců pro silniční i horské kolo."
+        path="/"
+      />
       <Header />
+
       <main>
         <div data-tour="hero-section">
           <HeroSection />

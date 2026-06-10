@@ -1,3 +1,4 @@
+import Seo from "@/components/Seo";
 import { Link } from "react-router-dom";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
@@ -35,7 +36,13 @@ const About = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <Seo
+        title="O klubu ESKO.cc | Cyklisté z Karolinky v Beskydech"
+        description="Historie, hodnoty a poslání cyklistického klubu ESKO.cc z Karolinky. Komunita, pravidelné vyjížďky a vášeň pro kolo."
+        path="/about"
+      />
       <Header />
+
       <main className="flex-1">
         {/* Hero Section */}
         <section className="container mx-auto px-4 pt-24 pb-16 md:pt-32 md:pb-24">

@@ -1,3 +1,4 @@
+import Seo from "@/components/Seo";
 import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -236,7 +237,9 @@ const Account = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <Seo title="Můj účet | ESKO.cc" description="Správa profilu člena klubu ESKO.cc." path="/account" noindex />
       <TourProvider tourId="account" run={runTour} onFinish={handleEndTour} />
+
 
       <header className="border-b border-border/40 bg-background/80 backdrop-blur-xl" data-tour="account-header">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">

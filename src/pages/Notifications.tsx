@@ -1,3 +1,4 @@
+import Seo from "@/components/Seo";
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Bell, Check, CheckCheck, Trash2, Calendar, AlertCircle, Info, ArrowLeft, Filter, ExternalLink, HelpCircle } from 'lucide-react';
@@ -162,8 +163,10 @@ const Notifications = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <Seo title="Notifikace | ESKO.cc" description="Centrum notifikací ESKO.cc." path="/notifications" noindex />
       {/* Header */}
       <header className="border-b border-border/40 bg-background/80 backdrop-blur-xl sticky top-0 z-50">
+
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link to={ROUTES.DASHBOARD}>

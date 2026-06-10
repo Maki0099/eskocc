@@ -31,7 +31,7 @@ const HeroSection = () => {
       <div ref={parallaxRef} className="absolute inset-0 will-change-transform" style={{
       transform: `translateY(${offset}px) scale(1.1)`
     }}>
-        <img src={heroCycling} alt="Cyklisté při západu slunce" className="w-full h-full object-cover" />
+        <img src={heroCycling} alt="Cyklisté při západu slunce" width={1920} height={1080} fetchPriority="high" decoding="async" className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-background/60 backdrop-blur-[2px]" />
       </div>
 

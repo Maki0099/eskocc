@@ -1,3 +1,4 @@
+import Seo from "@/components/Seo";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -74,7 +75,13 @@ const Gallery = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <Seo
+        title="Fotogalerie | ESKO.cc Karolinka"
+        description="Fotografie z vyjížděk a akcí cyklistického klubu ESKO.cc v Beskydech. Týdenní výběry a alba ze společných jízd."
+        path="/gallery"
+      />
       <Header />
+
       <main className="flex-1 container mx-auto px-4 pt-24 pb-12">
         <div className="max-w-6xl mx-auto">
           <div 

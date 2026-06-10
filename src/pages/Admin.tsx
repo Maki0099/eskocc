@@ -1,3 +1,4 @@
+import Seo from "@/components/Seo";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -224,7 +225,9 @@ const Admin = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <Seo title="Administrace | ESKO.cc" description="Administrátorský panel klubu ESKO.cc." path="/admin" noindex />
       <Header />
+
       <main className="flex-1 container mx-auto px-4 pt-24 pb-12">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center gap-3 mb-8">

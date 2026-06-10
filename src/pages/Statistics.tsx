@@ -1,3 +1,4 @@
+import Seo from "@/components/Seo";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -198,7 +199,13 @@ const Statistics = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <Seo
+        title="Statistiky klubu | ESKO.cc"
+        description="Roční přehled najetých kilometrů, převýšení a aktivit členů cyklistického klubu ESKO.cc z Karolinky. Data ze Stravy v reálném čase."
+        path="/statistiky"
+      />
       <Header />
+
       <main className="flex-1 container mx-auto px-4 pt-24 pb-12">
         <div className="max-w-4xl mx-auto space-y-8">
           <div className="text-center space-y-2" data-tour="statistics-header">

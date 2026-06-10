@@ -1,3 +1,4 @@
+import Seo from "@/components/Seo";
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -102,7 +103,13 @@ const Register = () => {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <Seo
+        title="Registrace do klubu | ESKO.cc Karolinka"
+        description="Staň se členem cyklistického klubu ESKO.cc z Karolinky. Vyplň krátkou žádost o členství a připoj se ke komunitě."
+        path="/register"
+      />
       <div className="w-full max-w-sm">
+
         <div className="flex items-center justify-between mb-8">
           {step === 1 ? (
             <Link to="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">

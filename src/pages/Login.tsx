@@ -1,3 +1,4 @@
+import Seo from "@/components/Seo";
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -262,7 +263,9 @@ const Login = () => {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <Seo title="Přihlášení | ESKO.cc" description="Přihlášení do členské sekce klubu ESKO.cc." path="/login" noindex />
       <div className="w-full max-w-sm">
+
         <Link to={ROUTES.HOME} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-8">
           <ArrowLeft className="w-4 h-4" />
           Zpět

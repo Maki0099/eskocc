@@ -1,3 +1,4 @@
+import Seo from "@/components/Seo";
 import { FileText, Download, Eye } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -43,7 +44,13 @@ const Documents = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <Seo
+        title="Klubové dokumenty | ESKO.cc"
+        description="Stanovy, ustanovující dekret a další oficiální dokumenty cyklistického klubu ESKO.cc z Karolinky."
+        path="/dokumenty"
+      />
       <Header />
+
       
       <main className="flex-1">
         <section className="py-16 md:py-24">

@@ -1,3 +1,4 @@
+import Seo from "@/components/Seo";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -61,7 +62,9 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <Seo title="Dashboard | ESKO.cc" description="Členský dashboard ESKO.cc." path="/dashboard" noindex />
       <TourProvider tourId="dashboard" run={runTour} onFinish={handleEndTour} />
+
 
       <header className="border-b border-border/40 bg-background/80 backdrop-blur-xl">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
