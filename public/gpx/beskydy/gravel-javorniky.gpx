@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="ESKO.cc Pruvodce Beskydy" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata>
+    <name>Gravel přes hřebeny Javorníků</name>
+    <desc>Náročný gravelový okruh přes hřebeny Javorníků. Kombinace lesních cest a asfaltu.</desc>
+    <time>2026-06-10T08:03:18Z</time>
+  </metadata>
+  <trk>
+    <name>Gravel přes hřebeny Javorníků</name>
+    <trkseg>
+      <trkpt lat="49.365" lon="18.27"><ele>450</ele></trkpt>
+      <trkpt lat="49.355" lon="18.31"><ele>700</ele></trkpt>
+      <trkpt lat="49.34" lon="18.34"><ele>880</ele></trkpt>
+      <trkpt lat="49.33" lon="18.3"><ele>920</ele></trkpt>
+      <trkpt lat="49.35" lon="18.27"><ele>750</ele></trkpt>
+      <trkpt lat="49.4267" lon="18.257"><ele>861</ele></trkpt>
+      <trkpt lat="49.385" lon="18.25"><ele>600</ele></trkpt>
+      <trkpt lat="49.365" lon="18.27"><ele>450</ele></trkpt>
+    </trkseg>
+  </trk>
+  <wpt lat="49.365" lon="18.27"><ele>450</ele><name>Velké Karlovice – start</name></wpt>
+  <wpt lat="49.355" lon="18.31"><ele>700</ele><name>Lesní výjezd</name></wpt>
+  <wpt lat="49.34" lon="18.34"><ele>880</ele><name>Hřeben Javorníků</name></wpt>
+  <wpt lat="49.33" lon="18.3"><ele>920</ele><name>Vrcholová cesta</name></wpt>
+  <wpt lat="49.35" lon="18.27"><ele>750</ele><name>Sjezd</name></wpt>
+  <wpt lat="49.4267" lon="18.257"><ele>861</ele><name>Soláň – druhé stoupání</name></wpt>
+  <wpt lat="49.385" lon="18.25"><ele>600</ele><name>Návrat</name></wpt>
+  <wpt lat="49.365" lon="18.27"><ele>450</ele><name>Velké Karlovice – cíl</name></wpt>
+</gpx>
