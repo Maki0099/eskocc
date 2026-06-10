@@ -8,6 +8,7 @@ interface SeoProps {
   description: string;
   path?: string;
   image?: string;
+  keywords?: string;
   type?: "website" | "article" | "profile";
   noindex?: boolean;
   jsonLd?: Record<string, unknown> | Record<string, unknown>[];
@@ -22,6 +23,7 @@ const Seo = ({
   description,
   path = "",
   image = DEFAULT_OG_IMAGE,
+  keywords,
   type = "website",
   noindex = false,
   jsonLd,
@@ -33,6 +35,7 @@ const Seo = ({
     <Helmet>
       <title>{title}</title>
       <meta name="description" content={description} />
+      {keywords && <meta name="keywords" content={keywords} />}
       <link rel="canonical" href={url} />
       {noindex && <meta name="robots" content="noindex, nofollow" />}
 
