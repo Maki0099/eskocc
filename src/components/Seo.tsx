@@ -8,6 +8,7 @@ interface SeoProps {
   description: string;
   path?: string;
   image?: string;
+  keywords?: string;
   type?: "website" | "article" | "profile";
   noindex?: boolean;
   jsonLd?: Record<string, unknown> | Record<string, unknown>[];
