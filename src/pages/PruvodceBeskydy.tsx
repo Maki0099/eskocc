@@ -274,6 +274,7 @@ const PruvodceBeskydy = () => {
                             <span className="bg-muted px-2 py-0.5 rounded">{TERRAIN_LABEL[r.terrain]}</span>
                           </div>
                           <p className="text-sm text-muted-foreground leading-relaxed mb-4 flex-1">{r.description}</p>
+                          <RouteGpxPreview gpxUrl={r.gpxUrl} title={r.title} className="mb-4" />
                           <div className="flex flex-col gap-3 mt-auto">
                             <Button asChild size="sm" variant="default" className="w-full sm:w-auto">
                               <a href={r.gpxUrl} download={`${r.slug}.gpx`}>
