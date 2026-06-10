@@ -61,11 +61,6 @@ export const StravaConnectionCard = () => {
     try {
       const redirectUri = `https://${PROJECT_REF}.supabase.co/functions/v1/user-strava-callback`;
       const returnTo = window.location.origin;
-      const { data, error } = await supabase.functions.invoke("user-strava-auth", {
-        body: null,
-        method: "GET" as any,
-      });
-      // invoke does not pass query params well; use direct fetch with auth
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
       const res = await fetch(
