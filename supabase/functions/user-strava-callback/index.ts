@@ -48,12 +48,12 @@ Deno.serve(async (req) => {
 
     if (error || !code || !state) {
       return Response.redirect(
-        `${appUrl}/ucet?strava=error&reason=${error || "missing_params"}`,
+        `${appUrl}/account?strava=error&reason=${error || "missing_params"}`,
         302
       );
     }
     if (!userId) {
-      return Response.redirect(`${appUrl}/ucet?strava=error&reason=invalid_state`, 302);
+      return Response.redirect(`${appUrl}/account?strava=error&reason=invalid_state`, 302);
     }
 
     const supabase = createClient(
@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
       .eq("id", userId)
       .maybeSingle();
     if (!prof) {
-      return Response.redirect(`${appUrl}/ucet?strava=error&reason=no_profile`, 302);
+      return Response.redirect(`${appUrl}/account?strava=error&reason=no_profile`, 302);
     }
 
     const tokenRes = await fetch("https://www.strava.com/oauth/token", {
@@ -84,7 +84,7 @@ Deno.serve(async (req) => {
     if (!tokenRes.ok) {
       const t = await tokenRes.text();
       console.error("Strava token exchange failed:", t);
-      return Response.redirect(`${appUrl}/ucet?strava=error&reason=token_exchange`, 302);
+      return Response.redirect(`${appUrl}/account?strava=error&reason=token_exchange`, 302);
     }
 
     const tokens = await tokenRes.json();
@@ -103,7 +103,7 @@ Deno.serve(async (req) => {
     });
     if (upErr) {
       console.error("DB upsert error:", upErr);
-      return Response.redirect(`${appUrl}/ucet?strava=error&reason=db`, 302);
+      return Response.redirect(`${appUrl}/account?strava=error&reason=db`, 302);
     }
 
     // Best-effort: spustit první sync hned (fire-and-forget)
@@ -115,7 +115,7 @@ Deno.serve(async (req) => {
       console.warn("Initial sync failed (non-fatal):", e);
     }
 
-    return Response.redirect(`${appUrl}/ucet?strava=connected`, 302);
+    return Response.redirect(`${appUrl}/account?strava=connected`, 302);
   } catch (err) {
     console.error("user-strava-callback error:", err);
     return new Response(`Error: ${(err as Error).message}`, { status: 500 });
