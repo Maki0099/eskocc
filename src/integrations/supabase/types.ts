@@ -744,6 +744,9 @@ export type Database = {
           full_name: string | null
           id: string
           nickname: string | null
+          personal_stats_cached_at: string | null
+          personal_ytd_count: number | null
+          personal_ytd_distance: number | null
           phone: string | null
           push_notifications_enabled: boolean | null
           strava_stats_cached_at: string | null
@@ -760,6 +763,9 @@ export type Database = {
           full_name?: string | null
           id: string
           nickname?: string | null
+          personal_stats_cached_at?: string | null
+          personal_ytd_count?: number | null
+          personal_ytd_distance?: number | null
           phone?: string | null
           push_notifications_enabled?: boolean | null
           strava_stats_cached_at?: string | null
@@ -776,6 +782,9 @@ export type Database = {
           full_name?: string | null
           id?: string
           nickname?: string | null
+          personal_stats_cached_at?: string | null
+          personal_ytd_count?: number | null
+          personal_ytd_distance?: number | null
           phone?: string | null
           push_notifications_enabled?: boolean | null
           strava_stats_cached_at?: string | null
@@ -913,6 +922,48 @@ export type Database = {
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_strava_tokens: {
+        Row: {
+          access_token: string
+          athlete_id: string
+          created_at: string
+          expires_at: string
+          last_error: string | null
+          last_synced_at: string | null
+          needs_reauth: boolean
+          refresh_token: string
+          scope: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          athlete_id: string
+          created_at?: string
+          expires_at: string
+          last_error?: string | null
+          last_synced_at?: string | null
+          needs_reauth?: boolean
+          refresh_token: string
+          scope?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          athlete_id?: string
+          created_at?: string
+          expires_at?: string
+          last_error?: string | null
+          last_synced_at?: string | null
+          needs_reauth?: boolean
+          refresh_token?: string
+          scope?: string | null
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
