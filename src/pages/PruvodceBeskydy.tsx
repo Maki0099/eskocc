@@ -57,6 +57,7 @@ const DIFFICULTY_VARIANT: Record<string, "secondary" | "default" | "destructive"
 
 const UPDATED_DATE = "2026-06-10";
 const READING_TIME = "10 min čtení";
+const PAGE_IMAGE = `https://www.eskocc.cz${heroImage}`;
 
 const PruvodceBeskydy = () => {
   const { data: routes = [], isLoading: routesLoading } = useQuery({
@@ -72,12 +73,13 @@ const PruvodceBeskydy = () => {
       return ((data ?? []) as BeskydyRouteRow[]).map(mapRowToRoute);
     },
   });
+
   const articleJsonLd = {
     "@context": "https://schema.org",
     "@type": "Article",
     headline: "Průvodce Beskydy na kole",
     description: "Kompletní průvodce cyklistikou v Beskydech – nejlepší trasy, sezóna, vybavení a tipy od klubu ESKO.cc z Karolinky.",
-    image: `https://www.eskocc.cz${heroImage}`,
+    image: PAGE_IMAGE,
     datePublished: "2026-06-08",
     dateModified: UPDATED_DATE,
     author: { "@type": "Organization", name: "ESKO.cc" },
@@ -86,11 +88,14 @@ const PruvodceBeskydy = () => {
       logo: { "@type": "ImageObject", url: "https://www.eskocc.cz/pwa-512x512.png" },
     },
     mainEntityOfPage: "https://www.eskocc.cz/pruvodce-beskydy",
+    inLanguage: "cs-CZ",
+    articleSection: "Cyklistika",
   };
 
   const faqJsonLd = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
+    inLanguage: "cs-CZ",
     mainEntity: FAQ_ITEMS.map((item) => ({
       "@type": "Question", name: item.q,
       acceptedAnswer: { "@type": "Answer", text: item.a },
@@ -112,6 +117,8 @@ const PruvodceBeskydy = () => {
         title="Průvodce Beskydy na kole | Trasy, tipy a sezóna | ESKO.cc"
         description="Kompletní průvodce cyklistikou v Beskydech: nejlepší trasy, sezóna, vybavení a tipy od klubu ESKO.cc. Silnice, gravel i MTB v Karolince a okolí."
         path="/pruvodce-beskydy"
+        image={PAGE_IMAGE}
+        keywords="Beskydy, cyklistika, cyklotrasy, Karolinka, silniční kolo, gravel, MTB, výjezdy, Soláň, Lysá hora, Pustevny, cyklostezka Bečva, Beskydská magistrála, cykloklub"
         type="article"
         jsonLd={[articleJsonLd, faqJsonLd, breadcrumbJsonLd]}
       />
