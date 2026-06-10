@@ -1,61 +1,45 @@
-## Aktuální stav SEO
+## Cíl
 
-Po předchozím kole zbývají 4 nálezy. Navrhuji řešit je v tomto pořadí:
+Vytvořit novou veřejnou SEO landing page na `/pruvodce-beskydy` — obsáhlý průvodce cyklistikou v Beskydech, který cílí na vyhledávací dotazy typu „cyklistika Beskydy", „cyklotrasy Beskydy", „kolo Beskydy" a přivádí návštěvníky na klubový web s odkazy do interních sekcí (Trasy, Akce, Statistiky, Kavárna, O nás).
 
-### 1. Per-route metadata (HIGH priority) — hlavní práce
+## Struktura stránky
 
-**Problém:** Všechny stránky sdílejí stejný `<title>` a `<meta description>` z `index.html`. Navíc je tam zmínka o Brně, ale klub je v Karolince. Canonical odkazuje vždy na homepage.
+Jeden semantický `<article>` s jedním `<h1>` a logickou hierarchií `<h2>`/`<h3>`. Obsah v češtině, tón věcný a přátelský, délka cca 1500–2000 slov.
 
-**Řešení:**
-- Doinstalovat `react-helmet-async` + obalit aplikaci `<HelmetProvider>` v `src/main.tsx`.
-- Odstranit `<link rel="canonical">` z `index.html` (aby nedocházelo k duplikaci).
-- Opravit zmínku o Brně (ověřit `index.html` — aktuálně tam vidím "Karolinka, Beskydy", takže problém asi nálezl scanner u staré verze; přesto sjednotíme).
-- Přidat `<Helmet>` blok do každé hlavní stránky s unikátním title (<60 znaků), description (50–160 znaků), canonical a OG tagy:
-  - `Index.tsx` (homepage)
-  - `Events.tsx` + `EventDetail.tsx` (dynamický title podle názvu vyjížďky)
-  - `Statistics.tsx`
-  - `Cafe.tsx`
-  - `Gallery.tsx`
-  - `About.tsx`
-  - `Documents.tsx`
-  - `Install.tsx`
-  - `Login.tsx`, `Register.tsx`, `ResetPassword.tsx`
-  - `MemberProfile.tsx` (dynamický + `noindex` kvůli soukromí)
-  - `RouteDetail.tsx` (dynamický)
-  - `Account.tsx`, `Dashboard.tsx`, `Admin.tsx`, `Notifications.tsx` → `noindex` (soukromé)
-  - `NotFound.tsx` → `noindex`
+### Sekce
 
-### 2. Performance — LCP hero (LOW)
+1. **Hero** — H1 „Průvodce Beskydy na kole", krátký lead, CTA na `/trasy` (oblíbené trasy) a `/akce` (klubové akce).
+2. **Proč jezdit v Beskydech** (H2) — krajina, terén, sezóna.
+3. **Nejlepší cyklotrasy v Beskydech** (H2) — H3 podsekce pro silnici, gravel a MTB. Dynamicky vypsat 6 položek z `favorite_routes` (řazeno podle `is_featured`/`created_at`) jako karty s odkazy na `/trasy/:slug`.
+4. **Sezóna a počasí** (H2) — jaro/léto/podzim, doporučené měsíce.
+5. **Co si vzít s sebou** (H2) — kolo, vybavení, bezpečnost.
+6. **Kde se občerstvit** (H2) — odkaz na `/kavarna` (klubová kavárna) + tipy na místa.
+7. **Klubové akce a vyjížďky** (H2) — odkaz na `/akce`, krátký popis společných jízd.
+8. **Připojte se ke klubu** (H2) — odkaz na `/o-nas` a `/registrace`.
+9. **Často kladené otázky (FAQ)** (H2) — 6–8 otázek (např. „Kde začít s cyklistikou v Beskydech?", „Která trasa je nejlehčí?", „Kdy je nejlepší sezóna?", „Potřebuji horské kolo?", „Jak najdu parťáky na vyjížďku?"). Každá Q jako H3.
+10. **Závěr + CTA** — odkaz na `/trasy` a `/registrace`.
 
-- V `HeroSection.tsx` přidat na `<img src={heroCycling}>` `fetchpriority="high"`, explicitní `width`/`height`, odstranit případné lazy-loading.
-- Do `index.html` přidat `<link rel="preload" as="image" href="..." fetchpriority="high">` pro hero obrázek (pokud lze zjistit hash — alternativně import a preload přes Helmet na homepage).
-- Projít `@font-face` pravidla v `src/index.css` a přidat `font-display: swap`.
+### Interní odkazy (povinné v textu)
 
-### 3. Obsahový průvodce Beskydy (LOW, Semrush návrh)
+`/trasy`, `/akce`, `/statistiky`, `/kavarna`, `/o-nas`, `/galerie`, `/registrace`, plus minimálně 3 odkazy na konkrétní trasy z DB.
 
-Nová veřejná stránka `/pruvodce-beskydy` s článkem **„Nejlepší cyklotrasy v Beskydech: Průvodce z Karolinky"** cílící klíčová slova *cyklotrasy* (1 000/mo) a *cyklotrasy mapa* (590/mo). Zahrnuje:
-- úvod o regionu a klubu,
-- 4–6 doporučených tras (čerpat z `favorite_routes` v DB),
-- ke stažení GPX, mapy,
-- CTA na registraci do klubu.
+## Technická implementace
 
-Přidat do `sitemap.xml`, `llms.txt` a navigace.
+- **Nová stránka** `src/pages/PruvodceBeskydy.tsx`:
+  - `useQuery` na `favorite_routes` (limit 6, veřejně čitelné dle stávajících RLS).
+  - `<Seo>` komponenta: title „Průvodce Beskydy na kole | ESKO CC", description ~155 znaků, canonical `/pruvodce-beskydy`, OG image (hero z `src/assets`), JSON-LD typu `Article` + `FAQPage` (otázky/odpovědi z FAQ sekce).
+  - Layout: existující `Header` + `Footer`, kontejner s typografií jako `/o-nas`.
+- **Route** v `src/App.tsx`: přidat `<Route path="/pruvodce-beskydy" element={<PruvodceBeskydy />} />` nad catch-all. Konstanta `ROUTES.GUIDE_BESKYDY = "/pruvodce-beskydy"` v `src/constants/routes.ts`.
+- **Sitemap** (`public/sitemap.xml`): přidat URL `https://www.eskocc.cz/pruvodce-beskydy`, `changefreq=monthly`, `priority=0.8`.
+- **Interní prolinkování zpět**: přidat textový odkaz na průvodce do patičky (`Footer`) v sekci „Užitečné" a z `/trasy` hlavičky (krátká věta „Inspirace najdeš v našem [průvodci Beskydy](/pruvodce-beskydy)").
+- **Hero obrázek**: vygenerovat 1 fotorealistický obrázek beskydské krajiny s cyklistou (`src/assets/pruvodce-beskydy-hero.jpg`, ~1600×900, `fetchPriority="high"`).
 
-**Otázka:** Tohle je větší kopírovací práce — chceš, abych obsah napsal sám (na základě dat klubu), nebo doplníš text ty?
+## Mimo rozsah
 
-### 4. Google Search Console (MID)
+- Vícejazyčné verze.
+- Blog/CMS systém pro další články (pouze tato jedna stránka).
+- Změny v stávajících SEO tagech jiných stránek.
 
-Vyžaduje OAuth na účet uživatele:
-- Připojím GSC konektor (`standard_connectors--connect`).
-- Ověřím vlastnictví domény přes meta tag.
-- Odešlu `sitemap.xml`.
+## Otázka k potvrzení
 
-**Vyžaduje akci od tebe** (autorizovat Google účet).
-
----
-
-## Doporučené pořadí dnešního loopu
-
-Navrhuji v jednom kroku udělat **bod 1 (metadata) + bod 2 (performance)** — to jsou jasné technické fixy s vysokým dopadem. Body 3 a 4 doděláme zvlášť, protože vyžadují tvoje rozhodnutí (text vs. OAuth).
-
-Souhlasíš s tímto postupem? Nebo chceš začít od jiného bodu?
+Text vygeneruji sám na základě dat z `favorite_routes` a obecných znalostí o Beskydech. Pokud máš vlastní formulace nebo konkrétní tipy (lokality, parťácká místa, oblíbené kavárny), pošli je teď a zapracuji je — jinak pokračuji s vlastním návrhem.

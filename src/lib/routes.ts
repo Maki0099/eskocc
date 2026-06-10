@@ -20,6 +20,7 @@ export const ROUTES = {
   INSTALL: '/install',
   NOTIFICATIONS: '/notifications',
   SHARE_TARGET: '/share-target',
+  GUIDE_BESKYDY: '/pruvodce-beskydy',
 } as const;
 
 // Dynamic route patterns (for Route definitions in App.tsx)
