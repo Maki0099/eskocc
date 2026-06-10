@@ -1113,6 +1113,16 @@ export type Database = {
       }
     }
     Functions: {
+      get_club_strava_status: {
+        Args: never
+        Returns: {
+          athlete_id: string
+          expires_at: string
+          last_error: string
+          needs_reauth: boolean
+          updated_at: string
+        }[]
+      }
       get_club_teaser_stats: { Args: never; Returns: Json }
       get_cron_jobs: {
         Args: never
@@ -1145,6 +1155,13 @@ export type Database = {
         }[]
       }
       get_public_club_stats: { Args: never; Returns: Json }
+      get_push_subscription_counts: {
+        Args: never
+        Returns: {
+          subscription_count: number
+          user_id: string
+        }[]
+      }
       get_top_members: { Args: { limit_count?: number }; Returns: Json }
       has_role: {
         Args: {
