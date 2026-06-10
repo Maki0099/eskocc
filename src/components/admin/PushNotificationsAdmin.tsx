@@ -71,13 +71,11 @@ export function PushNotificationsAdmin() {
 
       const memberIds = new Set((memberRoles || []).map(r => r.user_id));
 
-      // Get subscription counts
-      const { data: subscriptions } = await supabase
-        .from("push_subscriptions")
-        .select("user_id");
+      // Get subscription counts via safe RPC (admins cannot read endpoints/keys directly)
+      const { data: countRows } = await supabase.rpc("get_push_subscription_counts");
 
-      const subscriptionCounts = (subscriptions || []).reduce((acc, sub) => {
-        acc[sub.user_id] = (acc[sub.user_id] || 0) + 1;
+      const subscriptionCounts = ((countRows as any[]) || []).reduce((acc, row) => {
+        acc[row.user_id] = Number(row.subscription_count) || 0;
         return acc;
       }, {} as Record<string, number>);
 
