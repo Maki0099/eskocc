@@ -182,9 +182,8 @@ Deno.serve(async (req) => {
     status: "ok",
     triggered_by: "member-stats-batch",
     fetched_count: results.length,
-    matched_count: okCount,
-    new_count: 0,
-    updated_count: okCount,
+    ytd_users_updated: okCount,
+    ytd_users_zeroed: 0,
     error_message: null,
   });
 
