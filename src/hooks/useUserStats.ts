@@ -13,6 +13,9 @@ interface UserProfile {
 interface UserStats {
   ytdDistance: number | null;
   ytdCount: number | null;
+  personalYtdDistance: number | null;
+  personalYtdCount: number | null;
+  personalStatsCachedAt: string | null;
   profile: UserProfile | null;
   role: AppRole | null;
   loading: boolean;
@@ -24,6 +27,9 @@ export const useUserStats = (): UserStats => {
   const { user } = useAuth();
   const [ytdDistance, setYtdDistance] = useState<number | null>(null);
   const [ytdCount, setYtdCount] = useState<number | null>(null);
+  const [personalYtdDistance, setPersonalYtdDistance] = useState<number | null>(null);
+  const [personalYtdCount, setPersonalYtdCount] = useState<number | null>(null);
+  const [personalStatsCachedAt, setPersonalStatsCachedAt] = useState<string | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
   const [loading, setLoading] = useState(true);
@@ -41,13 +47,16 @@ export const useUserStats = (): UserStats => {
 
     const { data: profileData } = await supabase
       .from('profiles')
-      .select('full_name, nickname, avatar_url, club_match_name, strava_ytd_distance, strava_ytd_count')
+      .select('full_name, nickname, avatar_url, club_match_name, strava_ytd_distance, strava_ytd_count, personal_ytd_distance, personal_ytd_count, personal_stats_cached_at')
       .eq('id', user.id)
       .maybeSingle();
 
     if (profileData) {
       setYtdDistance(profileData.strava_ytd_distance);
       setYtdCount(profileData.strava_ytd_count);
+      setPersonalYtdDistance((profileData as any).personal_ytd_distance ?? null);
+      setPersonalYtdCount((profileData as any).personal_ytd_count ?? null);
+      setPersonalStatsCachedAt((profileData as any).personal_stats_cached_at ?? null);
       setProfile({
         full_name: profileData.full_name,
         nickname: profileData.nickname,
@@ -78,5 +87,16 @@ export const useUserStats = (): UserStats => {
     fetchStats(false);
   }, [fetchStats]);
 
-  return { ytdDistance, ytdCount, profile, role, loading, refreshing, refetch };
+  return {
+    ytdDistance,
+    ytdCount,
+    personalYtdDistance,
+    personalYtdCount,
+    personalStatsCachedAt,
+    profile,
+    role,
+    loading,
+    refreshing,
+    refetch,
+  };
 };
