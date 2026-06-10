@@ -34,6 +34,7 @@ const Install = lazy(() => import("./pages/Install"));
 const Documents = lazy(() => import("./pages/Documents"));
 const Notifications = lazy(() => import("./pages/Notifications"));
 const ShareTarget = lazy(() => import("./pages/ShareTarget"));
+const PruvodceBeskydy = lazy(() => import("./pages/PruvodceBeskydy"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -66,6 +67,7 @@ const App = () => (
                 <Route path={ROUTES.ABOUT} element={<About />} />
                 <Route path={ROUTES.INSTALL} element={<Install />} />
                 <Route path={ROUTES.DOCUMENTS} element={<Documents />} />
+                <Route path={ROUTES.GUIDE_BESKYDY} element={<PruvodceBeskydy />} />
                 <Route
                   path={ROUTES.DASHBOARD}
                   element={
