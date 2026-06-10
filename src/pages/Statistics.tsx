@@ -209,7 +209,7 @@ const Statistics = () => {
             <div className="flex items-center justify-center gap-2">
               <h1 className="text-display font-bold">Statistiky klubu</h1>
               {isMember && !isTourCompleted("statistics") && (
-                <Button variant="ghost" size="icon" onClick={handleStartTour} className="shrink-0">
+                <Button variant="ghost" size="icon" onClick={handleStartTour} className="shrink-0" aria-label="Nápověda k statistikám">
                   <HelpCircle className="w-5 h-5" />
                 </Button>
               )}
