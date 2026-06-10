@@ -41,6 +41,63 @@ export type Database = {
         }
         Relationships: []
       }
+      beskydy_routes: {
+        Row: {
+          created_at: string
+          description: string
+          difficulty: string
+          distance_km: number
+          elevation_m: number
+          gpx_path: string
+          id: string
+          is_published: boolean
+          komoot_url: string | null
+          mapy_url: string | null
+          slug: string
+          sort_order: number
+          start_location: string
+          terrain: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          difficulty?: string
+          distance_km?: number
+          elevation_m?: number
+          gpx_path: string
+          id?: string
+          is_published?: boolean
+          komoot_url?: string | null
+          mapy_url?: string | null
+          slug: string
+          sort_order?: number
+          start_location?: string
+          terrain?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          difficulty?: string
+          distance_km?: number
+          elevation_m?: number
+          gpx_path?: string
+          id?: string
+          is_published?: boolean
+          komoot_url?: string | null
+          mapy_url?: string | null
+          slug?: string
+          sort_order?: number
+          start_location?: string
+          terrain?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cafe_gallery: {
         Row: {
           caption: string | null
