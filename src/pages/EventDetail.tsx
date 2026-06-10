@@ -328,7 +328,15 @@ const EventDetail = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <Seo
+        title={`${event.title} | Vyjížďka ESKO.cc`}
+        description={(event.description || `Společná vyjížďka cyklistického klubu ESKO.cc: ${event.title}.`).slice(0, 160)}
+        path={`/events/${event.id}`}
+        type="article"
+        image={event.cover_image_url || undefined}
+      />
       <Header />
+
       <main className="flex-1 container mx-auto px-4 pt-24 pb-12">
         <div className="max-w-3xl mx-auto">
           <div className="flex items-center justify-between mb-6">

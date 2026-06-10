@@ -166,7 +166,14 @@ const MemberProfile = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <Seo
+        title={`${member.full_name || "Profil člena"} | ESKO.cc`}
+        description="Profil člena cyklistického klubu ESKO.cc."
+        path={`/member/${member.id}`}
+        noindex
+      />
       <header className="border-b border-border bg-card">
+
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
             <img src={logoRound} alt="Esko.cc" className="h-10 w-10" />

@@ -247,7 +247,15 @@ const RouteDetail = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <Seo
+        title={`${route.title} | Cyklotrasa ESKO.cc`}
+        description={(route.description || `Oblíbená cyklotrasa klubu ESKO.cc: ${route.title}. GPX ke stažení.`).slice(0, 160)}
+        path={`/routes/${route.id}`}
+        type="article"
+        image={route.cover_image_url || undefined}
+      />
       <Header />
+
       <main className="flex-1 container mx-auto px-4 pt-24 pb-12">
         <div className="max-w-3xl mx-auto">
           {/* Back Link */}
