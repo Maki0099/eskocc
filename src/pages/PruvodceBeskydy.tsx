@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   Mountain, Bike, Calendar, Coffee, MapPin, Users, ArrowRight,
-  Clock, Home, ChevronRight, ExternalLink, AlertTriangle,
+  Clock, Home, ChevronRight, ExternalLink, AlertTriangle, Download,
+
 } from "lucide-react";
 import { ROUTES } from "@/lib/routes";
 import heroImage from "@/assets/pruvodce-beskydy-hero.jpg";
