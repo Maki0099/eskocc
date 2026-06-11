@@ -1,13 +1,15 @@
+import { lazy, Suspense } from "react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import HeroSection from "@/components/home/HeroSection";
-import LeadershipSection from "@/components/home/LeadershipSection";
-import FeaturesSection from "@/components/home/FeaturesSection";
-import ClubhouseSection from "@/components/home/ClubhouseSection";
-import CTASection from "@/components/home/CTASection";
-import TeaserSection from "@/components/home/TeaserSection";
-import InstallBanner from "@/components/pwa/InstallBanner";
 import Seo from "@/components/Seo";
+
+const LeadershipSection = lazy(() => import("@/components/home/LeadershipSection"));
+const FeaturesSection = lazy(() => import("@/components/home/FeaturesSection"));
+const ClubhouseSection = lazy(() => import("@/components/home/ClubhouseSection"));
+const CTASection = lazy(() => import("@/components/home/CTASection"));
+const TeaserSection = lazy(() => import("@/components/home/TeaserSection"));
+const InstallBanner = lazy(() => import("@/components/pwa/InstallBanner"));
 
 const Index = () => {
   return (
@@ -23,22 +25,26 @@ const Index = () => {
         <div data-tour="hero-section">
           <HeroSection />
         </div>
-        <div data-tour="teaser-stats">
-          <TeaserSection />
-        </div>
-        <div data-tour="features-section">
-          <FeaturesSection />
-        </div>
-        <div data-tour="clubhouse-section">
-          <ClubhouseSection />
-        </div>
-        <div data-tour="cta-section">
-          <CTASection />
-        </div>
-        <LeadershipSection />
+        <Suspense fallback={null}>
+          <div data-tour="teaser-stats">
+            <TeaserSection />
+          </div>
+          <div data-tour="features-section">
+            <FeaturesSection />
+          </div>
+          <div data-tour="clubhouse-section">
+            <ClubhouseSection />
+          </div>
+          <div data-tour="cta-section">
+            <CTASection />
+          </div>
+          <LeadershipSection />
+        </Suspense>
       </main>
       <Footer />
-      <InstallBanner />
+      <Suspense fallback={null}>
+        <InstallBanner />
+      </Suspense>
     </div>
   );
 };

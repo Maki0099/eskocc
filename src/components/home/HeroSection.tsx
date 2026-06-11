@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import heroCycling from "@/assets/hero-cycling.jpg";
+import heroCyclingWebp from "@/assets/hero-cycling.webp";
 import logoRoundDark from "@/assets/logo-round-dark.png";
 import logoRound from "@/assets/logo-round.png";
 import { useParallax } from "@/hooks/useParallax";
@@ -31,8 +32,11 @@ const HeroSection = () => {
       <div ref={parallaxRef} className="absolute inset-0 will-change-transform" style={{
       transform: `translateY(${offset}px) scale(1.1)`
     }}>
-        <img src={heroCycling} alt="Cyklisté při západu slunce" width={1920} height={1080} fetchPriority="high" decoding="async" className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-background/60 backdrop-blur-[2px]" />
+        <picture>
+          <source srcSet={heroCyclingWebp} type="image/webp" />
+          <img src={heroCycling} alt="Cyklisté při západu slunce" width={1600} height={900} fetchPriority="high" decoding="async" className="w-full h-full object-cover" />
+        </picture>
+        <div className="absolute inset-0 bg-background/60" />
       </div>
 
       {/* Content */}
