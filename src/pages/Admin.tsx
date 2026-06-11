@@ -67,6 +67,7 @@ interface UserWithRole {
   created_at: string;
   role: AppRole;
   clubAthlete: { firstname: string; lastnameInitial: string | null; athleteKey?: string } | null;
+  hasPersonalStrava: boolean;
 }
 
 const Admin = () => {
