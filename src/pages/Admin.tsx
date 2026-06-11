@@ -427,6 +427,7 @@ const Admin = () => {
                             <TableHead>Registrace</TableHead>
                             <TableHead>Role</TableHead>
                             <TableHead className="hidden md:table-cell">Strava klub</TableHead>
+                            <TableHead className="hidden md:table-cell">Vlastní Strava</TableHead>
                             <TableHead className="text-right">Akce</TableHead>
                           </TableRow>
                         </TableHeader>
