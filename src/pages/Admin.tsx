@@ -67,6 +67,7 @@ interface UserWithRole {
   created_at: string;
   role: AppRole;
   clubAthlete: { firstname: string; lastnameInitial: string | null; athleteKey?: string } | null;
+  hasPersonalStrava: boolean;
 }
 
 const Admin = () => {
@@ -111,6 +112,14 @@ const Admin = () => {
 
       if (mappingsError) throw mappingsError;
 
+      const { data: stravaTokens, error: tokensError } = await supabase
+        .from("user_strava_tokens")
+        .select("user_id");
+
+      if (tokensError) throw tokensError;
+
+      const personalStravaSet = new Set((stravaTokens || []).map((t) => t.user_id as string));
+
       const mappingByUser = new Map(
         (mappings || []).map((m) => [
           m.matched_user_id as string,
@@ -124,6 +133,7 @@ const Admin = () => {
           ...profile,
           role: (userRole?.role as AppRole) || "pending",
           clubAthlete: mappingByUser.get(profile.id) || null,
+          hasPersonalStrava: personalStravaSet.has(profile.id),
         };
       });
 
@@ -384,6 +394,9 @@ const Admin = () => {
                     <div className="text-2xl font-bold">
                       {users.filter((u) => u.clubAthlete).length}
                     </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Vlastní účet: {users.filter((u) => u.hasPersonalStrava).length}
+                    </p>
                   </CardContent>
                 </Card>
               </div>
@@ -414,6 +427,7 @@ const Admin = () => {
                             <TableHead>Registrace</TableHead>
                             <TableHead>Role</TableHead>
                             <TableHead className="hidden md:table-cell">Strava klub</TableHead>
+                            <TableHead className="hidden md:table-cell">Vlastní Strava</TableHead>
                             <TableHead className="text-right">Akce</TableHead>
                           </TableRow>
                         </TableHeader>
@@ -480,6 +494,20 @@ const Admin = () => {
                                     </TooltipContent>
                                   </Tooltip>
                                 </TooltipProvider>
+                              </TableCell>
+                              <TableCell className="hidden md:table-cell">
+                                {user.hasPersonalStrava ? (
+                                  <Badge
+                                    variant="secondary"
+                                    className="gap-1 bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20"
+                                    title="Uživatel má propojený svůj Strava účet"
+                                  >
+                                    <Activity className="w-3 h-3" />
+                                    Propojeno
+                                  </Badge>
+                                ) : (
+                                  <span className="text-muted-foreground text-sm">—</span>
+                                )}
                               </TableCell>
                               <TableCell className="text-right">
                                 <div className="flex items-center justify-end gap-2">
