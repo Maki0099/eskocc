@@ -1,71 +1,123 @@
 ## Cíl
 
-Odstranit `dangerous-clean-slate: true` z workflow a zajistit, aby se obsah z GitHub repa `Maki0099/eskocc` reálně přenášel na FTP `webftp.eskocc.cz`.
+Zjistit, proč GitHub Actions běží zeleně, ale `www.eskocc.cz` pořád servíruje starou verzi, a opravit deploy bez použití `dangerous-clean-slate`.
 
-## Diagnóza
+## Nejpravděpodobnější příčina
 
-Workflow končí zeleně, ale na FTP nic nepřibývá. To znamená jednu z těchto věcí:
+Když jsou všechny runy zelené, chyba pravděpodobně není v buildu ani přihlášení, ale v jedné z těchto věcí:
 
-1. **Sync-state cache** — `FTP-Deploy-Action` si vede soubor `.ftp-deploy-sync-state-active24.json` se seznamem hashů. Pokud je zastaralý/nesedí s realitou, akce „skipne" všechno a nahraje 0 souborů.
-2. **Špatná cílová cesta** (`SFTP_TARGET` secret) — soubory se nahrávají do home složky FTP účtu, kterou web neservíruje, ne do document rootu.
-3. **Špatné přihlašovací údaje / jiný FTP účet** — workflow se připojí někam jinam, než kam se díváš přes `webftp.eskocc.cz`.
-
-Bez clean-slate je třeba problém vyřešit jinak — manuálním smazáním state souboru a verifikací cílové cesty.
+1. Workflow nahrává do jiné FTP složky než té, kterou web používá.
+2. FTP deploy akce kvůli sync-state souboru vyhodnocuje soubory jako beze změny.
+3. Web/hosting má cache nebo servíruje jiný document root.
+4. Secret `SFTP_TARGET` míří jinam, než si myslíme.
 
 ## Plán
 
-### Krok 1 — Upravit `.github/workflows/deploy.yml`
+### 1. Ověřit z logu posledního zeleného runu skutečný výsledek FTP kroku
 
-- Odstranit řádek `dangerous-clean-slate: true`.
-- Ponechat diagnostické kroky (stamp marker `deploy-source.txt` + `ls -la dist/`) — pomohou potvrdit, že build je v pořádku.
-- Přidat do log_level `verbose` u `FTP-Deploy-Action`, aby log ukazoval reálné `connected to ...`, cílovou cestu a počet `uploaded/skipped` souborů.
+V posledním runu otevřít krok:
 
-### Krok 2 — Manuálně smazat sync-state na FTP (uděláš ty)
-
-Přes `webftp.eskocc.cz` najít a smazat soubor:
-
-```
-.ftp-deploy-sync-state-active24.json
+```text
+Deploy via FTP to Active24
 ```
 
-Hledej ho v rootu FTP účtu i v document rootu (typicky `/www/` nebo `/httpdocs/`). Smazáním donutíš akci považovat FTP za prázdný a nahrát vše znovu — bez clean-slate, bez mazání čehokoli jiného.
+Z něj potřebujeme zjistit hlavně:
 
-### Krok 3 — Ověřit cílovou cestu (uděláš ty)
-
-Ve `webftp.eskocc.cz` zjisti, ve které složce leží reálný `index.html`, který servíruje `www.eskocc.cz`:
-
-- Pokud je v rootu připojení → `SFTP_TARGET` má být `/` (nebo nenastaveno).
-- Pokud je ve `/www/` → `SFTP_TARGET` musí být `/www/`.
-- Pokud je ve `/httpdocs/` → `SFTP_TARGET` musí být `/httpdocs/`.
-
-Pošli mi cestu, kterou tam vidíš, a já ti řeknu, jestli secret sedí (nebo upravíš sám v GitHub → Settings → Secrets).
-
-### Krok 4 — Spustit workflow ručně
-
-GitHub → Actions → „Deploy to Active24" → **Run workflow** → main.
-
-V logu kroku „Deploy via FTP to Active24" hledej:
-
-- `Connected to <host>` — musí sedět s `webftp.eskocc.cz` (případně jeho IP).
-- `Server folder: <path>` — musí být document root.
-- `published: N files` — N musí být > 0 (poprvé ~stovky).
-
-### Krok 5 — Ověřit na webu
-
-Otevři v inkognito:
-
+```text
+Server folder / server-dir
+Uploaded / Updated / Deleted / Skipped counts
+Local files count
 ```
+
+Pokud log říká `uploaded: 0` nebo skoro všechno `skipped`, řešíme sync-state.
+Pokud log ukazuje jinou server složku než document root, řešíme `SFTP_TARGET`.
+
+### 2. Přidat jednoznačný deploy marker, který se mění při každém deployi
+
+Workflow už vytváří:
+
+```text
+public/deploy-source.txt
+```
+
+Ten po buildu končí jako:
+
+```text
+dist/deploy-source.txt
+```
+
+Na webu musí být dostupný tady:
+
+```text
 https://www.eskocc.cz/deploy-source.txt
 ```
 
-Musí ukázat `source: NEW-REPO` + aktuální commit hash. Pokud ano → deploy funguje, hotovo.
+Pokud tam je starý obsah nebo 404, aktuální deploy nejde do reálného document rootu.
 
-## Soubory ke změně
+### 3. Porovnat FTP složky proti veřejnému webu
 
-- `.github/workflows/deploy.yml` — odstranit `dangerous-clean-slate: true`, přidat `log-level: verbose`.
+Na FTP zkontrolovat, kde leží aktuální `deploy-source.txt` a `index.html`:
 
-## Co potřebuju od tebe paralelně
+```text
+/
+/www/
+/web/
+```
 
-1. Smazat na FTP `.ftp-deploy-sync-state-active24.json` (pokud existuje).
-2. Zjistit, ve které složce na FTP leží `index.html` servírovaný `www.eskocc.cz`, a poslat mi cestu.
-3. Potvrdit, že FTP účet v secretu `SFTP_USER` je tentýž, jakým se přihlašuješ do `webftp.eskocc.cz` (pokud ne, máš workflow napojený na úplně jiný účet a deploy končí jinde).
+Potom otevřít v prohlížeči:
+
+```text
+https://www.eskocc.cz/deploy-source.txt
+```
+
+Výsledek rozhodne:
+
+- Soubor je aktuální v `/`, ale web ho neukazuje → web neservíruje `/`.
+- Soubor je aktuální ve `/www/`, ale ne v `/` → `SFTP_TARGET` má být `/www/`.
+- Soubor není aktuální nikde → workflow reálně nic nenahrálo, i když doběhlo zeleně.
+
+### 4. Opravit cílovou cestu nebo sync-state
+
+Podle zjištění:
+
+- Pokud je správný root `/www/`, změnit GitHub secret `SFTP_TARGET` na:
+
+```text
+/www/
+```
+
+- Pokud je správný root `/web/`, změnit GitHub secret `SFTP_TARGET` na:
+
+```text
+/web/
+```
+
+- Pokud je správný root `/`, nechat `SFTP_TARGET` jako `/` nebo ho odstranit.
+
+Pokud je problém sync-state, ručně smazat jen tento soubor v cílové složce:
+
+```text
+.ftp-deploy-sync-state-active24.json
+```
+
+Ne mazat web, nepoužívat clean-slate.
+
+### 5. Volitelně upravit workflow, aby diagnostika byla ještě průkaznější
+
+Pokud bude potřeba úprava workflow, přidám bezpečný krok, který před FTP uploadem vypíše aktuální marker a donutí změnu jednoho malého souboru při každém deployi.
+
+Zůstane bez:
+
+```yaml
+dangerous-clean-slate: true
+```
+
+## Co potřebuji od tebe teď
+
+Pošli prosím screenshot nebo zkopírovaný text z posledního zeleného runu, konkrétně z kroku:
+
+```text
+Deploy via FTP to Active24
+```
+
+Stačí spodní část logu, kde jsou počty uploadnutých/skipped souborů a cílová server složka.
