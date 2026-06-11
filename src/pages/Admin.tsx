@@ -112,6 +112,14 @@ const Admin = () => {
 
       if (mappingsError) throw mappingsError;
 
+      const { data: stravaTokens, error: tokensError } = await supabase
+        .from("user_strava_tokens")
+        .select("user_id");
+
+      if (tokensError) throw tokensError;
+
+      const personalStravaSet = new Set((stravaTokens || []).map((t) => t.user_id as string));
+
       const mappingByUser = new Map(
         (mappings || []).map((m) => [
           m.matched_user_id as string,
@@ -125,6 +133,7 @@ const Admin = () => {
           ...profile,
           role: (userRole?.role as AppRole) || "pending",
           clubAthlete: mappingByUser.get(profile.id) || null,
+          hasPersonalStrava: personalStravaSet.has(profile.id),
         };
       });
 
