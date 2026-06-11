@@ -1,0 +1,68 @@
+# ============================================================
+# ESKO.cc – Apache config for SPA (Active24 hosting)
+# ============================================================
+
+# ----- MIME types (jistota pro PWA / source mapy) -----
+<IfModule mod_mime.c>
+  AddType application/manifest+json    .webmanifest
+  AddType application/javascript       .js
+  AddType text/cache-manifest          .appcache
+  AddType image/svg+xml                .svg
+  AddType application/gpx+xml          .gpx
+</IfModule>
+
+# ----- Komprese -----
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/plain text/css text/xml \
+    application/javascript application/json application/xml \
+    application/xml+rss application/manifest+json image/svg+xml \
+    application/gpx+xml
+</IfModule>
+
+# ----- Bezpečnostní hlavičky -----
+<IfModule mod_headers.c>
+  Header set X-Content-Type-Options "nosniff"
+  Header set Referrer-Policy "strict-origin-when-cross-origin"
+  Header set X-Frame-Options "SAMEORIGIN"
+</IfModule>
+
+# ----- Cache hlavičky -----
+<IfModule mod_headers.c>
+  # Hashované assety – cache forever
+  <FilesMatch "\.(?:js|css|woff2?|ttf|otf|eot)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+
+  # Obrázky – dlouhá cache, ale revalidace
+  <FilesMatch "\.(?:png|jpg|jpeg|gif|webp|svg|ico)$">
+    Header set Cache-Control "public, max-age=2592000"
+  </FilesMatch>
+
+  # HTML, service worker, manifest – nikdy necachovat
+  <FilesMatch "(^index\.html$|service-worker\.js$|sw\.js$|sw-push\.js$|manifest\.webmanifest$|registerSW\.js$)">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+    Header set Pragma "no-cache"
+    Header set Expires "0"
+  </FilesMatch>
+</IfModule>
+
+# ----- SPA fallback (React Router BrowserRouter) -----
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # Existující soubor / složka – nech projít
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # Skutečné statické zdroje – nech projít (i kdyby chyběly, vrať standardní 404)
+  RewriteRule ^(documents|gpx|assets)/ - [L]
+  RewriteRule ^(sitemap\.xml|robots\.txt|llms\.txt|sw\.js|sw-push\.js|manifest\.webmanifest|favicon\.ico|offline\.html)$ - [L]
+
+  # Vše ostatní → index.html (SPA)
+  RewriteRule . /index.html [L]
+</IfModule>
+
+# ----- Vlastní 404 (pro neexistující soubory) -----
+ErrorDocument 404 /index.html
