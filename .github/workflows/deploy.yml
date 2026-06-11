@@ -51,8 +51,6 @@ jobs:
           echo "--- index.html head ---"
           head -20 dist/index.html
 
-      # NOTE: dangerous-clean-slate is enabled to force a full re-upload.
-      # Remove it after the first successful full deploy to speed up subsequent runs.
       - name: Deploy via FTP to Active24
         uses: SamKirkland/FTP-Deploy-Action@v4.3.6
         with:
@@ -64,4 +62,4 @@ jobs:
           local-dir: ./dist/
           server-dir: ${{ secrets.SFTP_TARGET || '/' }}
           state-name: .ftp-deploy-sync-state-active24.json
-          dangerous-clean-slate: true
+          log-level: verbose
