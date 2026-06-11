@@ -1,23 +1,28 @@
-## Cíl
-V admin panelu (`/admin`, záložka Uživatelé) zobrazit u každého uživatele indikátor, zda má propojený **vlastní Strava účet** (záznam v `user_strava_tokens`) — vedle stávajícího klubového athlete mappingu.
+## Plán: Nová favicon z loga ESKO.cc
 
-## Změny
+Vytvořím sadu favicon souborů z nahraného loga (tmavý "yin-yang" symbol klubu) a propojím je v `index.html`.
 
-**`src/pages/Admin.tsx`**
+### Kroky
 
-1. Rozšířit typ `UserWithRole` o `hasPersonalStrava: boolean`.
-2. Ve `fetchUsers()` přidat dotaz:
-   ```ts
-   const { data: tokens } = await supabase
-     .from("user_strava_tokens")
-     .select("user_id");
-   ```
-   (admin policy už čtení povoluje) a vytvořit `Set<string>` user_ids; při mapování profilů nastavit `hasPersonalStrava`.
-3. V renderu řádku uživatele (kolem ř. 455, vedle bloku „klubový athlete") přidat malý badge:
-   - Pokud `hasPersonalStrava` → oranžový badge `SiStrava` ikona + text „Vlastní Strava" (tooltip „Uživatel má propojený svůj Strava účet").
-   - Jinak nic nebo decentní „—".
-4. Přidat do horního souhrnu (vedle počtu napárovaných, ř. 385) nový čítač: „Vlastní Strava: X".
+1. **Uložení zdrojového loga**
+   - Nahraný obrázek uložím jako `public/favicon-source.png` (master verze).
 
-## Bez změn
-- RLS / DB / edge funkce — vše už je nastaveno.
-- Žádné nové secrets, žádné migrace.
+2. **Generování favicon variant** (přes ImageMagick v sandboxu)
+   - `public/favicon.ico` — multi-size ICO (16, 32, 48 px) — výchozí pro prohlížeče
+   - `public/favicon-16x16.png`
+   - `public/favicon-32x32.png`
+   - `public/favicon-96x96.png`
+   - `public/apple-touch-icon.png` (180×180) — logo na světlém pozadí pro iOS
+   - Všechny varianty zachovají transparentní pozadí (kromě apple-touch-icon, kde iOS pozadí nepodporuje → použiju krémové `#FAF8F5` ladící s brand paletou)
+
+3. **Úprava `index.html`**
+   - Přidám `<link rel="icon" href="/favicon.ico" sizes="any">`
+   - Přidám `<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">`
+   - Přidám `<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">`
+   - `apple-touch-icon` link už existuje (`apple-touch-icon-180x180.png`) — buď ho přepíšu novým logem, nebo nahradím cestu na `/apple-touch-icon.png`
+
+### Pozn.
+- PWA ikony (`pwa-192x192.png`, `pwa-512x512.png`, `maskable-icon-512x512.png`) **neměním** — používají oficiální kulaté logo klubu dle memory `branding/club-identity`. Pokud chceš i ty přegenerovat z tohoto symbolu, dej vědět.
+- Pro apple-touch-icon je nutné neprůhledné pozadí (jinak iOS dá černé). Použiju krémovou z brand palety.
+
+Mám pokračovat?
