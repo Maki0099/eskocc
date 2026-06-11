@@ -394,6 +394,9 @@ const Admin = () => {
                     <div className="text-2xl font-bold">
                       {users.filter((u) => u.clubAthlete).length}
                     </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Vlastní účet: {users.filter((u) => u.hasPersonalStrava).length}
+                    </p>
                   </CardContent>
                 </Card>
               </div>
