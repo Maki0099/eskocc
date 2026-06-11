@@ -495,6 +495,20 @@ const Admin = () => {
                                   </Tooltip>
                                 </TooltipProvider>
                               </TableCell>
+                              <TableCell className="hidden md:table-cell">
+                                {user.hasPersonalStrava ? (
+                                  <Badge
+                                    variant="secondary"
+                                    className="gap-1 bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20"
+                                    title="Uživatel má propojený svůj Strava účet"
+                                  >
+                                    <Activity className="w-3 h-3" />
+                                    Propojeno
+                                  </Badge>
+                                ) : (
+                                  <span className="text-muted-foreground text-sm">—</span>
+                                )}
+                              </TableCell>
                               <TableCell className="text-right">
                                 <div className="flex items-center justify-end gap-2">
                                   <Button
