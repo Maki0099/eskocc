@@ -49,6 +49,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Users, Shield, Loader2, Coffee, Target, Clock, KeyRound, Bell, Route, Sparkles, Trash2, Activity, Images, Mountain } from "lucide-react";
 import BeskydyRoutesAdmin from "@/components/admin/BeskydyRoutesAdmin";
+import VersionInfo from "@/components/admin/VersionInfo";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ClubStravaAdmin } from "@/components/admin/ClubStravaAdmin";
 import { toast } from "sonner";
@@ -231,12 +232,15 @@ const Admin = () => {
 
       <main className="flex-1 container mx-auto px-4 pt-24 pb-12">
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-center gap-3 mb-8">
-            <Shield className="w-8 h-8 text-primary" />
-            <div>
-              <h1 className="text-3xl font-bold">Admin Panel</h1>
-              <p className="text-muted-foreground">Správa uživatelů a kavárny</p>
+          <div className="flex items-start justify-between gap-4 mb-8 flex-wrap">
+            <div className="flex items-center gap-3">
+              <Shield className="w-8 h-8 text-primary" />
+              <div>
+                <h1 className="text-3xl font-bold">Admin Panel</h1>
+                <p className="text-muted-foreground">Správa uživatelů a kavárny</p>
+              </div>
             </div>
+            <VersionInfo />
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
