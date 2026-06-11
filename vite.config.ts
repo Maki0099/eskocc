@@ -1,11 +1,34 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
+import { execSync } from "child_process";
 import { componentTagger } from "lovable-tagger";
 import { VitePWA } from "vite-plugin-pwa";
 
+const getCommitHash = (): string => {
+  if (process.env.GITHUB_SHA) return process.env.GITHUB_SHA.slice(0, 7);
+  try {
+    return execSync("git rev-parse --short HEAD", { stdio: ["ignore", "pipe", "ignore"] })
+      .toString()
+      .trim();
+  } catch {
+    return "dev";
+  }
+};
+
+const getRepo = (): string => process.env.GITHUB_REPOSITORY || "";
+
+const COMMIT_HASH = getCommitHash();
+const BUILD_DATE = new Date().toISOString();
+const REPO = getRepo();
+
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
+  define: {
+    __APP_COMMIT_HASH__: JSON.stringify(COMMIT_HASH),
+    __APP_BUILD_DATE__: JSON.stringify(BUILD_DATE),
+    __APP_REPO__: JSON.stringify(REPO),
+  },
   server: {
     host: "::",
     port: 8080,
