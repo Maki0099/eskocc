@@ -26,9 +26,33 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Stamp deploy marker
+        run: |
+          mkdir -p public
+          {
+            echo "source: NEW-REPO"
+            echo "repo: ${{ github.repository }}"
+            echo "commit: ${{ github.sha }}"
+            echo "ref: ${{ github.ref }}"
+            echo "run_id: ${{ github.run_id }}"
+            echo "time: $(date -u +%FT%TZ)"
+          } > public/deploy-source.txt
+          cat public/deploy-source.txt
+
       - name: Build project
         run: npm run build
 
+      - name: Debug — list build output
+        run: |
+          echo "--- dist/ root ---"
+          ls -la dist/
+          echo "--- deploy-source.txt ---"
+          cat dist/deploy-source.txt || echo "MISSING"
+          echo "--- index.html head ---"
+          head -20 dist/index.html
+
+      # NOTE: dangerous-clean-slate is enabled to force a full re-upload.
+      # Remove it after the first successful full deploy to speed up subsequent runs.
       - name: Deploy via FTP to Active24
         uses: SamKirkland/FTP-Deploy-Action@v4.3.6
         with:
@@ -40,3 +64,4 @@ jobs:
           local-dir: ./dist/
           server-dir: ${{ secrets.SFTP_TARGET || '/' }}
           state-name: .ftp-deploy-sync-state-active24.json
+          dangerous-clean-slate: true
