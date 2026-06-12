@@ -120,8 +120,12 @@ export default defineConfig(({ mode }) => ({
         }
       },
       workbox: {
-        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MiB
-        globPatterns: ["**/*.{js,css,html,ico,png,jpg,jpeg,svg,woff,woff2}"],
+        cleanupOutdatedCaches: true,
+        clientsClaim: true,
+        skipWaiting: true,
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, // 3 MiB
+        // Precache only the app shell. Images/fonts go through runtimeCaching → rychlejší první instalace.
+        globPatterns: ["**/*.{js,css,html,woff,woff2}"],
         globIgnores: [
           "**/documents/**",
           "**/pwa-512x512.png",
