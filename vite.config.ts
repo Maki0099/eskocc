@@ -40,31 +40,37 @@ export default defineConfig(({ mode }) => ({
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "apple-touch-icon.png", "robots.txt"],
       manifest: {
-        name: "EskoCC - Cyklistický klub",
+        name: "ESKO.cc - Cyklistický klub Karolinka",
         short_name: "EskoCC",
-        description: "Cyklistický klub z Brna. Společné vyjížďky a komunita cyklistů.",
+        description: "Cyklistický klub z Karolinky v Beskydech. Společné vyjížďky, GPX trasy a komunita.",
+        lang: "cs",
+        dir: "ltr",
+        id: "/",
         theme_color: "#B7A99A",
         background_color: "#121212",
         display: "standalone",
         orientation: "portrait-primary",
-        start_url: "/",
+        start_url: "/?source=pwa",
         scope: "/",
-        categories: ["sports", "social"],
+        categories: ["sports", "social", "lifestyle"],
         icons: [
           {
             src: "/pwa-64x64.png",
             sizes: "64x64",
-            type: "image/png"
+            type: "image/png",
+            purpose: "any"
           },
           {
             src: "/pwa-192x192.png",
             sizes: "192x192",
-            type: "image/png"
+            type: "image/png",
+            purpose: "any"
           },
           {
             src: "/pwa-512x512.png",
             sizes: "512x512",
-            type: "image/png"
+            type: "image/png",
+            purpose: "any"
           },
           {
             src: "/maskable-icon-512x512.png",
