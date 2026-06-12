@@ -1,40 +1,30 @@
+import { lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
-import heroCycling from "@/assets/hero-cycling.jpg";
-import heroCyclingWebp from "@/assets/hero-cycling.webp";
-import logoRoundDark from "@/assets/logo-round-dark.png";
-import logoRound from "@/assets/logo-round.png";
 import { useParallax } from "@/hooks/useParallax";
 import { useAuth } from "@/contexts/AuthContext";
 import { ROUTES } from "@/lib/routes";
-import { useCountUp } from "@/hooks/useCountUp";
-import { useClubStats, formatStatNumber } from "@/hooks/useClubStats";
+
+const HeroStatsLine = lazy(() => import("./HeroStatsLine"));
+
+const HERO_WEBP = "/hero-cycling.webp";
+const HERO_JPG = "/hero-cycling.jpg";
+const LOGO_LIGHT = "/logo-round-dark.png";
+const LOGO_DARK = "/logo-round.png";
+
 const HeroSection = () => {
-  const {
-    ref: parallaxRef,
-    offset
-  } = useParallax({
-    speed: 0.4
-  });
-  const {
-    user
-  } = useAuth();
-  const { stats } = useClubStats();
-  const clubYtdKm = stats?.ytd_km ?? 0;
-  const {
-    count: animatedDistance
-  } = useCountUp(clubYtdKm, {
-    duration: 2500
-  });
+  const { ref: parallaxRef, offset } = useParallax({ speed: 0.4 });
+  const { user } = useAuth();
+
   return <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background with Parallax */}
       <div ref={parallaxRef} className="absolute inset-0 will-change-transform" style={{
       transform: `translateY(${offset}px) scale(1.1)`
     }}>
         <picture>
-          <source srcSet={heroCyclingWebp} type="image/webp" />
-          <img src={heroCycling} alt="Cyklisté při západu slunce" width={1600} height={900} fetchPriority="high" decoding="async" className="w-full h-full object-cover" />
+          <source srcSet={HERO_WEBP} type="image/webp" />
+          <img src={HERO_JPG} alt="Cyklisté při západu slunce" width={1600} height={900} fetchPriority="high" decoding="async" className="w-full h-full object-cover" />
         </picture>
         <div className="absolute inset-0 bg-background/60" />
       </div>
@@ -42,14 +32,14 @@ const HeroSection = () => {
       {/* Content */}
       <div className="relative z-10 container mx-auto px-4 pt-14">
         <div className="max-w-3xl mx-auto text-center">
-          <img src={logoRoundDark} alt="ESKO.cc logo" className="w-24 h-24 mx-auto mb-6 opacity-0 animate-fade-up animation-delay-100 dark:hidden" />
-          <img src={logoRound} alt="ESKO.cc logo" className="w-24 h-24 mx-auto mb-6 opacity-0 animate-fade-up animation-delay-100 hidden dark:block" />
-          <p className="text-sm text-muted-foreground mb-6 opacity-0 animate-fade-up animation-delay-150">
+          <img src={LOGO_LIGHT} alt="ESKO.cc logo" width={96} height={96} className="w-24 h-24 mx-auto mb-6 dark:hidden" />
+          <img src={LOGO_DARK} alt="ESKO.cc logo" width={96} height={96} className="w-24 h-24 mx-auto mb-6 hidden dark:block" />
+          <p className="text-sm text-muted-foreground mb-6">
             Cyklistický klub Esko.cc
           </p>
 
           <h1 className="sr-only">Cyklistický klub ESKO.cc Karolinka — Jezdi tak dlouho, jak zvládáš</h1>
-          <div aria-hidden="true" className="text-hero font-semibold mb-4 opacity-0 animate-fade-up animation-delay-200">
+          <div aria-hidden="true" className="text-hero font-semibold mb-4">
             Jezdi tak dlouho,
             <br />
             <span className="text-muted-foreground">nebo krátce jak zvládáš.</span>
@@ -57,19 +47,19 @@ const HeroSection = () => {
             <span className="text-gradient">Ale jezdi.</span>
           </div>
 
-          <p className="text-xs text-muted-foreground mb-10 opacity-0 animate-fade-up animation-delay-250">
+          <p className="text-xs text-muted-foreground mb-10">
             — Eddy Merckx
           </p>
 
-          {stats && stats.ytd_km > 0 && <p className="text-3xl font-bold mb-6 opacity-0 animate-fade-up animation-delay-300 text-muted-foreground">
-              <span className="tabular-nums">{formatStatNumber(animatedDistance)}</span> km najezdil klub letos
-            </p>}
+          <Suspense fallback={null}>
+            <HeroStatsLine />
+          </Suspense>
 
-          <p className="text-lg text-muted-foreground mb-10 max-w-xl mx-auto opacity-0 animate-fade-up animation-delay-300">
+          <p className="text-lg text-muted-foreground mb-10 max-w-xl mx-auto">
             {user ? "Kam to dnes natočíš?" : "Přidej se k naší komunitě cyklistů. Společné vyjížďky, nezapomenutelné zážitky."}
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center opacity-0 animate-fade-up animation-delay-400">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
             {user ? <>
                 <Link to={ROUTES.STATISTICS}>
                   <Button variant="apple" size="lg" className="group">
