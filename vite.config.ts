@@ -116,7 +116,13 @@ export default defineConfig(({ mode }) => ({
       workbox: {
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MiB
         globPatterns: ["**/*.{js,css,html,ico,png,jpg,jpeg,svg,woff,woff2}"],
-        globIgnores: ["**/documents/**"],
+        globIgnores: [
+          "**/documents/**",
+          "**/pwa-512x512.png",
+          "**/maskable-icon-512x512.png",
+          "**/splash-*.png",
+          "**/hero-cycling.*",
+        ],
         importScripts: ['/sw-push.js'],
         runtimeCaching: [
           // Supabase API calls - Network first with cache fallback
