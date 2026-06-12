@@ -3,18 +3,15 @@ import { toast } from "sonner";
 import { useRegisterSW } from "virtual:pwa-register/react";
 
 /**
- * Silent auto-updater.
+ * Detekce nové verze PWA + uživatelské hlášení s tlačítkem "Aktualizovat".
  *
- * After publish:
- *  - SW detects a new build (immediately + on focus/visibility + hourly)
- *  - Runtime caches are wiped (Workbox precache is managed by the SW itself)
- *  - The waiting SW is activated (skipWaiting + clientsClaim)
- *  - All open tabs/windows reload so nobody stays on stale JS/CSS
- *
- * No user interaction required.
+ *  - SW kontroluje novou verzi (po registraci + při focus/visibility + každou hodinu)
+ *  - Když je dostupná nová verze, zobrazí se trvalý toast s tlačítkem
+ *  - Po kliknutí: vyčistí runtime cache, aktivuje nový SW a načte stránku
  */
 const UpdatePrompt = () => {
   const cleanupRef = useRef<(() => void) | null>(null);
+  const toastShownRef = useRef(false);
   const reloadingRef = useRef(false);
 
   const {
@@ -25,15 +22,12 @@ const UpdatePrompt = () => {
       console.log("Service Worker registered:", swUrl);
       if (!r) return;
 
-      // (a) Check immediately after registration
       r.update().catch(() => {});
 
-      // (b) Periodic check every 60 minutes (battery friendly)
       const interval = setInterval(() => {
         r.update().catch(() => {});
       }, 60 * 60 * 1000);
 
-      // (c) Check when user returns to the app (key for installed PWA)
       const onVisible = () => {
         if (document.visibilityState === "visible") {
           r.update().catch(() => {});
@@ -62,13 +56,13 @@ const UpdatePrompt = () => {
     };
   }, []);
 
-  useEffect(() => {
-    if (!needRefresh || reloadingRef.current) return;
+  const applyUpdate = async () => {
+    if (reloadingRef.current) return;
     reloadingRef.current = true;
 
-    void (async () => {
-      // 1. Nuke runtime caches so user sees fresh data after reload.
-      //    Workbox precache is managed by the SW itself — leave it alone.
+    const loadingId = toast.loading("Načítám novou verzi…");
+
+    try {
       if ("caches" in window) {
         try {
           const keys = await caches.keys();
@@ -82,8 +76,6 @@ const UpdatePrompt = () => {
         }
       }
 
-      // 2. Once the new SW takes control, reload current tab and ask
-      //    other open tabs/windows to reload too.
       if ("serviceWorker" in navigator) {
         const onControllerChange = () => {
           navigator.serviceWorker.controller?.postMessage({
@@ -98,13 +90,37 @@ const UpdatePrompt = () => {
         );
       }
 
-      // Subtle, non-blocking notice — UI reloads right after.
-      toast.success("Načítám novou verzi…", { duration: 1500 });
-
-      // 3. Activate the waiting SW (skipWaiting + clientsClaim).
       await updateServiceWorker(true);
-    })();
-  }, [needRefresh, updateServiceWorker]);
+
+      // Fallback: pokud controllerchange neproběhne do 3 s, načti ručně
+      setTimeout(() => {
+        toast.dismiss(loadingId);
+        window.location.reload();
+      }, 3000);
+    } catch (err) {
+      console.error("Update failed:", err);
+      toast.dismiss(loadingId);
+      toast.error("Aktualizace se nezdařila. Zkus to prosím znovu.");
+      reloadingRef.current = false;
+    }
+  };
+
+  useEffect(() => {
+    if (!needRefresh || toastShownRef.current || reloadingRef.current) return;
+    toastShownRef.current = true;
+
+    toast("Je dostupná nová verze", {
+      description: "Aktualizuj pro načtení nejnovějších změn.",
+      duration: Infinity,
+      action: {
+        label: "Aktualizovat",
+        onClick: () => {
+          void applyUpdate();
+        },
+      },
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [needRefresh]);
 
   return null;
 };
