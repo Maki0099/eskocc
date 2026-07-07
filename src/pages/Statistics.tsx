@@ -11,22 +11,9 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import MemberOnlyContent from "@/components/MemberOnlyContent";
 import ClubSummaryStats from "@/components/statistics/ClubSummaryStats";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { StatisticsPageSkeleton } from "@/components/statistics/StatisticsSkeletons";
-import {
-  Target,
-  Trophy,
-  Medal,
-  Award,
-  Users,
-  Bike,
-  AlertCircle,
-  CheckCircle2,
-  HelpCircle,
-} from "lucide-react";
+import { AlertCircle, CheckCircle2, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { AppRole } from "@/lib/types";
 import type { ChallengeSettings } from "@/lib/types";
@@ -65,13 +52,17 @@ const Statistics = () => {
       const timer = setTimeout(() => handleStartTour(), 500);
       return () => clearTimeout(timer);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, isMember]);
 
   const currentYear = new Date().getFullYear();
 
-  const getTargetForAgeCategory = (ageCategory: string, settings: ChallengeSettings): number => {
-    if (ageCategory === 'over_60') return settings.target_over_60;
-    if (ageCategory === 'under_60') return settings.target_under_60;
+  const getTargetForAgeCategory = (
+    ageCategory: string,
+    settings: ChallengeSettings
+  ): number => {
+    if (ageCategory === "over_60") return settings.target_over_60;
+    if (ageCategory === "under_60") return settings.target_under_60;
     return settings.target_under_40;
   };
 
@@ -89,8 +80,9 @@ const Statistics = () => {
         const typedSettings = settingsData as ChallengeSettings | null;
         setSettings(typedSettings);
 
-        const { data: memberData, error: memberError } = await supabase
-          .rpc("get_member_statistics");
+        const { data: memberData, error: memberError } = await supabase.rpc(
+          "get_member_statistics"
+        );
 
         if (memberError) throw memberError;
 
@@ -102,7 +94,9 @@ const Statistics = () => {
 
         const memberStats: MemberStats[] = (memberData || []).map((profile: any) => {
           const role = roles?.find((r) => r.user_id === profile.id);
-          const target = typedSettings ? getTargetForAgeCategory(profile.age_category, typedSettings) : 0;
+          const target = typedSettings
+            ? getTargetForAgeCategory(profile.age_category, typedSettings)
+            : 0;
           const ytd_distance = profile.strava_ytd_distance || 0;
 
           return {
@@ -132,57 +126,27 @@ const Statistics = () => {
     fetchData();
   }, [currentYear]);
 
-  const getRankIcon = (index: number) => {
-    switch (index) {
-      case 0:
-        return (
-          <div className="w-8 h-8 rounded-full bg-yellow-500/20 flex items-center justify-center">
-            <Trophy className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
-          </div>
-        );
-      case 1:
-        return (
-          <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-            <Medal className="w-4 h-4 text-muted-foreground" />
-          </div>
-        );
-      case 2:
-        return (
-          <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center">
-            <Award className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-          </div>
-        );
-      default:
-        return (
-          <div className="w-8 h-8 rounded-full bg-muted/50 flex items-center justify-center">
-            <span className="text-sm font-medium text-muted-foreground">{index + 1}</span>
-          </div>
-        );
-    }
-  };
-
   const getAgeCategoryLabel = (ageCategory: string): string => {
-    if (ageCategory === 'over_60') return "Nad 60";
-    if (ageCategory === 'under_60') return "40–60";
+    if (ageCategory === "over_60") return "Nad 60";
+    if (ageCategory === "under_60") return "40–60";
     return "Pod 40";
   };
 
+  const heroEyebrow = `Sezónní cíl klubu ${currentYear}`;
+
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col bg-background">
+      <div className="min-h-dvh flex flex-col bg-background">
         <Header />
-        <main className="flex-1 container mx-auto px-4 pt-24 pb-12">
-          <div className="max-w-4xl mx-auto space-y-8">
-            <div className="text-center space-y-2">
-              <div className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary mb-4">
-                <Target className="w-4 h-4" />
-                <span className="text-sm font-medium">Výzva {currentYear}</span>
-              </div>
-              <h1 className="text-display font-bold">Statistiky klubu</h1>
-              <p className="text-lg text-muted-foreground max-w-md mx-auto">
-                Sleduj pokrok členů a celého klubu ve splnění ročního cíle
-              </p>
-            </div>
+        <main className="flex-1 container mx-auto px-4 pt-24 pb-16">
+          <div className="max-w-5xl mx-auto space-y-16">
+            <header className="text-center space-y-4">
+              <span className="block text-accent text-[10px] md:text-xs font-bold tracking-[0.2em] uppercase">
+                {heroEyebrow}
+              </span>
+              <h1 className="sr-only">Statistiky klubu {currentYear}</h1>
+              <div className="h-20 md:h-32 bg-warm/60 rounded-sm animate-pulse" />
+            </header>
             <StatisticsPageSkeleton />
           </div>
         </main>
@@ -200,7 +164,7 @@ const Statistics = () => {
   const clubCompleted = clubProgress >= 100;
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-dvh flex flex-col bg-background">
       <Seo
         title="Statistiky klubu | ESKO.cc"
         description="Roční přehled najetých kilometrů, převýšení a aktivit členů cyklistického klubu ESKO.cc z Karolinky. Data ze Stravy v reálném čase."
@@ -208,255 +172,348 @@ const Statistics = () => {
       />
       <Header />
 
-      <main className="flex-1 container mx-auto px-4 pt-24 pb-12">
-        <div className="max-w-4xl mx-auto space-y-8">
-          <div className="text-center space-y-2" data-tour="statistics-header">
-            <div className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary mb-4">
-              <Target className="w-4 h-4" />
-              <span className="text-sm font-medium">Výzva {currentYear}</span>
-            </div>
-            <div className="flex items-center justify-center gap-2">
-              <h1 className="text-display font-bold">Statistiky klubu</h1>
-              {isMember && !isTourCompleted("statistics") && (
-                <Button variant="ghost" size="icon" onClick={handleStartTour} className="shrink-0" aria-label="Nápověda k statistikám">
-                  <HelpCircle className="w-5 h-5" />
-                </Button>
-              )}
-            </div>
-            <p className="text-lg text-muted-foreground max-w-md mx-auto">
-              Data jsou počítána z aktivit v klubu ESKO.cc na Stravě
-            </p>
-          </div>
+      <main className="flex-1 container mx-auto px-4 pt-24 pb-16">
+        <div className="max-w-5xl mx-auto">
+          <h1 className="sr-only">Statistiky klubu {currentYear}</h1>
 
           {!isMember && !roleLoading ? (
-            <MemberOnlyContent
-              title="Statistiky pro členy"
-              description="Pro zobrazení statistik a žebříčku členů se staň členem klubu."
-            />
+            <div className="space-y-8">
+              <header className="text-center space-y-3" data-tour="statistics-header">
+                <span className="block text-accent text-[10px] md:text-xs font-bold tracking-[0.2em] uppercase">
+                  {heroEyebrow}
+                </span>
+                <p className="font-display text-3xl md:text-5xl font-bold text-foreground tracking-tight">
+                  Statistiky klubu
+                </p>
+                <p className="text-muted-foreground max-w-md mx-auto">
+                  Data jsou počítána z aktivit v klubu ESKO.cc na Stravě
+                </p>
+              </header>
+              <MemberOnlyContent
+                title="Statistiky pro členy"
+                description="Pro zobrazení statistik a žebříčku členů se staň členem klubu."
+              />
+            </div>
           ) : error ? (
-            <Card className="border-destructive/20">
-              <CardContent className="py-12 text-center">
-                <AlertCircle className="w-12 h-12 mx-auto mb-4 text-destructive" />
-                <p className="text-muted-foreground">{error}</p>
-              </CardContent>
-            </Card>
+            <div className="border border-destructive/30 bg-destructive/5 py-16 text-center rounded-sm">
+              <AlertCircle className="w-10 h-10 mx-auto mb-4 text-destructive" />
+              <p className="text-muted-foreground">{error}</p>
+            </div>
           ) : (
-            <div className="space-y-6">
-              <div className="flex justify-end">
-                <StatisticsExportButton targetRef={exportRef} year={currentYear} />
+            <div className="space-y-16">
+              <div className="flex justify-end -mb-8">
+                <div className="flex items-center gap-1">
+                  {isMember && !isTourCompleted("statistics") && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleStartTour}
+                      className="gap-2 font-display uppercase tracking-[0.18em] text-xs text-accent hover:text-foreground hover:bg-warm"
+                      aria-label="Nápověda k statistikám"
+                    >
+                      <HelpCircle className="w-3.5 h-3.5" />
+                      Nápověda
+                    </Button>
+                  )}
+                  <StatisticsExportButton targetRef={exportRef} year={currentYear} />
+                </div>
               </div>
-              <div ref={exportRef} className="space-y-6 bg-background">
-              {settings && (
-                <Card className="overflow-hidden border-0 shadow-lg animate-fade-up" data-tour="club-goal">
-                  <div className="bg-gradient-to-br from-accent to-secondary p-6 md:p-8 text-accent-foreground">
-                    <div className="flex items-center gap-3 mb-6">
-                      <div className="w-12 h-12 rounded-full bg-accent-foreground/20 flex items-center justify-center">
-                        <Users className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <h2 className="text-xl font-semibold">Klubový cíl</h2>
-                        <p className="text-accent-foreground/80 text-sm">Společně za {settings.club_total_target.toLocaleString()} km</p>
-                      </div>
-                    </div>
 
-                    <div className="space-y-4">
-                      <div className="flex items-baseline justify-between">
-                        <span className="text-4xl md:text-5xl font-bold tracking-tight">
-                          {clubTotal.toLocaleString()}
-                          <span className="text-lg font-normal ml-1 opacity-80">km</span>
-                        </span>
-                        <span className="text-lg opacity-80">
-                          z {settings.club_total_target.toLocaleString()} km
-                        </span>
-                      </div>
+              <div ref={exportRef} className="space-y-16 bg-background">
+                {/* HERO: Club Goal */}
+                {settings && (
+                  <section
+                    className="text-center space-y-8 animate-fade-up"
+                    data-tour="club-goal"
+                    aria-labelledby="club-goal-heading"
+                  >
+                    <header className="space-y-3">
+                      <span className="block text-accent text-[10px] md:text-xs font-bold tracking-[0.2em] uppercase">
+                        {heroEyebrow}
+                      </span>
+                      <p
+                        id="club-goal-heading"
+                        className="font-display font-bold text-foreground tracking-tight text-6xl md:text-8xl leading-none tabular-nums"
+                      >
+                        {Math.round(clubProgress)}%
+                      </p>
+                      <p className="sr-only">
+                        Klubový cíl: {clubTotal.toLocaleString()} km z{" "}
+                        {settings.club_total_target.toLocaleString()} km
+                      </p>
+                    </header>
 
-                      <div className="h-3 bg-accent-foreground/20 rounded-full overflow-hidden">
+                    <div className="max-w-2xl mx-auto space-y-5">
+                      <div
+                        className="w-full h-3 bg-warm rounded-full overflow-hidden"
+                        role="progressbar"
+                        aria-valuenow={Math.round(clubProgress)}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-label={`Klubový cíl: ${Math.round(clubProgress)} %`}
+                      >
                         <div
-                          className={`h-full rounded-full transition-all duration-500 ${
-                            clubCompleted ? 'bg-green-400' : 'bg-accent-foreground'
+                          className={`h-full rounded-full transition-all duration-700 ${
+                            clubCompleted ? "bg-success" : "bg-primary"
                           }`}
                           style={{ width: `${clubProgress}%` }}
                         />
                       </div>
-
-                      <div className="flex justify-between text-sm">
-                        <span className="flex items-center gap-1.5">
+                      <div className="flex justify-between items-end">
+                        <div className="text-left">
+                          <p className="text-accent text-[10px] md:text-xs uppercase tracking-[0.18em] font-medium">
+                            Aktuálně
+                          </p>
+                          <p className="font-display text-xl md:text-2xl font-semibold text-foreground tabular-nums">
+                            {clubTotal.toLocaleString()} km
+                          </p>
+                        </div>
+                        <div className="text-center hidden md:block">
                           {clubCompleted ? (
-                            <>
+                            <span className="inline-flex items-center gap-1.5 text-success font-medium text-sm">
                               <CheckCircle2 className="w-4 h-4" />
-                              Cíl splněn!
-                            </>
+                              Cíl splněn
+                            </span>
                           ) : (
-                            <>{Math.round(clubProgress)}% splněno</>
+                            <span className="text-muted-foreground text-sm">
+                              Zbývá {clubRemaining.toLocaleString()} km
+                            </span>
                           )}
-                        </span>
-                        <span className="opacity-80">
-                          Zbývá {clubRemaining.toLocaleString()} km
-                        </span>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-accent text-[10px] md:text-xs uppercase tracking-[0.18em] font-medium">
+                            Cíl
+                          </p>
+                          <p className="font-display text-xl md:text-2xl font-semibold text-foreground tabular-nums">
+                            {settings.club_total_target.toLocaleString()} km
+                          </p>
+                        </div>
                       </div>
                     </div>
+                  </section>
+                )}
+
+                {/* Age Category Targets */}
+                {settings && (
+                  <section
+                    className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6"
+                    data-tour="age-categories"
+                    aria-label="Kilometrové cíle podle věkových kategorií"
+                  >
+                    {[
+                      { label: "Pod 40 let", target: settings.target_under_40, delay: 100 },
+                      { label: "40–60 let", target: settings.target_under_60, delay: 200 },
+                      { label: "Nad 60 let", target: settings.target_over_60, delay: 300 },
+                    ].map((cat) => (
+                      <div
+                        key={cat.label}
+                        className="bg-warm p-6 md:p-8 rounded-sm space-y-5 animate-fade-up"
+                        style={{ animationDelay: `${cat.delay}ms` }}
+                      >
+                        <h3 className="font-display text-sm md:text-base font-bold uppercase tracking-[0.14em] text-foreground">
+                          {cat.label}
+                        </h3>
+                        <div className="space-y-3">
+                          <p className="font-display text-3xl md:text-4xl font-bold text-foreground tabular-nums">
+                            {cat.target.toLocaleString()}
+                            <span className="text-base md:text-lg font-normal text-accent ml-1.5">
+                              km
+                            </span>
+                          </p>
+                          <div className="w-full h-[3px] bg-background rounded-full overflow-hidden">
+                            <div className="h-full bg-secondary w-full" />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </section>
+                )}
+
+                {/* Summary Tiles */}
+                <ClubSummaryStats members={members} clubTotal={clubTotal} />
+
+                {/* Leaderboard */}
+                <section
+                  className="space-y-8 animate-fade-up"
+                  data-tour="leaderboard"
+                  aria-labelledby="leaderboard-heading"
+                >
+                  <div className="flex justify-between items-baseline border-b border-warm pb-4">
+                    <h2
+                      id="leaderboard-heading"
+                      className="font-display text-2xl md:text-3xl font-bold text-foreground tracking-tight"
+                    >
+                      Žebříček členů
+                    </h2>
+                    <span className="text-accent text-[10px] md:text-xs uppercase tracking-[0.18em] font-medium">
+                      YTD {currentYear}
+                    </span>
                   </div>
-                </Card>
-              )}
 
-              {settings && (
-                <div className="grid gap-4 md:grid-cols-3" data-tour="age-categories">
-                  <Card className="text-center animate-fade-up animation-delay-100">
-                    <CardContent className="pt-6 pb-5">
-                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
-                        <Bike className="w-5 h-5 text-primary" />
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-1">Pod 40 let</p>
-                      <p className="text-2xl font-bold">{settings.target_under_40.toLocaleString()} km</p>
-                    </CardContent>
-                  </Card>
-                  <Card className="text-center animate-fade-up animation-delay-200">
-                    <CardContent className="pt-6 pb-5">
-                      <div className="w-10 h-10 rounded-full bg-secondary/20 flex items-center justify-center mx-auto mb-3">
-                        <Bike className="w-5 h-5 text-secondary" />
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-1">40–60 let</p>
-                      <p className="text-2xl font-bold">{settings.target_under_60.toLocaleString()} km</p>
-                    </CardContent>
-                  </Card>
-                  <Card className="text-center animate-fade-up animation-delay-300">
-                    <CardContent className="pt-6 pb-5">
-                      <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-3">
-                        <Bike className="w-5 h-5 text-accent" />
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-1">Nad 60 let</p>
-                      <p className="text-2xl font-bold">{settings.target_over_60.toLocaleString()} km</p>
-                    </CardContent>
-                  </Card>
-                </div>
-              )}
-
-              <ClubSummaryStats members={members} clubTotal={clubTotal} />
-
-              <Card className="animate-fade-up animation-delay-400" data-tour="leaderboard">
-                <CardHeader className="pb-4">
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <Trophy className="w-5 h-5 text-primary" />
-                    Pořadí členů
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="px-4 pb-4">
                   {members.length === 0 ? (
-                    <p className="text-center text-muted-foreground py-8">
+                    <p className="text-center text-muted-foreground py-12">
                       Zatím nejsou k dispozici žádná data
                     </p>
                   ) : (
-                    <div className="space-y-2">
+                    <ol className="space-y-px bg-warm/60 list-none">
                       {members.map((member, index) => {
-                        const progress = member.target > 0
-                          ? Math.min((member.ytd_distance / member.target) * 100, 100)
-                          : 0;
-                        const isCompleted = member.ytd_distance >= member.target && member.target > 0;
+                        const progress =
+                          member.target > 0
+                            ? Math.min((member.ytd_distance / member.target) * 100, 100)
+                            : 0;
+                        const isCompleted =
+                          member.ytd_distance >= member.target && member.target > 0;
                         const isCurrentUser = user?.id === member.id;
+                        const displayName =
+                          member.full_name || member.nickname || "Bez jména";
+                        const ariaLabel = `${displayName}: ${Math.round(
+                          progress
+                        )} % z ${member.target.toLocaleString()} km`;
 
                         return (
-                          <div
+                          <li
                             key={member.id}
-                            className={`p-3 md:p-4 rounded-xl transition-all animate-fade-up ${
-                              isCurrentUser ? "bg-primary/10 ring-1 ring-primary/20" : "bg-card hover:bg-muted/50"
+                            className={`bg-background py-5 md:py-6 px-4 md:px-5 flex items-center gap-4 md:gap-6 transition-colors hover:bg-warm/50 animate-fade-up ${
+                              isCurrentUser ? "ring-1 ring-primary/40 ring-inset" : ""
                             }`}
-                            style={{ animationDelay: `${(index + 5) * 50}ms` }}
+                            style={{ animationDelay: `${(index + 4) * 40}ms` }}
                           >
-                            <div className="flex items-center gap-3 md:gap-4">
-                              <div className="flex-shrink-0">{getRankIcon(index)}</div>
+                            <span
+                              className="font-display font-bold text-base md:text-lg text-accent tabular-nums w-8 shrink-0"
+                              aria-hidden="true"
+                            >
+                              {String(index + 1).padStart(2, "0")}
+                            </span>
 
-                              <Link
-                                to={`/member/${member.id}`}
-                                className="flex items-center gap-3 min-w-0 flex-1 md:flex-none md:w-56 md:shrink-0 md:basis-56 hover:opacity-80 transition-opacity"
+                            <Link
+                              to={`/member/${member.id}`}
+                              className="flex items-center gap-3 md:gap-4 min-w-0 flex-1 md:flex-none md:w-64 md:shrink-0 hover:opacity-80 transition-opacity"
+                            >
+                              <Avatar className="w-10 h-10 shrink-0">
+                                <AvatarImage
+                                  src={member.avatar_url || undefined}
+                                  alt={displayName}
+                                />
+                                <AvatarFallback className="bg-warm text-accent text-sm font-display">
+                                  {getInitials(member.full_name, member.nickname)}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="min-w-0 flex-1">
+                                <p className="font-display font-bold text-foreground truncate">
+                                  {displayName}
+                                  {isCurrentUser && (
+                                    <span className="text-xs text-accent ml-1.5 font-sans font-normal">
+                                      (ty)
+                                    </span>
+                                  )}
+                                </p>
+                                <p className="text-xs text-muted-foreground uppercase tracking-[0.12em]">
+                                  {getAgeCategoryLabel(member.age_category)}
+                                </p>
+                              </div>
+                            </Link>
+
+                            <div className="flex-1 min-w-0 hidden md:flex flex-col gap-2">
+                              <div className="flex items-baseline justify-between gap-3 text-sm">
+                                <span className="font-display font-semibold text-foreground tabular-nums">
+                                  {member.ytd_distance.toLocaleString()} km
+                                </span>
+                                <span className="text-muted-foreground tabular-nums">
+                                  / {member.target.toLocaleString()} km
+                                </span>
+                                <span
+                                  className={`ml-auto inline-flex items-center gap-1 font-display font-semibold tabular-nums ${
+                                    isCompleted ? "text-success" : "text-foreground"
+                                  }`}
+                                >
+                                  {isCompleted && (
+                                    <CheckCircle2
+                                      className="w-3.5 h-3.5"
+                                      aria-label="Splněno"
+                                    />
+                                  )}
+                                  {Math.round(progress)}%
+                                </span>
+                              </div>
+                              <div
+                                className="w-full h-1 bg-warm rounded-full overflow-hidden"
+                                role="progressbar"
+                                aria-valuenow={Math.round(progress)}
+                                aria-valuemin={0}
+                                aria-valuemax={100}
+                                aria-label={ariaLabel}
                               >
-                                <Avatar className="w-10 h-10 border-2 border-background shadow-sm shrink-0">
-                                  <AvatarImage src={member.avatar_url || undefined} />
-                                  <AvatarFallback className="bg-muted text-muted-foreground text-sm">
-                                    {getInitials(member.full_name, member.nickname)}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <div className="min-w-0 flex-1">
-                                  <p className="font-medium truncate">
-                                    {member.full_name || member.nickname || "Bez jména"}
-                                    {isCurrentUser && (
-                                      <span className="text-xs text-muted-foreground ml-1.5">(ty)</span>
-                                    )}
-                                  </p>
-                                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                    <span>{getAgeCategoryLabel(member.age_category)}</span>
-                                  </div>
-                                </div>
-                              </Link>
-
-                              <div className="flex-1 min-w-0 hidden md:block">
-                                <div className="flex items-baseline justify-between gap-3 text-sm mb-1.5">
-                                  <span className="font-semibold">
-                                    {member.ytd_distance.toLocaleString()} km
-                                  </span>
-                                  <span className="text-muted-foreground">
-                                    / {member.target.toLocaleString()} km
-                                  </span>
-                                  <span
-                                    className={`ml-auto font-medium inline-flex items-center gap-1 ${
-                                      isCompleted ? "text-green-600 dark:text-green-400" : ""
-                                    }`}
-                                  >
-                                    {isCompleted && <CheckCircle2 className="w-3.5 h-3.5" />}
-                                    {Math.round(progress)}%
-                                  </span>
-                                </div>
-                                <Progress
-                                  value={progress}
-                                  className={`h-3 bg-muted border border-border/60 ${isCompleted ? '[&>div]:bg-green-600' : '[&>div]:bg-primary'}`}
+                                <div
+                                  className={`h-full rounded-full transition-all duration-700 ${
+                                    isCompleted ? "bg-success" : "bg-accent"
+                                  }`}
+                                  style={{ width: `${progress}%` }}
                                 />
                               </div>
+                            </div>
 
-                              <div className="flex-shrink-0 text-right ml-auto md:hidden">
-                                {isCompleted ? (
-                                  <Badge className="bg-green-500/15 text-green-600 dark:text-green-400 hover:bg-green-500/20 border-0">
-                                    <CheckCircle2 className="w-3 h-3 mr-1" />
-                                    {Math.round(progress)}%
-                                  </Badge>
-                                ) : (
-                                  <div className="text-right">
-                                    <span className="text-sm font-medium">{Math.round(progress)}%</span>
-                                    <p className="text-xs text-muted-foreground">
-                                      {member.ytd_distance.toLocaleString()} km
-                                    </p>
-                                  </div>
+                            <div className="md:hidden flex flex-col items-end gap-1 shrink-0">
+                              <span
+                                className={`font-display font-semibold tabular-nums inline-flex items-center gap-1 ${
+                                  isCompleted ? "text-success" : "text-foreground"
+                                }`}
+                              >
+                                {isCompleted && (
+                                  <CheckCircle2 className="w-3.5 h-3.5" aria-label="Splněno" />
                                 )}
+                                {Math.round(progress)}%
+                              </span>
+                              <span className="text-xs text-muted-foreground tabular-nums">
+                                {member.ytd_distance.toLocaleString()} km
+                              </span>
+                            </div>
+
+                            <div className="md:hidden w-full basis-full order-last">
+                              <div
+                                className="w-full h-1 bg-warm rounded-full overflow-hidden mt-3"
+                                role="progressbar"
+                                aria-valuenow={Math.round(progress)}
+                                aria-valuemin={0}
+                                aria-valuemax={100}
+                                aria-label={ariaLabel}
+                              >
+                                <div
+                                  className={`h-full rounded-full transition-all duration-700 ${
+                                    isCompleted ? "bg-success" : "bg-accent"
+                                  }`}
+                                  style={{ width: `${progress}%` }}
+                                />
                               </div>
                             </div>
-
-                            <div className="mt-3 md:hidden">
-                              <Progress
-                                value={progress}
-                                className={`h-2 bg-muted border border-border/60 ${isCompleted ? '[&>div]:bg-green-600' : '[&>div]:bg-primary'}`}
-                              />
-                            </div>
-
-                          </div>
+                          </li>
                         );
                       })}
-                    </div>
+                    </ol>
                   )}
-                </CardContent>
-              </Card>
+                </section>
 
-              <div
-                data-export-only
-                className="items-center justify-between gap-3 pt-4 border-t border-border/60 text-xs text-muted-foreground"
-              >
-                <span className="font-semibold">ESKO.cc — Statistiky klubu {currentYear}</span>
-                <span>{new Date().toLocaleDateString("cs-CZ")}</span>
-              </div>
+                <div
+                  data-export-only
+                  className="items-center justify-between gap-3 pt-6 border-t border-warm text-[10px] uppercase tracking-[0.18em] text-accent"
+                >
+                  <span className="font-display font-bold">
+                    ESKO.cc — Statistiky klubu {currentYear}
+                  </span>
+                  <span className="tabular-nums">
+                    {new Date().toLocaleDateString("cs-CZ")}
+                  </span>
+                </div>
               </div>
             </div>
           )}
         </div>
       </main>
       <Footer />
-      <TourProvider tourId="statistics" run={tourRunning} onFinish={() => setTourRunning(false)} />
+      <TourProvider
+        tourId="statistics"
+        run={tourRunning}
+        onFinish={() => setTourRunning(false)}
+      />
     </div>
   );
 };
