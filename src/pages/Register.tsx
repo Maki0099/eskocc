@@ -10,6 +10,7 @@ import logoDark from "@/assets/logo-horizontal-dark.png";
 import RegistrationSteps from "@/components/register/RegistrationSteps";
 import PersonalDetailsStep from "@/components/register/PersonalDetailsStep";
 import TermsAndConditions from "@/components/register/TermsAndConditions";
+import { toTitleCase } from "@/lib/utils";
 
 const registerSchema = z.object({
   fullName: z.string().min(2, "Jméno musí mít alespoň 2 znaky").max(100),
