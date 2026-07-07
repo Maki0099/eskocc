@@ -27,6 +27,14 @@ export default {
   				'Noto Sans',
   				'sans-serif'
   			],
+  			display: [
+  				'Space Grotesk',
+  				'ui-sans-serif',
+  				'system-ui',
+  				'-apple-system',
+  				'BlinkMacSystemFont',
+  				'sans-serif'
+  			],
   			serif: [
   				'Crimson Pro',
   				'ui-serif',
@@ -96,6 +104,14 @@ export default {
   			accent: {
   				DEFAULT: 'hsl(var(--accent))',
   				foreground: 'hsl(var(--accent-foreground))'
+  			},
+  			warm: {
+  				DEFAULT: 'hsl(var(--warm))',
+  				foreground: 'hsl(var(--warm-foreground))'
+  			},
+  			success: {
+  				DEFAULT: 'hsl(var(--success))',
+  				foreground: 'hsl(var(--success-foreground))'
   			},
   			popover: {
   				DEFAULT: 'hsl(var(--popover))',
