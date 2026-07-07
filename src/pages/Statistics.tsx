@@ -1,5 +1,6 @@
 import Seo from "@/components/Seo";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import StatisticsExportButton from "@/components/statistics/StatisticsExportButton";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -52,6 +53,7 @@ const Statistics = () => {
   const [members, setMembers] = useState<MemberStats[]>([]);
   const [clubTotal, setClubTotal] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const exportRef = useRef<HTMLDivElement>(null);
 
   const handleStartTour = () => {
     setTourRunning(true);
@@ -240,6 +242,10 @@ const Statistics = () => {
             </Card>
           ) : (
             <div className="space-y-6">
+              <div className="flex justify-end">
+                <StatisticsExportButton targetRef={exportRef} year={currentYear} />
+              </div>
+              <div ref={exportRef} className="space-y-6 bg-background">
               {settings && (
                 <Card className="overflow-hidden border-0 shadow-lg animate-fade-up" data-tour="club-goal">
                   <div className="bg-gradient-to-br from-accent to-secondary p-6 md:p-8 text-accent-foreground">
@@ -436,6 +442,15 @@ const Statistics = () => {
                   )}
                 </CardContent>
               </Card>
+
+              <div
+                data-export-only
+                className="items-center justify-between gap-3 pt-4 border-t border-border/60 text-xs text-muted-foreground"
+              >
+                <span className="font-semibold">ESKO.cc — Statistiky klubu {currentYear}</span>
+                <span>{new Date().toLocaleDateString("cs-CZ")}</span>
+              </div>
+              </div>
             </div>
           )}
         </div>

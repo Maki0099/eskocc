@@ -301,3 +301,6 @@
 .animation-delay-600 { animation-delay: 0.6s; transition-delay: 0.6s; }
 .animation-delay-700 { animation-delay: 0.7s; transition-delay: 0.7s; }
 .animation-delay-800 { animation-delay: 0.8s; transition-delay: 0.8s; }
+/* Statistics export mode */
+[data-export-only] { display: none; }
+html[data-exporting="true"] [data-export-only] { display: flex; }
