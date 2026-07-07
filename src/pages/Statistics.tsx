@@ -361,9 +361,9 @@ const Statistics = () => {
 
                               <Link
                                 to={`/member/${member.id}`}
-                                className="flex items-center gap-3 min-w-0 flex-shrink-0 hover:opacity-80 transition-opacity"
+                                className="flex items-center gap-3 min-w-0 w-full md:w-56 md:flex-shrink-0 hover:opacity-80 transition-opacity"
                               >
-                                <Avatar className="w-10 h-10 border-2 border-background shadow-sm">
+                                <Avatar className="w-10 h-10 border-2 border-background shadow-sm flex-shrink-0">
                                   <AvatarImage src={member.avatar_url || undefined} />
                                   <AvatarFallback className="bg-muted text-muted-foreground text-sm">
                                     {getInitials(member.full_name, member.nickname)}
@@ -382,7 +382,7 @@ const Statistics = () => {
                                 </div>
                               </Link>
 
-                              <div className="flex-1 hidden md:block ml-4">
+                              <div className="flex-1 hidden md:block">
                                 <div className="flex justify-between text-sm mb-1.5">
                                   <span className="font-semibold">
                                     {member.ytd_distance.toLocaleString()} km
@@ -393,7 +393,7 @@ const Statistics = () => {
                                 </div>
                                 <Progress
                                   value={progress}
-                                  className={`h-2 ${isCompleted ? '[&>div]:bg-green-500' : ''}`}
+                                  className={`h-3 bg-muted border border-border/60 ${isCompleted ? '[&>div]:bg-green-600' : '[&>div]:bg-primary'}`}
                                 />
                               </div>
 
@@ -417,7 +417,7 @@ const Statistics = () => {
                             <div className="mt-3 md:hidden">
                               <Progress
                                 value={progress}
-                                className={`h-1.5 ${isCompleted ? '[&>div]:bg-green-500' : ''}`}
+                                className={`h-2 bg-muted border border-border/60 ${isCompleted ? '[&>div]:bg-green-600' : '[&>div]:bg-primary'}`}
                               />
                             </div>
                           </div>
