@@ -97,10 +97,12 @@ const Account = () => {
     if (!user) return;
     setSaving(true);
 
+    const normalizedFullName = toTitleCase(fullName);
+
     const { error } = await supabase
       .from("profiles")
       .update({
-        full_name: fullName.trim() || null,
+        full_name: normalizedFullName.trim() || null,
         nickname: nickname.trim() || null,
         club_match_name: clubMatchName.trim() || null,
         birth_date: birthDate ? format(birthDate, "yyyy-MM-dd") : null,
@@ -118,9 +120,10 @@ const Account = () => {
         title: "Uloženo",
         description: "Tvoje údaje byly aktualizovány",
       });
+      setFullName(normalizedFullName);
       setProfile((prev) => prev ? {
         ...prev,
-        full_name: fullName.trim() || null,
+        full_name: normalizedFullName.trim() || null,
         nickname: nickname.trim() || null,
         club_match_name: clubMatchName.trim() || null,
         birth_date: birthDate ? format(birthDate, "yyyy-MM-dd") : null,
