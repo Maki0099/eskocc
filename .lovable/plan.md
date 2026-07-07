@@ -1,38 +1,45 @@
-# Mobilní optimalizace homepage (LCP 10,3 s → cíl ~3 s)
+## Cíl
+Při splnění 100 % zajistit, aby se progress bar nezkracoval kvůli badge "100 %" vpravo — všechny 3 informace (najeto, cíl, procenta) se zobrazí v řádku nad barem a bar se roztáhne přes celou šířku.
 
-Desktop je v zeleném pásmu, neměníme. Všechny změny cílí na mobil, kde React hydratace + `opacity-0` animace odsouvají LCP element (text „Jezdi tak dlouho…") o několik sekund.
+## Úprava v `src/pages/Statistics.tsx` (řádky ~385–415, desktop verze)
 
-## Změny
-
-### 1) Odstranit `opacity-0` z above-fold textu v `HeroSection.tsx`
-Text, logo a podtitul jsou nad foldem a jsou LCP kandidáti. Aktuálně mají `opacity-0 animate-fade-up animation-delay-*`, takže jsou neviditelné dokud React nehydratuje a CSS animace neproběhne. Odstraníme `opacity-0` a `animation-delay-*` třídy z těchto elementů (logo, kicker, hlavní `<h1>` div, citace Merckx, hlavní popis a CTA tlačítka). Text se vykreslí okamžitě z prerenderu. Animace `animate-fade-up` zůstane na sekcích pod foldem (statistika klubu), které nejsou LCP.
-
-### 2) Preload hero WebP s `fetchpriority="high"`
-Aktuálně je hero v `<picture>` uvnitř React komponenty → preload scanner ho najde až po parsování JS bundle. Přesuneme `hero-cycling.webp` do `/public/hero-cycling.webp` (stabilní URL bez Vite hashe) a v `index.html` přidáme:
-```html
-<link rel="preload" as="image" href="/hero-cycling.webp" type="image/webp" fetchpriority="high" media="(max-width: 768px)" />
+Aktuálně je layout:
 ```
-V `HeroSection.tsx` přepneme import na absolutní cestu `/hero-cycling.webp`.
-
-### 3) Round logo do `/public`
-`logo-round-dark.png` a `logo-round.png` jsou nad foldem (24×24, ~6 KB každé). Přesuneme do `/public/logo-round-dark.png` a `/public/logo-round.png`, importy v Hero nahradíme stringovou cestou. Tím se vyhneme čekání na JS bundle pro vyřešení hashed URL.
-
-### 4) Odložit `useClubStats()` mimo Hero
-Hook volá Supabase RPC při mountu Hera a způsobuje re-render LCP frame. Vytvoříme novou malou komponentu `HeroStatsLine` (samostatný soubor), která drží `useClubStats` + `useCountUp` a render `<p>... km najezdil klub letos</p>`. V `HeroSection.tsx` ji lazy-loadneme přes `React.lazy` + `<Suspense fallback={null}>`. Hero se vykreslí bez čekání na statistiku; číslo doskočí později.
-
-### 5) Service worker — vynechat velké PWA ikony z precache
-Ve `vite.config.ts` `workbox.globPatterns` aktuálně cachuje všechny PNG včetně `pwa-512x512.png` a `maskable-icon-512x512.png` (~157 KB dohromady). Tyto soubory PWA potřebuje jen při instalaci z manifestu, ne pro běh aplikace. Přidáme do `globIgnores`:
+[rank] [jméno w-56] [flex-1: km / cíl km + BAR] [badge 100% nebo %]
 ```
-"**/pwa-512x512.png", "**/maskable-icon-512x512.png", "**/splash-*.png"
+Pravý sloupec s procenty vždy ukrajuje šířku baru.
+
+Nový layout pro desktop:
+```
+[rank] [jméno w-56] [flex-1: km  /  cíl km  ·  % (vpravo) + BAR přes celou šířku]
 ```
 
-## Mimo rozsah
-- Desktop layout (nezměněno)
-- Parallax hook, design, kopie
-- Backend/DB
-- Refaktor ostatních sekcí
+Konkrétní změny:
+1. **Odstranit pravý sloupec s procenty/badge na desktopu** — přesunout procenta do stejného řádku jako "najeto / cíl" uvnitř `flex-1` progress kontejneru.
+2. Řádek nad barem bude obsahovat 3 informace v jednom flex řádku:
+   - vlevo: `3 218 km` (najetá vzdálenost, `font-semibold`)
+   - uprostřed/vpravo: `/ 3 000 km` (cíl, `text-muted-foreground`)
+   - úplně vpravo: `100 %` nebo procenta se zelenou barvou při splnění (případně s ikonou `CheckCircle2`)
+3. Progress bar zůstane pod tímto řádkem přes plnou šířku `flex-1` sloupce — už se nebude zkracovat.
+4. **Mobilní verze** (`md:hidden` blok níže): zachovat, ale sjednotit zobrazení — procenta s ikonou splnění zůstanou nad barem, který je full-width. Odstranit duplicitní pravý sloupec s procenty na mobilu (aktuálně je vpravo od jména).
 
-## Očekávaný dopad (mobil)
-- LCP: 10,3 s → ~2,5–3,5 s (text vidí okamžitě + hero preload)
-- Speed Index: 4,9 s → ~3,5 s
-- FCP: 2,9 s → beze změny (limit TTFB)
+## Detail — struktura po úpravě (desktop)
+
+```tsx
+<div className="flex-1 min-w-0 hidden md:block">
+  <div className="flex items-baseline justify-between gap-3 text-sm mb-1.5">
+    <span className="font-semibold">{ytd} km</span>
+    <span className="text-muted-foreground">/ {target} km</span>
+    <span className={isCompleted ? "text-green-600 font-medium flex items-center gap-1" : "font-medium"}>
+      {isCompleted && <CheckCircle2 className="w-3.5 h-3.5" />}
+      {Math.round(progress)} %
+    </span>
+  </div>
+  <Progress value={progress} className="h-3 ..." />
+</div>
+```
+
+Pravý sloupec (`<div className="flex-shrink-0 text-right ml-auto">…</div>`) se pro desktop odstraní; pro mobil se přeuspořádá tak, aby ukazoval jen km údaje (bar + procenta pak žijí ve spodním mobilním bloku).
+
+## Výsledek
+Progress bar má konzistentní šířku pro všechny členy — jak pro rozjeté, tak pro splněné cíle. Splnění je vizuálně odlišeno zelenou barvou procent a check ikonou, ne zkrácením baru.
