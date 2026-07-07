@@ -377,7 +377,7 @@ const Statistics = () => {
                                 </Avatar>
                                 <div className="min-w-0 flex-1">
                                   <p className="font-medium truncate">
-                                    {member.nickname || member.full_name || "Bez jména"}
+                                    {member.full_name || member.nickname || "Bez jména"}
                                     {isCurrentUser && (
                                       <span className="text-xs text-muted-foreground ml-1.5">(ty)</span>
                                     )}
