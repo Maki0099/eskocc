@@ -383,12 +383,20 @@ const Statistics = () => {
                               </Link>
 
                               <div className="flex-1 min-w-0 hidden md:block">
-                                <div className="flex justify-between text-sm mb-1.5">
+                                <div className="flex items-baseline justify-between gap-3 text-sm mb-1.5">
                                   <span className="font-semibold">
                                     {member.ytd_distance.toLocaleString()} km
                                   </span>
                                   <span className="text-muted-foreground">
                                     / {member.target.toLocaleString()} km
+                                  </span>
+                                  <span
+                                    className={`ml-auto font-medium inline-flex items-center gap-1 ${
+                                      isCompleted ? "text-green-600 dark:text-green-400" : ""
+                                    }`}
+                                  >
+                                    {isCompleted && <CheckCircle2 className="w-3.5 h-3.5" />}
+                                    {Math.round(progress)}%
                                   </span>
                                 </div>
                                 <Progress
@@ -397,7 +405,7 @@ const Statistics = () => {
                                 />
                               </div>
 
-                              <div className="flex-shrink-0 text-right ml-auto">
+                              <div className="flex-shrink-0 text-right ml-auto md:hidden">
                                 {isCompleted ? (
                                   <Badge className="bg-green-500/15 text-green-600 dark:text-green-400 hover:bg-green-500/20 border-0">
                                     <CheckCircle2 className="w-3 h-3 mr-1" />
@@ -406,7 +414,7 @@ const Statistics = () => {
                                 ) : (
                                   <div className="text-right">
                                     <span className="text-sm font-medium">{Math.round(progress)}%</span>
-                                    <p className="text-xs text-muted-foreground md:hidden">
+                                    <p className="text-xs text-muted-foreground">
                                       {member.ytd_distance.toLocaleString()} km
                                     </p>
                                   </div>
@@ -420,6 +428,7 @@ const Statistics = () => {
                                 className={`h-2 bg-muted border border-border/60 ${isCompleted ? '[&>div]:bg-green-600' : '[&>div]:bg-primary'}`}
                               />
                             </div>
+
                           </div>
                         );
                       })}
