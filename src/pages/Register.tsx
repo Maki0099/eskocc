@@ -10,6 +10,7 @@ import logoDark from "@/assets/logo-horizontal-dark.png";
 import RegistrationSteps from "@/components/register/RegistrationSteps";
 import PersonalDetailsStep from "@/components/register/PersonalDetailsStep";
 import TermsAndConditions from "@/components/register/TermsAndConditions";
+import { toTitleCase } from "@/lib/utils";
 
 const registerSchema = z.object({
   fullName: z.string().min(2, "Jméno musí mít alespoň 2 znaky").max(100),
@@ -69,7 +70,7 @@ const Register = () => {
 
     setLoading(true);
 
-    const { error } = await signUp(email, password, fullName, nickname || undefined, birthDate, phone || undefined);
+    const { error } = await signUp(email, password, toTitleCase(fullName), nickname || undefined, birthDate, phone || undefined);
 
     if (error) {
       let message = "Nepodařilo se vytvořit účet";

@@ -14,7 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ROUTES } from "@/lib/routes";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
-import { cn } from "@/lib/utils";
+import { cn, toTitleCase } from "@/lib/utils";
 import logoDark from "@/assets/logo-horizontal-dark.png";
 import { PushNotificationToggle } from "@/components/notifications/PushNotificationToggle";
 import { useTour } from "@/hooks/useTour";
@@ -97,10 +97,12 @@ const Account = () => {
     if (!user) return;
     setSaving(true);
 
+    const normalizedFullName = toTitleCase(fullName);
+
     const { error } = await supabase
       .from("profiles")
       .update({
-        full_name: fullName.trim() || null,
+        full_name: normalizedFullName.trim() || null,
         nickname: nickname.trim() || null,
         club_match_name: clubMatchName.trim() || null,
         birth_date: birthDate ? format(birthDate, "yyyy-MM-dd") : null,
@@ -118,9 +120,10 @@ const Account = () => {
         title: "Uloženo",
         description: "Tvoje údaje byly aktualizovány",
       });
+      setFullName(normalizedFullName);
       setProfile((prev) => prev ? {
         ...prev,
-        full_name: fullName.trim() || null,
+        full_name: normalizedFullName.trim() || null,
         nickname: nickname.trim() || null,
         club_match_name: clubMatchName.trim() || null,
         birth_date: birthDate ? format(birthDate, "yyyy-MM-dd") : null,
