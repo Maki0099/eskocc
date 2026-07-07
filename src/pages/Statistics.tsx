@@ -442,6 +442,15 @@ const Statistics = () => {
                   )}
                 </CardContent>
               </Card>
+
+              <div
+                data-export-only
+                className="hidden [html[data-exporting=true]_&]:flex items-center justify-between gap-3 pt-4 border-t border-border/60 text-xs text-muted-foreground"
+              >
+                <span className="font-semibold">ESKO.cc — Statistiky klubu {currentYear}</span>
+                <span>{new Date().toLocaleDateString("cs-CZ")}</span>
+              </div>
+              </div>
             </div>
           )}
         </div>
