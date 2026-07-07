@@ -70,7 +70,7 @@ const Register = () => {
 
     setLoading(true);
 
-    const { error } = await signUp(email, password, fullName, nickname || undefined, birthDate, phone || undefined);
+    const { error } = await signUp(email, password, toTitleCase(fullName), nickname || undefined, birthDate, phone || undefined);
 
     if (error) {
       let message = "Nepodařilo se vytvořit účet";
