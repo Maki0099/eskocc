@@ -361,15 +361,15 @@ const Statistics = () => {
 
                               <Link
                                 to={`/member/${member.id}`}
-                                className="flex items-center gap-3 min-w-0 w-full md:w-56 md:flex-shrink-0 hover:opacity-80 transition-opacity"
+                                className="flex items-center gap-3 min-w-0 flex-1 md:flex-none md:w-56 md:shrink-0 md:basis-56 hover:opacity-80 transition-opacity"
                               >
-                                <Avatar className="w-10 h-10 border-2 border-background shadow-sm flex-shrink-0">
+                                <Avatar className="w-10 h-10 border-2 border-background shadow-sm shrink-0">
                                   <AvatarImage src={member.avatar_url || undefined} />
                                   <AvatarFallback className="bg-muted text-muted-foreground text-sm">
                                     {getInitials(member.full_name, member.nickname)}
                                   </AvatarFallback>
                                 </Avatar>
-                                <div className="min-w-0">
+                                <div className="min-w-0 flex-1">
                                   <p className="font-medium truncate">
                                     {member.nickname || member.full_name || "Bez jména"}
                                     {isCurrentUser && (
@@ -382,7 +382,7 @@ const Statistics = () => {
                                 </div>
                               </Link>
 
-                              <div className="flex-1 hidden md:block">
+                              <div className="flex-1 min-w-0 hidden md:block">
                                 <div className="flex justify-between text-sm mb-1.5">
                                   <span className="font-semibold">
                                     {member.ytd_distance.toLocaleString()} km
