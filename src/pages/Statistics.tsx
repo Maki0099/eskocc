@@ -242,6 +242,10 @@ const Statistics = () => {
             </Card>
           ) : (
             <div className="space-y-6">
+              <div className="flex justify-end">
+                <StatisticsExportButton targetRef={exportRef} year={currentYear} />
+              </div>
+              <div ref={exportRef} className="space-y-6 bg-background">
               {settings && (
                 <Card className="overflow-hidden border-0 shadow-lg animate-fade-up" data-tour="club-goal">
                   <div className="bg-gradient-to-br from-accent to-secondary p-6 md:p-8 text-accent-foreground">
