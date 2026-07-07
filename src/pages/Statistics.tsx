@@ -53,6 +53,7 @@ const Statistics = () => {
   const [members, setMembers] = useState<MemberStats[]>([]);
   const [clubTotal, setClubTotal] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const exportRef = useRef<HTMLDivElement>(null);
 
   const handleStartTour = () => {
     setTourRunning(true);
