@@ -82,22 +82,22 @@ const StatisticsExportButton = ({ targetRef, year }: StatisticsExportButtonProps
 
   return (
     <Button
-      variant="ghost"
+      variant="outline"
       size="sm"
       onClick={handleExport}
       disabled={loading}
       data-export-ignore="true"
-      className="gap-2 font-display uppercase tracking-[0.18em] text-xs text-accent hover:text-foreground hover:bg-warm"
+      className="gap-2"
     >
       {loading ? (
         <>
-          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          <Loader2 className="w-4 h-4 animate-spin" />
           Připravuji…
         </>
       ) : (
         <>
-          <Download className="w-3.5 h-3.5" />
-          Export PNG
+          <Download className="w-4 h-4" />
+          Exportovat jako obrázek
         </>
       )}
     </Button>

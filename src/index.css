@@ -35,17 +35,9 @@
     --input: 30 12% 82%;
     --ring: 30 17% 66%;
 
-    /* Warm sand surface for editorial tiles */
-    --warm: 34 27% 91%;
-    --warm-foreground: 218 11% 21%;
-
-    /* Success semantic (goal completed) */
-    --success: 30 40% 32%;
-    --success-foreground: 30 27% 96%;
-
     --radius: 0.5rem;
 
-    --font-display: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-display: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     --font-body: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
     --sidebar-background: 30 15% 97%;
@@ -106,11 +98,6 @@
     --border: 218 10% 22%;
     --input: 218 10% 22%;
     --ring: 30 20% 70%;
-
-    --warm: 218 10% 16%;
-    --warm-foreground: 30 12% 90%;
-    --success: 30 30% 65%;
-    --success-foreground: 218 11% 10%;
 
     --sidebar-background: 218 11% 8%;
     --sidebar-foreground: 30 12% 90%;
