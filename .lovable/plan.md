@@ -1,45 +1,59 @@
 ## Cíl
-Při splnění 100 % zajistit, aby se progress bar nezkracoval kvůli badge "100 %" vpravo — všechny 3 informace (najeto, cíl, procenta) se zobrazí v řádku nad barem a bar se roztáhne přes celou šířku.
+Přidat na stránku Statistiky tlačítko **"Exportovat jako obrázek"**, které vygeneruje PNG snapshot celé stránky (klubový cíl, věkové kategorie, souhrn a žebříček) a stáhne ho, případně nabídne sdílení přes Web Share API na mobilu.
 
-## Úprava v `src/pages/Statistics.tsx` (řádky ~385–415, desktop verze)
+## Postup
 
-Aktuálně je layout:
-```
-[rank] [jméno w-56] [flex-1: km / cíl km + BAR] [badge 100% nebo %]
-```
-Pravý sloupec s procenty vždy ukrajuje šířku baru.
+### 1. Instalace knihovny
+Nainstalovat `html-to-image` (lightweight, cca 15 kB, funguje s Tailwind/CSS Grid, podporuje `Promise<Blob>` a data URL).
 
-Nový layout pro desktop:
 ```
-[rank] [jméno w-56] [flex-1: km  /  cíl km  ·  % (vpravo) + BAR přes celou šířku]
+bun add html-to-image
 ```
 
-Konkrétní změny:
-1. **Odstranit pravý sloupec s procenty/badge na desktopu** — přesunout procenta do stejného řádku jako "najeto / cíl" uvnitř `flex-1` progress kontejneru.
-2. Řádek nad barem bude obsahovat 3 informace v jednom flex řádku:
-   - vlevo: `3 218 km` (najetá vzdálenost, `font-semibold`)
-   - uprostřed/vpravo: `/ 3 000 km` (cíl, `text-muted-foreground`)
-   - úplně vpravo: `100 %` nebo procenta se zelenou barvou při splnění (případně s ikonou `CheckCircle2`)
-3. Progress bar zůstane pod tímto řádkem přes plnou šířku `flex-1` sloupce — už se nebude zkracovat.
-4. **Mobilní verze** (`md:hidden` blok níže): zachovat, ale sjednotit zobrazení — procenta s ikonou splnění zůstanou nad barem, který je full-width. Odstranit duplicitní pravý sloupec s procenty na mobilu (aktuálně je vpravo od jména).
+### 2. Nová komponenta `StatisticsExportButton.tsx`
+Umístění: `src/components/statistics/StatisticsExportButton.tsx`.
 
-## Detail — struktura po úpravě (desktop)
+Props: `targetRef: React.RefObject<HTMLElement>`, `year: number`.
 
-```tsx
-<div className="flex-1 min-w-0 hidden md:block">
-  <div className="flex items-baseline justify-between gap-3 text-sm mb-1.5">
-    <span className="font-semibold">{ytd} km</span>
-    <span className="text-muted-foreground">/ {target} km</span>
-    <span className={isCompleted ? "text-green-600 font-medium flex items-center gap-1" : "font-medium"}>
-      {isCompleted && <CheckCircle2 className="w-3.5 h-3.5" />}
-      {Math.round(progress)} %
-    </span>
-  </div>
-  <Progress value={progress} className="h-3 ..." />
-</div>
-```
+Chování:
+- Tlačítko s ikonou `Download` / `Share2` (lucide-react) v pravém horním rohu nad obsahem.
+- Po kliknutí:
+  1. Zavolá `toBlob(targetRef.current, { pixelRatio: 2, backgroundColor: getComputedStyle(document.body).backgroundColor, cacheBust: true })`.
+  2. Pokud je dostupné `navigator.canShare({ files: [...] })` (mobil/PWA), otevře nativní sdílecí dialog s PNG souborem `esko-statistiky-{rok}.png` a popiskem "Statistiky klubu ESKO.cc {rok}".
+  3. Jinak stáhne soubor přes `URL.createObjectURL` + neviditelný `<a download>`.
+- Během generování: `loading` stav s toast notifikací "Připravuji obrázek…" a po dokončení "Obrázek uložen".
+- Ošetřit chybu (toast destructive) — zejména CORS problém u Strava avatarů.
 
-Pravý sloupec (`<div className="flex-shrink-0 text-right ml-auto">…</div>`) se pro desktop odstraní; pro mobil se přeuspořádá tak, aby ukazoval jen km údaje (bar + procenta pak žijí ve spodním mobilním bloku).
+### 3. Zapojení v `Statistics.tsx`
+- Vytvořit `const exportRef = useRef<HTMLDivElement>(null)`.
+- Obalit sekci s obsahem výzvy (klubový cíl + kategorie + ClubSummaryStats + žebříček) tímto ref.
+- Nad obsah (v hlavičce stránky vedle `HelpCircle` tlačítka, resp. pod ním) přidat `<StatisticsExportButton targetRef={exportRef} year={currentYear} />` — viditelné pouze pro členy.
+- Přidat viditelný pouze pro export "vodoznak" / patičku uvnitř ref containeru: malý řádek s logem/textem "ESKO.cc · {datum}" ve spodní části. Skrytý v normálním zobrazení pomocí `hidden data-export-only` a při exportu dočasně zobrazit (přepnutím třídy před `toBlob` a zpět po dokončení).
+
+### 4. Ošetření CORS pro obrázky
+Strava CDN a Supabase avatary musí mít `crossOrigin="anonymous"`, jinak html-to-image nedokáže vykreslit avatary a pád PNG. Přidat `crossOrigin="anonymous"` do `<AvatarImage>` v žebříčku (přes wrapper nebo přímo v `Statistics.tsx`). Pokud některý CDN neposílá CORS hlavičky, html-to-image tichý fallback: použije `useCORS: true` + `imagePlaceholder` (prázdný avatar s iniciálami).
+
+### 5. Ovládání viewportu při exportu
+Před `toBlob`:
+- Dočasně přidat na kořen `data-exporting="true"`.
+- V `index.css` (nebo Tailwind arbitrary) upravit `[data-exporting] .hover\:...` na neutrální stav, aby v obrázku nebyly zbytky hoveru.
+- Nastavit `width` na `targetRef.current.scrollWidth` a `height` na `scrollHeight`, aby se zachytila celá stránka i mimo viewport.
+
+### 6. Analytika / žádná
+Bez sledování — pouze client-side.
+
+## Technické detaily
+
+**Použité API:**
+- `html-to-image` — `toBlob(node, options)`.
+- `navigator.share` + `navigator.canShare({ files })` — s file fallbackem.
+- Toast: existující `useToast` hook.
+- Ikony: `Download`, `Share2` z `lucide-react`.
+
+**Rozsah změn:**
+- `src/components/statistics/StatisticsExportButton.tsx` (nová)
+- `src/pages/Statistics.tsx` (přidat ref, tlačítko, export-only footer)
+- `package.json` (nová dependence)
 
 ## Výsledek
-Progress bar má konzistentní šířku pro všechny členy — jak pro rozjeté, tak pro splněné cíle. Splnění je vizuálně odlišeno zelenou barvou procent a check ikonou, ne zkrácením baru.
+Člen klubu klikne na "Exportovat" a dostane PNG (typicky ~2000×3000 px, retina) obsahující kompletní přehled statistik. Na mobilu se otevře nativní sdílecí dialog, na desktopu se soubor stáhne. Ideální pro sdílení do WhatsApp/Messenger skupiny klubu.
