@@ -14,7 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ROUTES } from "@/lib/routes";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
-import { cn } from "@/lib/utils";
+import { cn, toTitleCase } from "@/lib/utils";
 import logoDark from "@/assets/logo-horizontal-dark.png";
 import { PushNotificationToggle } from "@/components/notifications/PushNotificationToggle";
 import { useTour } from "@/hooks/useTour";
