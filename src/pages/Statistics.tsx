@@ -362,12 +362,12 @@ const Statistics = () => {
                             }`}
                             style={{ animationDelay: `${(index + 5) * 50}ms` }}
                           >
-                            <div className="flex items-center gap-3 md:gap-4">
+                            <div className="flex items-center gap-2.5 md:gap-4">
                               <div className="flex-shrink-0">{getRankIcon(index)}</div>
 
                               <Link
                                 to={`/member/${member.id}`}
-                                className="flex items-center gap-3 min-w-0 flex-1 md:flex-none md:w-56 md:shrink-0 md:basis-56 hover:opacity-80 transition-opacity"
+                                className="flex items-center gap-2.5 min-w-0 flex-1 md:flex-none md:w-56 md:shrink-0 md:basis-56 hover:opacity-80 transition-opacity"
                               >
                                 <Avatar className="w-10 h-10 border-2 border-background shadow-sm shrink-0">
                                   <AvatarImage src={member.avatar_url || undefined} />
@@ -376,15 +376,15 @@ const Statistics = () => {
                                   </AvatarFallback>
                                 </Avatar>
                                 <div className="min-w-0 flex-1">
-                                  <p className="font-medium truncate">
+                                  <p className="font-medium text-sm md:text-base truncate leading-tight">
                                     {member.full_name || member.nickname || "Bez jména"}
                                     {isCurrentUser && (
                                       <span className="text-xs text-muted-foreground ml-1.5">(ty)</span>
                                     )}
                                   </p>
-                                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                    <span>{getAgeCategoryLabel(member.age_category)}</span>
-                                  </div>
+                                  <p className="text-xs text-muted-foreground whitespace-nowrap mt-0.5">
+                                    {getAgeCategoryLabel(member.age_category)}
+                                  </p>
                                 </div>
                               </Link>
 
@@ -411,19 +411,21 @@ const Statistics = () => {
                                 />
                               </div>
 
-                              <div className="flex-shrink-0 text-right ml-auto md:hidden">
+                              <div className="flex-shrink-0 text-right md:hidden whitespace-nowrap">
                                 {isCompleted ? (
-                                  <Badge className="bg-green-500/15 text-green-600 dark:text-green-400 hover:bg-green-500/20 border-0">
+                                  <Badge className="bg-green-500/15 text-green-600 dark:text-green-400 hover:bg-green-500/20 border-0 whitespace-nowrap">
                                     <CheckCircle2 className="w-3 h-3 mr-1" />
                                     {Math.round(progress)}%
                                   </Badge>
                                 ) : (
-                                  <div className="text-right">
-                                    <span className="text-sm font-medium">{Math.round(progress)}%</span>
-                                    <p className="text-xs text-muted-foreground">
+                                  <>
+                                    <div className="text-sm font-semibold leading-tight whitespace-nowrap">
+                                      {Math.round(progress)}%
+                                    </div>
+                                    <div className="text-[11px] text-muted-foreground whitespace-nowrap mt-0.5">
                                       {member.ytd_distance.toLocaleString()} km
-                                    </p>
-                                  </div>
+                                    </div>
+                                  </>
                                 )}
                               </div>
                             </div>
