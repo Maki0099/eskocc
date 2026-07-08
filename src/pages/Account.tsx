@@ -443,6 +443,12 @@ const Account = () => {
             <p className="text-xs text-muted-foreground mt-2">
               Ověří, zda je dostupná novější verze aplikace
             </p>
+            <div className="mt-4">
+              <ForceRefreshButton />
+              <p className="text-xs text-muted-foreground mt-2">
+                Vyčistí cache, stáhne čerstvé soubory ze service workeru a znovu načte aplikaci
+              </p>
+            </div>
           </div>
 
           <div className="mt-8 pt-8 border-t border-border/40">
