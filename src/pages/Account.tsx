@@ -21,6 +21,7 @@ import { useTour } from "@/hooks/useTour";
 import TourProvider from "@/components/tour/TourProvider";
 import { AccountPageSkeleton } from "@/components/skeletons/PageSkeletons";
 import CheckForUpdatesButton from "@/components/pwa/CheckForUpdatesButton";
+import ForceRefreshButton from "@/components/pwa/ForceRefreshButton";
 import { StravaConnectionCard } from "@/components/strava/StravaConnectionCard";
 
 interface Profile {
