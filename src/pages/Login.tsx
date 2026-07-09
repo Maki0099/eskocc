@@ -33,7 +33,7 @@ const Login = () => {
 
   useEffect(() => {
     if (user) {
-      navigate(ROUTES.DASHBOARD);
+      navigate(ROUTES.STATISTICS);
     }
   }, [user, navigate]);
 
@@ -71,7 +71,7 @@ const Login = () => {
             title: "Přihlášení úspěšné",
             description: "Vítej zpět!",
           });
-          navigate(ROUTES.DASHBOARD);
+          navigate(ROUTES.STATISTICS);
         }
         
         // Clear the hash
@@ -136,7 +136,7 @@ const Login = () => {
         title: "Přihlášení úspěšné",
         description: "Vítej zpět!",
       });
-      navigate(ROUTES.DASHBOARD);
+      navigate(ROUTES.STATISTICS);
     }
     
     setLoading(false);
