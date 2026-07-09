@@ -348,9 +348,10 @@ const Statistics = () => {
                   ) : (
                     <div className="space-y-2">
                       {members.map((member, index) => {
-                        const progress = member.target > 0
-                          ? Math.min((member.ytd_distance / member.target) * 100, 100)
+                        const rawPercentage = member.target > 0
+                          ? Math.round((member.ytd_distance / member.target) * 100)
                           : 0;
+                        const progress = Math.min(rawPercentage, 100);
                         const isCompleted = member.ytd_distance >= member.target && member.target > 0;
                         const isCurrentUser = user?.id === member.id;
 
@@ -402,7 +403,7 @@ const Statistics = () => {
                                     }`}
                                   >
                                     {isCompleted && <CheckCircle2 className="w-3.5 h-3.5" />}
-                                    {Math.round(progress)}%
+                                    {rawPercentage}%
                                   </span>
                                 </div>
                                 <Progress
@@ -413,14 +414,19 @@ const Statistics = () => {
 
                               <div className="flex-shrink-0 text-right md:hidden whitespace-nowrap">
                                 {isCompleted ? (
-                                  <Badge className="bg-green-500/15 text-green-600 dark:text-green-400 hover:bg-green-500/20 border-0 whitespace-nowrap">
-                                    <CheckCircle2 className="w-3 h-3 mr-1" />
-                                    {Math.round(progress)}%
-                                  </Badge>
+                                  <div className="flex flex-col items-end gap-0.5">
+                                    <Badge className="bg-green-500/15 text-green-600 dark:text-green-400 hover:bg-green-500/20 border-0 whitespace-nowrap">
+                                      <CheckCircle2 className="w-3 h-3 mr-1" />
+                                      {rawPercentage}%
+                                    </Badge>
+                                    <span className="text-[11px] text-muted-foreground whitespace-nowrap">
+                                      {member.ytd_distance.toLocaleString()} km
+                                    </span>
+                                  </div>
                                 ) : (
                                   <>
                                     <div className="text-sm font-semibold leading-tight whitespace-nowrap">
-                                      {Math.round(progress)}%
+                                      {rawPercentage}%
                                     </div>
                                     <div className="text-[11px] text-muted-foreground whitespace-nowrap mt-0.5">
                                       {member.ytd_distance.toLocaleString()} km
