@@ -17,6 +17,7 @@ import type { AppRole } from "@/lib/types";
 import { ROLE_LABELS } from "@/lib/constants";
 import { getInitials } from "@/lib/user-utils";
 import { MemberProfileSkeleton } from "@/components/skeletons/PageSkeletons";
+import YearlyProgressChart from "@/components/member/YearlyProgressChart";
 
 interface MemberData {
   full_name: string | null;
