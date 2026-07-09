@@ -136,7 +136,7 @@ const Login = () => {
         title: "Přihlášení úspěšné",
         description: "Vítej zpět!",
       });
-      navigate(ROUTES.DASHBOARD);
+      navigate(ROUTES.STATISTICS);
     }
     
     setLoading(false);
