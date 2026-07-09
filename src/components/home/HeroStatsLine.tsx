@@ -9,7 +9,7 @@ const HeroStatsLine = () => {
   if (!stats || stats.ytd_km <= 0) return null;
 
   return (
-    <p className="text-3xl font-bold mb-6 opacity-0 animate-fade-up animation-delay-300 text-muted-foreground">
+    <p className="text-3xl font-bold opacity-0 animate-fade-up animation-delay-300 text-muted-foreground">
       <span className="tabular-nums">{formatStatNumber(animatedDistance)}</span> km najezdil klub letos
     </p>
   );
