@@ -256,6 +256,9 @@ const MemberProfile = () => {
           </CardContent>
         </Card>
 
+        {userId && <YearlyProgressChart userId={userId} />}
+
+
         <div className="grid grid-cols-2 gap-4 mb-8" data-tour="member-stats">
           <Card>
             <CardContent className="pt-6 text-center">
