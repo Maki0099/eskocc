@@ -1154,6 +1154,14 @@ export type Database = {
           strava_ytd_distance: number
         }[]
       }
+      get_member_yearly_progress: {
+        Args: { _user_id: string }
+        Returns: {
+          cumulative_km: number
+          day: string
+          day_km: number
+        }[]
+      }
       get_public_club_stats: { Args: never; Returns: Json }
       get_push_subscription_counts: {
         Args: never
