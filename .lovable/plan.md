@@ -1,25 +1,36 @@
-## Problém
+## Cíl
+Do stránky profilu člena (`/member/:userId`) přidat graf zobrazující, jak členovi rostly najeté kilometry v průběhu aktuálního roku.
 
-`HeroStatsLine` je v `HeroSection` načítán přes `React.lazy` + `Suspense` s `fallback={null}`. Dokud se komponenta nenačte a stats z `useClubStats()` nedorazí, na stránce **není žádný prostor rezervovaný** pro řádek „X km najezdil klub letos". Jakmile data dorazí, vloží se do DOM odstavec `text-3xl font-bold mb-6` a celý obsah pod ním (podnadpis, tlačítka) skočí dolů → viditelné poskakování.
+## Vizuální podoba
+- Nová karta „Průběh sezóny {rok}" pod kartou „Statistiky tohoto roku".
+- Plošný / spojnicový graf (recharts, `AreaChart`) v barvě primary.
+- Osa X = měsíce (Led–Pro), osa Y = kumulativní km od 1.1.
+- Tooltip: datum + kumulativní km + km za daný den.
+- Prázdný stav: hláška „Zatím žádné aktivity v tomto roce."
+- Skeleton při načítání.
 
-Navíc má samotný `<p>` třídu `opacity-0 animate-fade-up animation-delay-300`, takže i po vložení do DOM chvíli není vidět, ale místo už zabírá — což je správně, ale platí to jen po tom, co se komponenta vůbec načte.
+## Datový zdroj
+Tabulka `club_activities` už obsahuje `matched_user_id`, `activity_date` a `distance_m` – všechny aktivity členů z klubového Strava účtu za rok. Data zagregujeme po dnech a spočítáme běžící součet.
 
-## Řešení
+## Backend
+Nová SECURITY DEFINER funkce `get_member_yearly_progress(_user_id uuid)`:
+- Přístupná pouze přihlášeným členům (`has_role` member/active_member/admin), stejně jako `get_member_statistics`.
+- Vrací řádky `(day date, day_km numeric, cumulative_km numeric)` pro aktuální rok.
+- Interně: `SUM(distance_m)/1000` po `date_trunc('day', activity_date)` s window funkcí pro kumulativní součet.
+- GRANT EXECUTE na `authenticated`.
 
-Rezervovat pevnou výšku slotu pro statistiku už v `HeroSection.tsx`, aby okolní obsah nikdy neposkakoval — bez ohledu na to, jestli `HeroStatsLine` vrátí obsah, `null`, nebo se ještě načítá.
+## Frontend
+- Nová komponenta `src/components/member/YearlyProgressChart.tsx`:
+  - Props: `userId`.
+  - Načte data přes `supabase.rpc('get_member_yearly_progress', { _user_id })`.
+  - Vykreslí `ResponsiveContainer` + `AreaChart` z `recharts` (už v projektu).
+  - Doplní bod pro 1.1. (0 km) a případně pro dnešek, aby graf pokrýval celý rok.
+  - České formátování (`cs-CZ`), měsíční ticky.
+- V `src/pages/MemberProfile.tsx` importovat a vložit pod kartu YTD statistik.
 
-### Změny v `src/components/home/HeroSection.tsx`
+## Rozsah dat / omezení
+- Graf ukazuje pouze aktivity zaznamenané v klubovém Strava účtu (stejný zdroj jako YTD čísla). To zmíníme malým popiskem pod grafem, konzistentně s existující kartou.
+- Členové bez napárovaných aktivit v roce → prázdný stav.
 
-1. Obalit `<Suspense><HeroStatsLine /></Suspense>` do `<div>` s pevnou minimální výškou odpovídající řádku `text-3xl` + `mb-6` (přibližně `min-h-[72px]` na mobilu, `md:min-h-[80px]` na desktopu — odpovídá line-height 3xl + spodnímu marginu).
-2. Suspense `fallback` nechat `null` — slot už drží výška wrapperu.
-
-### Změny v `src/components/home/HeroStatsLine.tsx`
-
-1. Odstranit brzký `return null` když `stats.ytd_km <= 0`, nebo ho ponechat — v obou případech vnější wrapper drží výšku, takže k posunu nedojde.
-2. Ponechat `opacity-0 animate-fade-up` — animace se přehraje uvnitř již rezervovaného prostoru.
-
-Volitelně: odstranit `mb-6` z `<p>` uvnitř `HeroStatsLine` a přesunout mezeru na wrapper, aby byl výpočet výšky konzistentní.
-
-## Výsledek
-
-Titulní stránka se při dohrání klubových statistik už nebude posouvat — číslo se objeví na místě, které je od začátku rezervované.
+## Technická poznámka
+Zvážit doplnění indexu `club_activities (matched_user_id, activity_date)` pokud tam ještě není – zrychlí dotaz. Ověřím při implementaci.
