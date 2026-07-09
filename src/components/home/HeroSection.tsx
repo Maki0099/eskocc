@@ -51,9 +51,11 @@ const HeroSection = () => {
             — Eddy Merckx
           </p>
 
-          <Suspense fallback={null}>
-            <HeroStatsLine />
-          </Suspense>
+          <div className="min-h-[72px] md:min-h-[80px] mb-6 flex items-center justify-center">
+            <Suspense fallback={null}>
+              <HeroStatsLine />
+            </Suspense>
+          </div>
 
           <p className="text-lg text-muted-foreground mb-10 max-w-xl mx-auto">
             {user ? "Kam to dnes natočíš?" : "Přidej se k naší komunitě cyklistů. Společné vyjížďky, nezapomenutelné zážitky."}
