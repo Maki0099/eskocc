@@ -33,7 +33,7 @@ const Login = () => {
 
   useEffect(() => {
     if (user) {
-      navigate(ROUTES.DASHBOARD);
+      navigate(ROUTES.STATISTICS);
     }
   }, [user, navigate]);
 
