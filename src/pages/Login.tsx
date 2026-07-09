@@ -71,7 +71,7 @@ const Login = () => {
             title: "Přihlášení úspěšné",
             description: "Vítej zpět!",
           });
-          navigate(ROUTES.DASHBOARD);
+          navigate(ROUTES.STATISTICS);
         }
         
         // Clear the hash
