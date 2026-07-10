@@ -1,36 +1,23 @@
-## Cíl
-Do stránky profilu člena (`/member/:userId`) přidat graf zobrazující, jak členovi rostly najeté kilometry v průběhu aktuálního roku.
+## Zjištěný problém
 
-## Vizuální podoba
-- Nová karta „Průběh sezóny {rok}" pod kartou „Statistiky tohoto roku".
-- Plošný / spojnicový graf (recharts, `AreaChart`) v barvě primary.
-- Osa X = měsíce (Led–Pro), osa Y = kumulativní km od 1.1.
-- Tooltip: datum + kumulativní km + km za daný den.
-- Prázdný stav: hláška „Zatím žádné aktivity v tomto roce."
-- Skeleton při načítání.
+Na screenshotech grafu „Průběh sezóny 2026" jsou **popisky osy Y oříznuté zleva** — místo `1400` je vidět `l400`, místo `1050` je vidět `i050`. Příčinou je kombinace v `YearlyProgressChart.tsx`:
 
-## Datový zdroj
-Tabulka `club_activities` už obsahuje `matched_user_id`, `activity_date` a `distance_m` – všechny aktivity členů z klubového Strava účtu za rok. Data zagregujeme po dnech a spočítáme běžící součet.
+- `AreaChart` má `margin={{ left: -12 }}` (posouvá obsah doleva mimo kreslicí plochu)
+- `YAxis` má `width={44}`, což je při čtyřciferných číslech málo
 
-## Backend
-Nová SECURITY DEFINER funkce `get_member_yearly_progress(_user_id uuid)`:
-- Přístupná pouze přihlášeným členům (`has_role` member/active_member/admin), stejně jako `get_member_statistics`.
-- Vrací řádky `(day date, day_km numeric, cumulative_km numeric)` pro aktuální rok.
-- Interně: `SUM(distance_m)/1000` po `date_trunc('day', activity_date)` s window funkcí pro kumulativní součet.
-- GRANT EXECUTE na `authenticated`.
+Vedle toho na mobilním rozlišení (390 px) chybí některé měsíční popisky osy X (únor, duben, červen) — recharts je vypustí, protože se do šířky nevejde 12 popisků vedle sebe.
 
-## Frontend
-- Nová komponenta `src/components/member/YearlyProgressChart.tsx`:
-  - Props: `userId`.
-  - Načte data přes `supabase.rpc('get_member_yearly_progress', { _user_id })`.
-  - Vykreslí `ResponsiveContainer` + `AreaChart` z `recharts` (už v projektu).
-  - Doplní bod pro 1.1. (0 km) a případně pro dnešek, aby graf pokrýval celý rok.
-  - České formátování (`cs-CZ`), měsíční ticky.
-- V `src/pages/MemberProfile.tsx` importovat a vložit pod kartu YTD statistik.
+## Oprava
 
-## Rozsah dat / omezení
-- Graf ukazuje pouze aktivity zaznamenané v klubovém Strava účtu (stejný zdroj jako YTD čísla). To zmíníme malým popiskem pod grafem, konzistentně s existující kartou.
-- Členové bez napárovaných aktivit v roce → prázdný stav.
+Úprava jen v `src/components/member/YearlyProgressChart.tsx`, čistě prezentační:
 
-## Technická poznámka
-Zvážit doplnění indexu `club_activities (matched_user_id, activity_date)` pokud tam ještě není – zrychlí dotaz. Ověřím při implementaci.
+1. Odstranit záporný `left` margin — nechat rozumný kladný, např. `margin={{ top: 8, right: 12, left: 4, bottom: 0 }}`.
+2. Zvětšit `YAxis width` na ~52 px, aby se čtyřciferné hodnoty vešly.
+3. Přidat na `XAxis` `interval="preserveStartEnd"` a `minTickGap={12}`, aby na mobilu recharts sám rozumně proředil měsíce (leden a prosinec zůstanou vždy). Volitelně zmenšit `fontSize` popisků os na 10 px pro mobil.
+4. Ponechat ostatní vzhled (gradient, tooltip, footer) beze změny.
+
+## Ověření
+
+Po změně znovu vyfotit desktop i mobilní pohled (390 × ...) na `/member/:userId` a zkontrolovat, že:
+- popisky Y osy `0 / 350 / 700 / 1050 / 1400` jsou celé viditelné
+- na mobilu je vidět alespoň `led ... pro` bez ořezu

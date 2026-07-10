@@ -127,7 +127,7 @@ const YearlyProgressChart = ({ userId }: Props) => {
         ) : (
           <div className="h-[220px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={data} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+              <AreaChart data={data} margin={{ top: 8, right: 12, left: 4, bottom: 0 }}>
                 <defs>
                   <linearGradient id="progressGradient" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.35} />
@@ -143,17 +143,19 @@ const YearlyProgressChart = ({ userId }: Props) => {
                   ticks={MONTH_TICKS}
                   tickFormatter={formatMonthTick}
                   stroke="hsl(var(--muted-foreground))"
-                  fontSize={11}
+                  fontSize={10}
                   tickLine={false}
                   axisLine={false}
+                  interval="preserveStartEnd"
+                  minTickGap={12}
                 />
                 <YAxis
                   stroke="hsl(var(--muted-foreground))"
-                  fontSize={11}
+                  fontSize={10}
                   tickLine={false}
                   axisLine={false}
                   tickFormatter={(v) => `${v}`}
-                  width={44}
+                  width={52}
                 />
                 <Tooltip content={<CustomTooltip />} />
                 <Area
