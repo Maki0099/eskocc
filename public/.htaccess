@@ -64,5 +64,7 @@
   RewriteRule . /index.html [L]
 </IfModule>
 
-# ----- Vlastní 404 (pro neexistující soubory) -----
-ErrorDocument 404 /index.html
+# ----- Neexistující soubory řeší SPA fallback výše (RewriteRule → /index.html s HTTP 200).
+# ----- ErrorDocument 404 /index.html by vracelo status 404 s tělem index.html a Googlebot
+# ----- takové stránky odmítá indexovat. Necháváme na Apache defaultní 404 pro asset requesty.
+
