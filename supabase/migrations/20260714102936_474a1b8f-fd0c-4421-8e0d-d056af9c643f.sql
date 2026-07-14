@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.get_member_yearly_progress(uuid) FROM anon;
