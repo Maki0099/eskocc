@@ -1160,6 +1160,7 @@ export type Database = {
           cumulative_km: number
           day: string
           day_km: number
+          target: number
         }[]
       }
       get_public_club_stats: { Args: never; Returns: Json }
