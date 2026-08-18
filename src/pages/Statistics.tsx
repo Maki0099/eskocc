@@ -420,6 +420,10 @@ const Statistics = () => {
                                   </p>
                                   <p className="text-xs text-muted-foreground whitespace-nowrap mt-0.5">
                                     {getAgeCategoryLabel(member.age_category)}
+                                    <span className="md:hidden inline-flex items-center gap-0.5 ml-1.5">
+                                      <Mountain className="w-3 h-3" />
+                                      {member.ytd_elevation.toLocaleString("cs-CZ")} m
+                                    </span>
                                   </p>
                                 </div>
                               </Link>
@@ -431,6 +435,10 @@ const Statistics = () => {
                                   </span>
                                   <span className="text-muted-foreground">
                                     / {member.target.toLocaleString()} km
+                                  </span>
+                                  <span className="text-muted-foreground inline-flex items-center gap-1 whitespace-nowrap">
+                                    <Mountain className="w-3.5 h-3.5" />
+                                    {member.ytd_elevation.toLocaleString("cs-CZ")} m
                                   </span>
                                   <span
                                     className={`ml-auto font-medium inline-flex items-center gap-1 ${
