@@ -39,9 +39,12 @@ interface MemberStats {
   avatar_url: string | null;
   role: AppRole;
   ytd_distance: number;
+  ytd_elevation: number;
   target: number;
   age_category: string;
 }
+
+type SortMode = "distance" | "elevation";
 
 const Statistics = () => {
   const { user } = useAuth();
