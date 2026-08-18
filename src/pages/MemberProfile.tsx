@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTour } from "@/hooks/useTour";
 import TourProvider from "@/components/tour/TourProvider";
-import { ArrowLeft, Calendar, MapPin, HelpCircle, Bike, TrendingUp } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, HelpCircle, Bike, TrendingUp, Mountain } from "lucide-react";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,7 @@ interface MemberData {
   created_at: string;
   strava_ytd_distance: number | null;
   strava_ytd_count: number | null;
+  strava_ytd_elevation: number | null;
 }
 
 interface EventParticipation {
@@ -70,7 +71,7 @@ const MemberProfile = () => {
       try {
         const { data: profileData, error: profileError } = await supabase
           .from("member_profiles_public")
-          .select("full_name, nickname, avatar_url, created_at, strava_ytd_distance, strava_ytd_count")
+          .select("full_name, nickname, avatar_url, created_at, strava_ytd_distance, strava_ytd_count, strava_ytd_elevation")
           .eq("id", userId)
           .maybeSingle();
 
@@ -165,6 +166,7 @@ const MemberProfile = () => {
   const isOwnProfile = user?.id === userId;
   const ytdDistance = member.strava_ytd_distance ?? 0;
   const ytdCount = member.strava_ytd_count ?? 0;
+  const ytdElevation = member.strava_ytd_elevation ?? 0;
 
   return (
     <div className="min-h-screen bg-background">
@@ -234,19 +236,26 @@ const MemberProfile = () => {
             <CardTitle className="text-lg">Statistiky tohoto roku</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div className="text-center">
                 <div className="flex items-center justify-center mb-2">
                   <TrendingUp className="w-5 h-5 text-primary" />
                 </div>
-                <p className="text-3xl font-bold">{ytdDistance.toLocaleString()}</p>
+                <p className="text-2xl md:text-3xl font-bold">{ytdDistance.toLocaleString("cs-CZ")}</p>
                 <p className="text-sm text-muted-foreground">km najeto</p>
+              </div>
+              <div className="text-center">
+                <div className="flex items-center justify-center mb-2">
+                  <Mountain className="w-5 h-5 text-primary" />
+                </div>
+                <p className="text-2xl md:text-3xl font-bold">{ytdElevation.toLocaleString("cs-CZ")}</p>
+                <p className="text-sm text-muted-foreground">m nastoupáno</p>
               </div>
               <div className="text-center">
                 <div className="flex items-center justify-center mb-2">
                   <Bike className="w-5 h-5 text-primary" />
                 </div>
-                <p className="text-3xl font-bold">{ytdCount}</p>
+                <p className="text-2xl md:text-3xl font-bold">{ytdCount}</p>
                 <p className="text-sm text-muted-foreground">jízd</p>
               </div>
             </div>

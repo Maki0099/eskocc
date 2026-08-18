@@ -8,6 +8,7 @@ export interface ClubStats {
   gallery_items: number;
   ytd_km: number;
   ytd_rides: number;
+  ytd_elevation: number;
 }
 
 export const useClubStats = () => {

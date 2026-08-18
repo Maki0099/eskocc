@@ -1,26 +1,39 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { Users, TrendingUp, Trophy, Activity } from "lucide-react";
+import { Users, TrendingUp, Trophy, Activity, Mountain } from "lucide-react";
 
 interface MemberStats {
   id: string;
   ytd_distance: number;
+  ytd_elevation?: number;
   target: number;
 }
 
 interface ClubSummaryStatsProps {
   members: MemberStats[];
   clubTotal: number;
+  clubElevation?: number;
 }
 
-const ClubSummaryStats = ({ members, clubTotal }: ClubSummaryStatsProps) => {
+const ClubSummaryStats = ({ members, clubTotal, clubElevation = 0 }: ClubSummaryStatsProps) => {
   const totalMembers = members.length;
   const membersWithDistance = members.filter(m => m.ytd_distance > 0);
   const averageDistance = membersWithDistance.length > 0
     ? Math.round(clubTotal / membersWithDistance.length)
     : 0;
+  const averageElevation = membersWithDistance.length > 0
+    ? Math.round(clubElevation / membersWithDistance.length)
+    : 0;
   const membersCompletedGoal = members.filter(m => m.target > 0 && m.ytd_distance >= m.target).length;
 
   const stats = [
+    {
+      icon: Mountain,
+      label: "Nastoupáno celkem",
+      value: `${clubElevation.toLocaleString("cs-CZ")} m`,
+      subtext: `Ø ${averageElevation.toLocaleString("cs-CZ")} m na člena`,
+      color: "text-primary",
+      bgColor: "bg-primary/10"
+    },
     {
       icon: Users,
       label: "Aktivních členů",

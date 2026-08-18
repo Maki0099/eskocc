@@ -23,6 +23,7 @@ import {
   Award,
   Users,
   Bike,
+  Mountain,
   AlertCircle,
   CheckCircle2,
   HelpCircle,
@@ -39,9 +40,12 @@ interface MemberStats {
   avatar_url: string | null;
   role: AppRole;
   ytd_distance: number;
+  ytd_elevation: number;
   target: number;
   age_category: string;
 }
+
+type SortMode = "distance" | "elevation";
 
 const Statistics = () => {
   const { user } = useAuth();
@@ -52,6 +56,8 @@ const Statistics = () => {
   const [settings, setSettings] = useState<ChallengeSettings | null>(null);
   const [members, setMembers] = useState<MemberStats[]>([]);
   const [clubTotal, setClubTotal] = useState(0);
+  const [clubElevation, setClubElevation] = useState(0);
+  const [sortMode, setSortMode] = useState<SortMode>("distance");
   const [error, setError] = useState<string | null>(null);
   const exportRef = useRef<HTMLDivElement>(null);
 
@@ -112,6 +118,7 @@ const Statistics = () => {
             avatar_url: profile.avatar_url,
             role: (role?.role as AppRole) || "member",
             ytd_distance,
+            ytd_elevation: profile.strava_ytd_elevation || 0,
             target,
             age_category: profile.age_category,
           };
@@ -121,6 +128,7 @@ const Statistics = () => {
 
         setMembers(memberStats);
         setClubTotal(memberStats.reduce((sum, m) => sum + m.ytd_distance, 0));
+        setClubElevation(memberStats.reduce((sum, m) => sum + m.ytd_elevation, 0));
       } catch (err) {
         console.error("Error fetching statistics:", err);
         setError("Nepodařilo se načíst statistiky");
@@ -166,6 +174,12 @@ const Statistics = () => {
     if (ageCategory === 'under_60') return "40–60";
     return "Pod 40";
   };
+
+  const sortedMembers = [...members].sort((a, b) =>
+    sortMode === "elevation"
+      ? b.ytd_elevation - a.ytd_elevation
+      : b.ytd_distance - a.ytd_distance
+  );
 
   if (loading) {
     return (
@@ -331,14 +345,36 @@ const Statistics = () => {
                 </div>
               )}
 
-              <ClubSummaryStats members={members} clubTotal={clubTotal} />
+              <ClubSummaryStats members={members} clubTotal={clubTotal} clubElevation={clubElevation} />
 
               <Card className="animate-fade-up animation-delay-400" data-tour="leaderboard">
                 <CardHeader className="pb-4">
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <Trophy className="w-5 h-5 text-primary" />
-                    Pořadí členů
-                  </CardTitle>
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Trophy className="w-5 h-5 text-primary" />
+                      Pořadí členů
+                    </CardTitle>
+                    <div className="inline-flex rounded-lg bg-muted p-0.5" data-export-ignore="true">
+                      <button
+                        type="button"
+                        onClick={() => setSortMode("distance")}
+                        className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                          sortMode === "distance" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"
+                        }`}
+                      >
+                        Kilometry
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSortMode("elevation")}
+                        className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                          sortMode === "elevation" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"
+                        }`}
+                      >
+                        Převýšení
+                      </button>
+                    </div>
+                  </div>
                 </CardHeader>
                 <CardContent className="px-4 pb-4">
                   {members.length === 0 ? (
@@ -347,7 +383,7 @@ const Statistics = () => {
                     </p>
                   ) : (
                     <div className="space-y-2">
-                      {members.map((member, index) => {
+                      {sortedMembers.map((member, index) => {
                         const rawPercentage = member.target > 0
                           ? Math.round((member.ytd_distance / member.target) * 100)
                           : 0;
@@ -385,6 +421,10 @@ const Statistics = () => {
                                   </p>
                                   <p className="text-xs text-muted-foreground whitespace-nowrap mt-0.5">
                                     {getAgeCategoryLabel(member.age_category)}
+                                    <span className="md:hidden inline-flex items-center gap-0.5 ml-1.5">
+                                      <Mountain className="w-3 h-3" />
+                                      {member.ytd_elevation.toLocaleString("cs-CZ")} m
+                                    </span>
                                   </p>
                                 </div>
                               </Link>
@@ -396,6 +436,10 @@ const Statistics = () => {
                                   </span>
                                   <span className="text-muted-foreground">
                                     / {member.target.toLocaleString()} km
+                                  </span>
+                                  <span className="text-muted-foreground inline-flex items-center gap-1 whitespace-nowrap">
+                                    <Mountain className="w-3.5 h-3.5" />
+                                    {member.ytd_elevation.toLocaleString("cs-CZ")} m
                                   </span>
                                   <span
                                     className={`ml-auto font-medium inline-flex items-center gap-1 ${

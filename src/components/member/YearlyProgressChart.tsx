@@ -20,6 +20,8 @@ interface ProgressRow {
   day_km: number;
   cumulative_km: number;
   target: number;
+  day_elevation: number;
+  cumulative_elevation: number;
 }
 
 interface ChartPoint {
@@ -27,7 +29,11 @@ interface ChartPoint {
   day: string;
   dayKm: number;
   cumulativeKm: number;
+  dayElevation: number;
+  cumulativeElevation: number;
 }
+
+type Metric = "distance" | "elevation";
 
 interface Props {
   userId: string;
@@ -44,29 +50,37 @@ const formatMonthTick = (value: number) =>
 const YearlyProgressChart = ({ userId }: Props) => {
   const [data, setData] = useState<ChartPoint[] | null>(null);
   const [target, setTarget] = useState<number | null>(null);
+  const [metric, setMetric] = useState<Metric>("distance");
   const [loading, setLoading] = useState(true);
   const year = new Date().getFullYear();
+
+  const isDistance = metric === "distance";
+  const unit = isDistance ? "km" : "m";
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (!active || !payload?.length) return null;
     const p = payload[0].payload as ChartPoint;
-    const achieved = target && target > 0 ? Math.round((p.cumulativeKm / target) * 100) : 0;
+    const total = isDistance ? p.cumulativeKm : p.cumulativeElevation;
+    const dayValue = isDistance ? p.dayKm : p.dayElevation;
+    const achieved = isDistance && target && target > 0
+      ? Math.round((p.cumulativeKm / target) * 100)
+      : 0;
     return (
       <div className="rounded-md border border-border bg-popover px-3 py-2 text-xs shadow-md">
         <div className="font-medium text-foreground">
           {format(new Date(p.ts), "d. MMMM yyyy", { locale: cs })}
         </div>
         <div className="mt-1 text-muted-foreground">
-          Celkem: <span className="font-semibold text-foreground">{p.cumulativeKm.toLocaleString("cs-CZ")} km</span>
+          Celkem: <span className="font-semibold text-foreground">{total.toLocaleString("cs-CZ")} {unit}</span>
         </div>
-        {target && target > 0 && (
+        {isDistance && target && target > 0 && (
           <div className="text-muted-foreground">
             Plnění cíle: <span className="font-semibold text-foreground">{achieved}%</span>
           </div>
         )}
-        {p.dayKm > 0 && (
+        {dayValue > 0 && (
           <div className="text-muted-foreground">
-            Ten den: {p.dayKm.toLocaleString("cs-CZ")} km
+            Ten den: {dayValue.toLocaleString("cs-CZ")} {unit}
           </div>
         )}
       </div>
@@ -98,12 +112,21 @@ const YearlyProgressChart = ({ userId }: Props) => {
         day: r.day,
         dayKm: Number(r.day_km) || 0,
         cumulativeKm: Number(r.cumulative_km) || 0,
+        dayElevation: Number(r.day_elevation) || 0,
+        cumulativeElevation: Number(r.cumulative_elevation) || 0,
       }));
 
       if (points.length > 0) {
         const yearStart = new Date(year, 0, 1).getTime();
         if (points[0].ts > yearStart) {
-          points.unshift({ ts: yearStart, day: `${year}-01-01`, dayKm: 0, cumulativeKm: 0 });
+          points.unshift({
+            ts: yearStart,
+            day: `${year}-01-01`,
+            dayKm: 0,
+            cumulativeKm: 0,
+            dayElevation: 0,
+            cumulativeElevation: 0,
+          });
         }
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -114,6 +137,8 @@ const YearlyProgressChart = ({ userId }: Props) => {
             day: today.toISOString().slice(0, 10),
             dayKm: 0,
             cumulativeKm: last.cumulativeKm,
+            dayElevation: 0,
+            cumulativeElevation: last.cumulativeElevation,
           });
         }
       }
@@ -126,14 +151,36 @@ const YearlyProgressChart = ({ userId }: Props) => {
     };
   }, [userId, year]);
 
-  const maxY = data && data.length > 0
-    ? Math.max(...data.map((d) => d.cumulativeKm), target || 0)
-    : target || 0;
+  const values = data?.map((d) => (isDistance ? d.cumulativeKm : d.cumulativeElevation)) ?? [];
+  const targetForAxis = isDistance ? target || 0 : 0;
+  const maxY = values.length > 0 ? Math.max(...values, targetForAxis) : targetForAxis;
 
   return (
     <Card className="mb-8">
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg">Průběh sezóny {year}</CardTitle>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <CardTitle className="text-lg">Průběh sezóny {year}</CardTitle>
+          <div className="inline-flex rounded-lg bg-muted p-0.5">
+            <button
+              type="button"
+              onClick={() => setMetric("distance")}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                isDistance ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"
+              }`}
+            >
+              Kilometry
+            </button>
+            <button
+              type="button"
+              onClick={() => setMetric("elevation")}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                !isDistance ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"
+              }`}
+            >
+              Převýšení
+            </button>
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         {loading ? (
@@ -179,12 +226,12 @@ const YearlyProgressChart = ({ userId }: Props) => {
                 <Tooltip content={<CustomTooltip />} />
                 <Area
                   type="monotone"
-                  dataKey="cumulativeKm"
+                  dataKey={isDistance ? "cumulativeKm" : "cumulativeElevation"}
                   stroke="hsl(var(--primary))"
                   strokeWidth={2}
                   fill="url(#progressGradient)"
                 />
-                {target && target > 0 && (
+                {isDistance && target && target > 0 && (
                   <ReferenceLine
                     y={target}
                     stroke="hsl(var(--accent))"
@@ -204,8 +251,10 @@ const YearlyProgressChart = ({ userId }: Props) => {
           </div>
         )}
         <p className="text-xs text-muted-foreground text-center mt-4">
-          Kumulativní km z aktivit v klubu ESKO.cc na Stravě
-          {target && target > 0 && (
+          {isDistance
+            ? "Kumulativní km z aktivit v klubu ESKO.cc na Stravě"
+            : "Kumulativní nastoupané metry z aktivit v klubu ESKO.cc na Stravě"}
+          {isDistance && target && target > 0 && (
             <span className="block mt-1">
               Přerušovaná čára = roční cíl ({target.toLocaleString("cs-CZ")} km)
             </span>
