@@ -23,6 +23,7 @@ import {
   Award,
   Users,
   Bike,
+  Mountain,
   AlertCircle,
   CheckCircle2,
   HelpCircle,
