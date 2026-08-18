@@ -71,7 +71,7 @@ const MemberProfile = () => {
       try {
         const { data: profileData, error: profileError } = await supabase
           .from("member_profiles_public")
-          .select("full_name, nickname, avatar_url, created_at, strava_ytd_distance, strava_ytd_count")
+          .select("full_name, nickname, avatar_url, created_at, strava_ytd_distance, strava_ytd_count, strava_ytd_elevation")
           .eq("id", userId)
           .maybeSingle();
 
@@ -166,6 +166,7 @@ const MemberProfile = () => {
   const isOwnProfile = user?.id === userId;
   const ytdDistance = member.strava_ytd_distance ?? 0;
   const ytdCount = member.strava_ytd_count ?? 0;
+  const ytdElevation = member.strava_ytd_elevation ?? 0;
 
   return (
     <div className="min-h-screen bg-background">
@@ -235,19 +236,26 @@ const MemberProfile = () => {
             <CardTitle className="text-lg">Statistiky tohoto roku</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div className="text-center">
                 <div className="flex items-center justify-center mb-2">
                   <TrendingUp className="w-5 h-5 text-primary" />
                 </div>
-                <p className="text-3xl font-bold">{ytdDistance.toLocaleString()}</p>
+                <p className="text-2xl md:text-3xl font-bold">{ytdDistance.toLocaleString("cs-CZ")}</p>
                 <p className="text-sm text-muted-foreground">km najeto</p>
+              </div>
+              <div className="text-center">
+                <div className="flex items-center justify-center mb-2">
+                  <Mountain className="w-5 h-5 text-primary" />
+                </div>
+                <p className="text-2xl md:text-3xl font-bold">{ytdElevation.toLocaleString("cs-CZ")}</p>
+                <p className="text-sm text-muted-foreground">m nastoupáno</p>
               </div>
               <div className="text-center">
                 <div className="flex items-center justify-center mb-2">
                   <Bike className="w-5 h-5 text-primary" />
                 </div>
-                <p className="text-3xl font-bold">{ytdCount}</p>
+                <p className="text-2xl md:text-3xl font-bold">{ytdCount}</p>
                 <p className="text-sm text-muted-foreground">jízd</p>
               </div>
             </div>
