@@ -354,7 +354,7 @@ const Statistics = () => {
                       <Trophy className="w-5 h-5 text-primary" />
                       Pořadí členů
                     </CardTitle>
-                    <div className="inline-flex rounded-lg bg-muted p-0.5" data-export-hide>
+                    <div className="inline-flex rounded-lg bg-muted p-0.5" data-export-ignore="true">
                       <button
                         type="button"
                         onClick={() => setSortMode("distance")}
