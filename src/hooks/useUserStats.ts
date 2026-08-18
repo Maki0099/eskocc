@@ -13,6 +13,7 @@ interface UserProfile {
 interface UserStats {
   ytdDistance: number | null;
   ytdCount: number | null;
+  ytdElevation: number | null;
   personalYtdDistance: number | null;
   personalYtdCount: number | null;
   personalStatsCachedAt: string | null;
