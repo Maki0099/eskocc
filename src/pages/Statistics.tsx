@@ -338,14 +338,36 @@ const Statistics = () => {
                 </div>
               )}
 
-              <ClubSummaryStats members={members} clubTotal={clubTotal} />
+              <ClubSummaryStats members={members} clubTotal={clubTotal} clubElevation={clubElevation} />
 
               <Card className="animate-fade-up animation-delay-400" data-tour="leaderboard">
                 <CardHeader className="pb-4">
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <Trophy className="w-5 h-5 text-primary" />
-                    Pořadí členů
-                  </CardTitle>
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Trophy className="w-5 h-5 text-primary" />
+                      Pořadí členů
+                    </CardTitle>
+                    <div className="inline-flex rounded-lg bg-muted p-0.5" data-export-hide>
+                      <button
+                        type="button"
+                        onClick={() => setSortMode("distance")}
+                        className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                          sortMode === "distance" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"
+                        }`}
+                      >
+                        Kilometry
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSortMode("elevation")}
+                        className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                          sortMode === "elevation" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"
+                        }`}
+                      >
+                        Převýšení
+                      </button>
+                    </div>
+                  </div>
                 </CardHeader>
                 <CardContent className="px-4 pb-4">
                   {members.length === 0 ? (
@@ -354,7 +376,7 @@ const Statistics = () => {
                     </p>
                   ) : (
                     <div className="space-y-2">
-                      {members.map((member, index) => {
+                      {sortedMembers.map((member, index) => {
                         const rawPercentage = member.target > 0
                           ? Math.round((member.ytd_distance / member.target) * 100)
                           : 0;
