@@ -174,6 +174,12 @@ const Statistics = () => {
     return "Pod 40";
   };
 
+  const sortedMembers = [...members].sort((a, b) =>
+    sortMode === "elevation"
+      ? b.ytd_elevation - a.ytd_elevation
+      : b.ytd_distance - a.ytd_distance
+  );
+
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col bg-background">
