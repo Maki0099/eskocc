@@ -28,6 +28,7 @@ export const useUserStats = (): UserStats => {
   const { user } = useAuth();
   const [ytdDistance, setYtdDistance] = useState<number | null>(null);
   const [ytdCount, setYtdCount] = useState<number | null>(null);
+  const [ytdElevation, setYtdElevation] = useState<number | null>(null);
   const [personalYtdDistance, setPersonalYtdDistance] = useState<number | null>(null);
   const [personalYtdCount, setPersonalYtdCount] = useState<number | null>(null);
   const [personalStatsCachedAt, setPersonalStatsCachedAt] = useState<string | null>(null);
@@ -48,13 +49,14 @@ export const useUserStats = (): UserStats => {
 
     const { data: profileData } = await supabase
       .from('profiles')
-      .select('full_name, nickname, avatar_url, club_match_name, strava_ytd_distance, strava_ytd_count, personal_ytd_distance, personal_ytd_count, personal_stats_cached_at')
+      .select('full_name, nickname, avatar_url, club_match_name, strava_ytd_distance, strava_ytd_count, strava_ytd_elevation, personal_ytd_distance, personal_ytd_count, personal_stats_cached_at')
       .eq('id', user.id)
       .maybeSingle();
 
     if (profileData) {
       setYtdDistance(profileData.strava_ytd_distance);
       setYtdCount(profileData.strava_ytd_count);
+      setYtdElevation((profileData as any).strava_ytd_elevation ?? null);
       setPersonalYtdDistance((profileData as any).personal_ytd_distance ?? null);
       setPersonalYtdCount((profileData as any).personal_ytd_count ?? null);
       setPersonalStatsCachedAt((profileData as any).personal_stats_cached_at ?? null);
@@ -91,6 +93,7 @@ export const useUserStats = (): UserStats => {
   return {
     ytdDistance,
     ytdCount,
+    ytdElevation,
     personalYtdDistance,
     personalYtdCount,
     personalStatsCachedAt,
