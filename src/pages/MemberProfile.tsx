@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTour } from "@/hooks/useTour";
 import TourProvider from "@/components/tour/TourProvider";
-import { ArrowLeft, Calendar, MapPin, HelpCircle, Bike, TrendingUp } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, HelpCircle, Bike, TrendingUp, Mountain } from "lucide-react";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,7 @@ interface MemberData {
   created_at: string;
   strava_ytd_distance: number | null;
   strava_ytd_count: number | null;
+  strava_ytd_elevation: number | null;
 }
 
 interface EventParticipation {
