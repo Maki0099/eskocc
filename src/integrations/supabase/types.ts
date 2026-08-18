@@ -809,6 +809,7 @@ export type Database = {
           strava_stats_cached_at: string | null
           strava_ytd_count: number | null
           strava_ytd_distance: number | null
+          strava_ytd_elevation: number
           updated_at: string
         }
         Insert: {
@@ -828,6 +829,7 @@ export type Database = {
           strava_stats_cached_at?: string | null
           strava_ytd_count?: number | null
           strava_ytd_distance?: number | null
+          strava_ytd_elevation?: number
           updated_at?: string
         }
         Update: {
@@ -847,6 +849,7 @@ export type Database = {
           strava_stats_cached_at?: string | null
           strava_ytd_count?: number | null
           strava_ytd_distance?: number | null
+          strava_ytd_elevation?: number
           updated_at?: string
         }
         Relationships: []
@@ -1090,6 +1093,7 @@ export type Database = {
           nickname: string | null
           strava_ytd_count: number | null
           strava_ytd_distance: number | null
+          strava_ytd_elevation: number | null
         }
         Insert: {
           avatar_url?: string | null
@@ -1099,6 +1103,7 @@ export type Database = {
           nickname?: string | null
           strava_ytd_count?: number | null
           strava_ytd_distance?: number | null
+          strava_ytd_elevation?: number | null
         }
         Update: {
           avatar_url?: string | null
@@ -1108,6 +1113,7 @@ export type Database = {
           nickname?: string | null
           strava_ytd_count?: number | null
           strava_ytd_distance?: number | null
+          strava_ytd_elevation?: number | null
         }
         Relationships: []
       }
@@ -1152,13 +1158,16 @@ export type Database = {
           nickname: string
           strava_ytd_count: number
           strava_ytd_distance: number
+          strava_ytd_elevation: number
         }[]
       }
       get_member_yearly_progress: {
         Args: { _user_id: string }
         Returns: {
+          cumulative_elevation: number
           cumulative_km: number
           day: string
+          day_elevation: number
           day_km: number
           target: number
         }[]
