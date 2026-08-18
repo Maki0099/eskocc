@@ -55,6 +55,8 @@ const Statistics = () => {
   const [settings, setSettings] = useState<ChallengeSettings | null>(null);
   const [members, setMembers] = useState<MemberStats[]>([]);
   const [clubTotal, setClubTotal] = useState(0);
+  const [clubElevation, setClubElevation] = useState(0);
+  const [sortMode, setSortMode] = useState<SortMode>("distance");
   const [error, setError] = useState<string | null>(null);
   const exportRef = useRef<HTMLDivElement>(null);
 
@@ -115,6 +117,7 @@ const Statistics = () => {
             avatar_url: profile.avatar_url,
             role: (role?.role as AppRole) || "member",
             ytd_distance,
+            ytd_elevation: profile.strava_ytd_elevation || 0,
             target,
             age_category: profile.age_category,
           };
@@ -124,6 +127,7 @@ const Statistics = () => {
 
         setMembers(memberStats);
         setClubTotal(memberStats.reduce((sum, m) => sum + m.ytd_distance, 0));
+        setClubElevation(memberStats.reduce((sum, m) => sum + m.ytd_elevation, 0));
       } catch (err) {
         console.error("Error fetching statistics:", err);
         setError("Nepodařilo se načíst statistiky");
