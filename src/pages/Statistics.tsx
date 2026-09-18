@@ -63,6 +63,7 @@ const Statistics = () => {
   const { startTour, shouldAutoStart, isTourCompleted } = useTour();
   const navigate = useNavigate();
   const [tourRunning, setTourRunning] = useState(false);
+  const [howToOpen, setHowToOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [settings, setSettings] = useState<ChallengeSettings | null>(null);
   const [members, setMembers] = useState<MemberStats[]>([]);
