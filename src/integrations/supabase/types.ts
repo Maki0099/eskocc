@@ -1239,6 +1239,18 @@ export type Database = {
       }
     }
     Functions: {
+      get_club_activity_polylines: {
+        Args: { _days?: number }
+        Returns: {
+          activity_date: string
+          distance_km: number
+          full_name: string
+          map_polyline: string
+          start_lat: number
+          start_lng: number
+          user_id: string
+        }[]
+      }
       get_club_activity_starts: {
         Args: { _days?: number }
         Returns: {
@@ -1248,6 +1260,19 @@ export type Database = {
           start_lat: number
           start_lng: number
           user_id: string
+        }[]
+      }
+      get_club_records: {
+        Args: { _year?: number }
+        Returns: {
+          activity_date: string
+          activity_name: string
+          avatar_url: string
+          full_name: string
+          label: string
+          record_key: string
+          user_id: string
+          value: string
         }[]
       }
       get_club_strava_status: {
@@ -1318,6 +1343,21 @@ export type Database = {
           label: string
         }[]
       }
+      get_member_calories_monthly: {
+        Args: { _user_id: string; _year?: number }
+        Returns: {
+          calories: number
+          month: number
+          rides: number
+        }[]
+      }
+      get_member_consistency_streak: {
+        Args: { _user_id: string; _year?: number }
+        Returns: {
+          current_streak: number
+          longest_streak: number
+        }[]
+      }
       get_member_duplicate_candidates: {
         Args: never
         Returns: {
@@ -1338,6 +1378,16 @@ export type Database = {
           likely_duplicate: boolean
           member_name: string
           user_id: string
+        }[]
+      }
+      get_member_heart_rate_zones: {
+        Args: { _user_id: string; _year?: number }
+        Returns: {
+          minutes: number
+          rides: number
+          zone_label: string
+          zone_max: number
+          zone_min: number
         }[]
       }
       get_member_heartrate_trend: {
@@ -1367,6 +1417,15 @@ export type Database = {
           total_calories: number
           total_elevation: number
           total_km: number
+        }[]
+      }
+      get_member_power_trend: {
+        Args: { _user_id: string; _year?: number }
+        Returns: {
+          avg_watts: number
+          max_watts: number
+          month: number
+          rides: number
         }[]
       }
       get_member_records: {
@@ -1426,6 +1485,15 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_member_trainer_ratio: {
+        Args: { _user_id: string; _year?: number }
+        Returns: {
+          category: string
+          km: number
+          minutes: number
+          rides: number
+        }[]
+      }
       get_member_weekly_load: {
         Args: { _user_id: string; _weeks?: number }
         Returns: {
@@ -1445,6 +1513,17 @@ export type Database = {
           day_elevation: number
           day_km: number
           target: number
+        }[]
+      }
+      get_monthly_leaderboard: {
+        Args: { _month?: number; _year?: number }
+        Returns: {
+          avatar_url: string
+          elevation: number
+          full_name: string
+          km: number
+          rides: number
+          user_id: string
         }[]
       }
       get_public_club_stats: { Args: never; Returns: Json }
