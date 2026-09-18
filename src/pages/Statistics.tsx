@@ -90,7 +90,7 @@ const Statistics = () => {
         _mode: rideFilter,
       });
       if (!active) return;
-      const map: Record<string, { km: number; elevation: number }> = {};
+      const map: Record<string, { km: number; elevation: number; rides: number }> = {};
       (data as any[] || []).forEach((row) => {
         map[row.user_id] = { km: Number(row.km), elevation: Number(row.elevation), rides: Number(row.rides) };
       });
