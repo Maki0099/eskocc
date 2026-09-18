@@ -270,6 +270,10 @@ const MemberProfile = () => {
 
         {userId && <YearlyProgressChart userId={userId} />}
 
+        {userId && <MemberHighlights userId={userId} />}
+        {userId && <ActivityHeatmap userId={userId} />}
+        {userId && <SportBreakdown userId={userId} />}
+
 
         <div className="grid grid-cols-2 gap-4 mb-8" data-tour="member-stats">
           <Card>
