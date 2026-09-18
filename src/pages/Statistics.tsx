@@ -493,7 +493,7 @@ const Statistics = () => {
                   )}
                 </CardHeader>
                 <CardContent className="px-4 pb-4">
-                  {members.length === 0 ? (
+                  {sortedMembers.length === 0 ? (
                     <p className="text-center text-muted-foreground py-8">
                       Zatím nejsou k dispozici žádná data
                     </p>
