@@ -767,6 +767,72 @@ export type Database = {
           },
         ]
       }
+      member_activities: {
+        Row: {
+          activity_date: string
+          created_at: string
+          distance_m: number
+          elevation_gain: number
+          excluded_as_duplicate: boolean
+          excluded_at: string | null
+          excluded_by: string | null
+          id: string
+          moving_time: number
+          name: string | null
+          sport_type: string | null
+          strava_activity_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          activity_date: string
+          created_at?: string
+          distance_m?: number
+          elevation_gain?: number
+          excluded_as_duplicate?: boolean
+          excluded_at?: string | null
+          excluded_by?: string | null
+          id?: string
+          moving_time?: number
+          name?: string | null
+          sport_type?: string | null
+          strava_activity_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          activity_date?: string
+          created_at?: string
+          distance_m?: number
+          elevation_gain?: number
+          excluded_as_duplicate?: boolean
+          excluded_at?: string | null
+          excluded_by?: string | null
+          id?: string
+          moving_time?: number
+          name?: string | null
+          sport_type?: string | null
+          strava_activity_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_activities_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "member_profiles_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_activities_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string
@@ -1178,6 +1244,28 @@ export type Database = {
           matched_user_id: string
         }[]
       }
+      get_member_duplicate_candidates: {
+        Args: never
+        Returns: {
+          a_date: string
+          a_distance_m: number
+          a_elevation: number
+          a_excluded: boolean
+          a_id: string
+          a_moving_time: number
+          a_sport_type: string
+          b_date: string
+          b_distance_m: number
+          b_elevation: number
+          b_excluded: boolean
+          b_id: string
+          b_moving_time: number
+          b_sport_type: string
+          likely_duplicate: boolean
+          member_name: string
+          user_id: string
+        }[]
+      }
       get_member_statistics: {
         Args: never
         Returns: {
@@ -1186,10 +1274,23 @@ export type Database = {
           created_at: string
           full_name: string
           id: string
+          is_connected: boolean
           nickname: string
           strava_ytd_count: number
           strava_ytd_distance: number
           strava_ytd_elevation: number
+        }[]
+      }
+      get_member_strava_connections: {
+        Args: never
+        Returns: {
+          activities_count: number
+          athlete_id: string
+          full_name: string
+          last_error: string
+          last_synced_at: string
+          needs_reauth: boolean
+          user_id: string
         }[]
       }
       get_member_yearly_progress: {
@@ -1226,7 +1327,18 @@ export type Database = {
           users_zeroed: number
         }[]
       }
+      recalc_member_ytd: {
+        Args: never
+        Returns: {
+          users_updated: number
+          users_zeroed: number
+        }[]
+      }
       set_activity_duplicate: {
+        Args: { _excluded: boolean; _id: string }
+        Returns: undefined
+      }
+      set_member_activity_duplicate: {
         Args: { _excluded: boolean; _id: string }
         Returns: undefined
       }

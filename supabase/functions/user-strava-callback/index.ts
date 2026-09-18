@@ -112,7 +112,14 @@ Deno.serve(async (req) => {
         headers: { "x-trigger-source": "user-connect", "x-user-id": userId },
       });
     } catch (e) {
-      console.warn("Initial sync failed (non-fatal):", e);
+      console.warn("Initial stats sync failed (non-fatal):", e);
+    }
+    try {
+      await supabase.functions.invoke("sync-member-activities", {
+        headers: { "x-trigger-source": "user-connect", "x-user-id": userId },
+      });
+    } catch (e) {
+      console.warn("Initial activities sync failed (non-fatal):", e);
     }
 
     return Response.redirect(`${appUrl}/account?strava=connected`, 302);

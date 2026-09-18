@@ -44,3 +44,15 @@ verify_jwt = false
 
 [functions.match-club-athlete]
 verify_jwt = true
+
+[functions.user-strava-auth]
+verify_jwt = true
+
+[functions.user-strava-callback]
+verify_jwt = false
+
+[functions.strava-stats-batch]
+verify_jwt = false
+
+[functions.sync-member-activities]
+verify_jwt = false
