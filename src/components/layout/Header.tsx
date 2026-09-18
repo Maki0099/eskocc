@@ -1,15 +1,25 @@
 import { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, User, ChevronRight, Moon, Sun, Sunrise, Download, Bell, HelpCircle } from "lucide-react";
+import { Menu, X, User, ChevronRight, Moon, Sun, Sunrise, Download, Bell, HelpCircle, LogOut, Settings, LayoutDashboard } from "lucide-react";
 import { useTour, TourId } from "@/hooks/useTour";
 import TourProvider from "@/components/tour/TourProvider";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/components/ThemeProvider";
+import { supabase } from "@/integrations/supabase/client";
 import logoWhite from "@/assets/logo-horizontal-white.png";
 import logoDark from "@/assets/logo-horizontal-dark.png";
-import { ROUTES, NAV_ITEMS } from "@/lib/routes";
+import { ROUTES, NAV_ITEMS, getMemberProfilePath } from "@/lib/routes";
+import { getInitials } from "@/lib/user-utils";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import NotificationBell from "./NotificationBell";
 
 // Mobile notification link component
@@ -45,7 +55,7 @@ const getTourIdFromPath = (pathname: string): TourId | null => {
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { user, loading } = useAuth();
+  const { user, loading, signOut } = useAuth();
   const { theme, setTheme, effectiveTheme, sunTimes } = useTheme();
   const location = useLocation();
   const { startTour, endTour } = useTour();
@@ -53,6 +63,35 @@ const Header = () => {
 
   const currentTourId = getTourIdFromPath(location.pathname);
   const hasTour = currentTourId !== null;
+  const navigate = useNavigate();
+
+  const [profile, setProfile] = useState<{ full_name: string | null; avatar_url: string | null } | null>(null);
+  const [profileLoading, setProfileLoading] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!user) {
+      setProfile(null);
+      setProfileLoading(false);
+      return;
+    }
+    setProfileLoading(true);
+    const loadProfile = async () => {
+      const { data, error } = await supabase
+        .from("member_profiles_public")
+        .select("full_name, avatar_url")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (!cancelled) {
+        if (!error && data) {
+          setProfile(data);
+        }
+        setProfileLoading(false);
+      }
+    };
+    loadProfile();
+    return () => { cancelled = true; };
+  }, [user]);
 
   const handleStartTour = () => {
     if (currentTourId) {
@@ -183,12 +222,57 @@ const Header = () => {
               ) : user ? (
                 <>
                   <NotificationBell />
-                  <Link to={ROUTES.DASHBOARD}>
-                    <Button variant="ghost" size="sm" className="gap-2">
-                      <User className="w-4 h-4" />
-                      Dashboard
-                    </Button>
-                  </Link>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="gap-2 pl-2 pr-3 h-10 rounded-full"
+                        aria-label="Otevřít uživatelské menu"
+                      >
+                        <Avatar className="h-7 w-7">
+                          <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.full_name || user.email || "Uživatel"} />
+                          <AvatarFallback className="text-xs">
+                            {profileLoading ? "…" : getInitials(profile?.full_name, user.email)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="hidden lg:inline max-w-[140px] truncate">
+                          {profileLoading ? "Načítání…" : profile?.full_name || user.email}
+                        </span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      <DropdownMenuItem asChild>
+                        <Link to={getMemberProfilePath(user.id)} className="cursor-pointer">
+                          <User className="mr-2 h-4 w-4" />
+                          Můj profil
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to={ROUTES.ACCOUNT} className="cursor-pointer">
+                          <Settings className="mr-2 h-4 w-4" />
+                          Nastavení účtu
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to={ROUTES.DASHBOARD} className="cursor-pointer">
+                          <LayoutDashboard className="mr-2 h-4 w-4" />
+                          Dashboard
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={() => {
+                          signOut();
+                          navigate(ROUTES.HOME);
+                        }}
+                        className="cursor-pointer"
+                      >
+                        <LogOut className="mr-2 h-4 w-4" />
+                        Odhlásit se
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </>
               ) : (
                 <>
@@ -295,13 +379,73 @@ const Header = () => {
               <div className="h-12 bg-muted animate-pulse rounded-xl"></div>
             ) : user ? (
               <div className="flex flex-col gap-3">
-                <Link to={ROUTES.DASHBOARD} className="block">
-                  <Button variant="apple" className="w-full h-12 gap-2 text-base rounded-xl">
-                    <User className="w-5 h-5" />
-                    Dashboard
-                  </Button>
+                <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-background">
+                  <Avatar className="h-10 w-10 shrink-0">
+                    <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.full_name || user.email || "Uživatel"} />
+                    <AvatarFallback>
+                      {profileLoading ? "…" : getInitials(profile?.full_name, user.email)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">
+                      {profileLoading ? "Načítání…" : profile?.full_name || "Člen klubu"}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                  </div>
+                </div>
+
+                <Link
+                  to={getMemberProfilePath(user.id)}
+                  onClick={() => setIsMenuOpen(false)}
+                  className="flex items-center justify-between w-full px-4 py-3 rounded-xl bg-background hover:bg-muted/50 transition-colors"
+                >
+                  <span className="text-sm font-medium flex items-center gap-2">
+                    <User className="w-4 h-4" />
+                    Můj profil
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
                 </Link>
+
+                <Link
+                  to={ROUTES.ACCOUNT}
+                  onClick={() => setIsMenuOpen(false)}
+                  className="flex items-center justify-between w-full px-4 py-3 rounded-xl bg-background hover:bg-muted/50 transition-colors"
+                >
+                  <span className="text-sm font-medium flex items-center gap-2">
+                    <Settings className="w-4 h-4" />
+                    Nastavení účtu
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                </Link>
+
+                <Link
+                  to={ROUTES.DASHBOARD}
+                  onClick={() => setIsMenuOpen(false)}
+                  className="flex items-center justify-between w-full px-4 py-3 rounded-xl bg-background hover:bg-muted/50 transition-colors"
+                >
+                  <span className="text-sm font-medium flex items-center gap-2">
+                    <LayoutDashboard className="w-4 h-4" />
+                    Dashboard
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                </Link>
+
                 <MobileNotificationLink />
+
+                <button
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    signOut();
+                    navigate(ROUTES.HOME);
+                  }}
+                  className="flex items-center justify-between w-full px-4 py-3 rounded-xl bg-background hover:bg-muted/50 transition-colors text-left"
+                >
+                  <span className="text-sm font-medium flex items-center gap-2">
+                    <LogOut className="w-4 h-4" />
+                    Odhlásit se
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                </button>
               </div>
             ) : (
               <div className="flex flex-col gap-3">
