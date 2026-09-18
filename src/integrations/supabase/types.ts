@@ -1174,6 +1174,7 @@ export type Database = {
           b_id: string
           b_moving_time: number
           b_sport_type: string
+          likely_duplicate: boolean
           matched_user_id: string
         }[]
       }

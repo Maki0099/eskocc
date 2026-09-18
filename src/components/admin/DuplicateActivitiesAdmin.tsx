@@ -24,6 +24,7 @@ interface DuplicatePair {
   b_date: string;
   a_excluded: boolean;
   b_excluded: boolean;
+  likely_duplicate: boolean;
 }
 
 const formatKm = (m: number) => `${(m / 1000).toFixed(2)} km`;
@@ -51,7 +52,9 @@ export const DuplicateActivitiesAdmin = () => {
         variant: "destructive",
       });
     } else {
-      setPairs((data as unknown as DuplicatePair[]) ?? []);
+      const rows = (data as unknown as DuplicatePair[]) ?? [];
+      rows.sort((x, y) => Number(y.likely_duplicate) - Number(x.likely_duplicate));
+      setPairs(rows);
     }
     setLoading(false);
   }, [toast]);
@@ -147,7 +150,8 @@ export const DuplicateActivitiesAdmin = () => {
             Možné duplicitní jízdy
           </CardTitle>
           <CardDescription>
-            Dvojice jízd stejného jezdce s téměř shodnou vzdáleností i převýšením. Označená jízda se
+            Dvojice jízd stejného jezdce s téměř shodnou vzdáleností a časem jízdy — typické pro
+            nahrání stejné trasy ze dvou zařízení (např. hodinky + cyklopočítač). Označená jízda se
             přestane počítat do statistik, ale zůstane uložená.
           </CardDescription>
         </div>
@@ -175,6 +179,11 @@ export const DuplicateActivitiesAdmin = () => {
               <div key={`${p.a_id}-${p.b_id}`} className="space-y-2 rounded-2xl border border-border/60 p-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-semibold">{p.athlete_full}</span>
+                  {p.likely_duplicate && (
+                    <Badge variant="destructive" className="text-xs">
+                      Pravděpodobná duplicita
+                    </Badge>
+                  )}
                   <Badge variant="outline" className="text-xs">
                     rozdíl {distDiff} m · {timeDiff} s · {elevDiff} m převýšení
                   </Badge>
