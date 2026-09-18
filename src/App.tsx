@@ -30,6 +30,7 @@ const Cafe = lazy(() => import("./pages/Cafe"));
 const About = lazy(() => import("./pages/About"));
 const Admin = lazy(() => import("./pages/Admin"));
 const Statistics = lazy(() => import("./pages/Statistics"));
+const ClubMap = lazy(() => import("./pages/ClubMap"));
 const Install = lazy(() => import("./pages/Install"));
 const Documents = lazy(() => import("./pages/Documents"));
 const Notifications = lazy(() => import("./pages/Notifications"));
@@ -63,6 +64,7 @@ const App = () => (
                 <Route path={ROUTES.GALLERY} element={<Gallery />} />
                 <Route path={ROUTES.CAFE} element={<Cafe />} />
                 <Route path={ROUTES.STATISTICS} element={<Statistics />} />
+                <Route path={ROUTES.CLUB_MAP} element={<ClubMap />} />
                 <Route path={ROUTE_PATTERNS.MEMBER_PROFILE} element={<MemberProfile />} />
                 <Route path={ROUTES.ABOUT} element={<About />} />
                 <Route path={ROUTES.INSTALL} element={<Install />} />

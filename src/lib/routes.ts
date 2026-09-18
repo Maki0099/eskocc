@@ -16,6 +16,7 @@ export const ROUTES = {
   CAFE: '/cafe',
   ABOUT: '/about',
   STATISTICS: '/statistiky',
+  CLUB_MAP: '/mapa-klubu',
   DOCUMENTS: '/dokumenty',
   INSTALL: '/install',
   NOTIFICATIONS: '/notifications',
