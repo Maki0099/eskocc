@@ -770,49 +770,94 @@ export type Database = {
       member_activities: {
         Row: {
           activity_date: string
+          average_cadence: number | null
+          average_heartrate: number | null
+          average_speed: number | null
+          average_watts: number | null
+          calories: number | null
           created_at: string
           distance_m: number
+          elapsed_time: number | null
           elevation_gain: number
           excluded_as_duplicate: boolean
           excluded_at: string | null
           excluded_by: string | null
           id: string
+          is_commute: boolean
+          is_race: boolean
+          is_trainer: boolean
+          map_polyline: string | null
+          max_heartrate: number | null
+          max_speed: number | null
           moving_time: number
           name: string | null
           sport_type: string | null
+          start_lat: number | null
+          start_lng: number | null
           strava_activity_id: string
+          suffer_score: number | null
           updated_at: string
           user_id: string
         }
         Insert: {
           activity_date: string
+          average_cadence?: number | null
+          average_heartrate?: number | null
+          average_speed?: number | null
+          average_watts?: number | null
+          calories?: number | null
           created_at?: string
           distance_m?: number
+          elapsed_time?: number | null
           elevation_gain?: number
           excluded_as_duplicate?: boolean
           excluded_at?: string | null
           excluded_by?: string | null
           id?: string
+          is_commute?: boolean
+          is_race?: boolean
+          is_trainer?: boolean
+          map_polyline?: string | null
+          max_heartrate?: number | null
+          max_speed?: number | null
           moving_time?: number
           name?: string | null
           sport_type?: string | null
+          start_lat?: number | null
+          start_lng?: number | null
           strava_activity_id: string
+          suffer_score?: number | null
           updated_at?: string
           user_id: string
         }
         Update: {
           activity_date?: string
+          average_cadence?: number | null
+          average_heartrate?: number | null
+          average_speed?: number | null
+          average_watts?: number | null
+          calories?: number | null
           created_at?: string
           distance_m?: number
+          elapsed_time?: number | null
           elevation_gain?: number
           excluded_as_duplicate?: boolean
           excluded_at?: string | null
           excluded_by?: string | null
           id?: string
+          is_commute?: boolean
+          is_race?: boolean
+          is_trainer?: boolean
+          map_polyline?: string | null
+          max_heartrate?: number | null
+          max_speed?: number | null
           moving_time?: number
           name?: string | null
           sport_type?: string | null
+          start_lat?: number | null
+          start_lng?: number | null
           strava_activity_id?: string
+          suffer_score?: number | null
           updated_at?: string
           user_id?: string
         }
@@ -1244,6 +1289,15 @@ export type Database = {
           matched_user_id: string
         }[]
       }
+      get_member_activity_heatmap: {
+        Args: { _user_id: string; _year?: number }
+        Returns: {
+          day: string
+          elevation: number
+          km: number
+          rides: number
+        }[]
+      }
       get_member_duplicate_candidates: {
         Args: never
         Returns: {
@@ -1264,6 +1318,36 @@ export type Database = {
           likely_duplicate: boolean
           member_name: string
           user_id: string
+        }[]
+      }
+      get_member_highlights: {
+        Args: { _user_id: string; _year?: number }
+        Returns: {
+          active_days: number
+          avg_heartrate: number
+          avg_speed_kmh: number
+          best_month: number
+          best_month_km: number
+          biggest_climb_date: string
+          biggest_climb_m: number
+          longest_ride_date: string
+          longest_ride_km: number
+          max_speed_kmh: number
+          moving_time: number
+          rides: number
+          total_calories: number
+          total_elevation: number
+          total_km: number
+        }[]
+      }
+      get_member_sport_breakdown: {
+        Args: { _user_id: string; _year?: number }
+        Returns: {
+          elevation: number
+          km: number
+          moving_time: number
+          rides: number
+          sport_type: string
         }[]
       }
       get_member_statistics: {
