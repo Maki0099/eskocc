@@ -1239,6 +1239,17 @@ export type Database = {
       }
     }
     Functions: {
+      get_club_activity_starts: {
+        Args: { _days?: number }
+        Returns: {
+          activity_date: string
+          distance_m: number
+          full_name: string
+          start_lat: number
+          start_lng: number
+          user_id: string
+        }[]
+      }
       get_club_strava_status: {
         Args: never
         Returns: {
@@ -1298,6 +1309,15 @@ export type Database = {
           rides: number
         }[]
       }
+      get_member_badges: {
+        Args: { _user_id: string }
+        Returns: {
+          badge_key: string
+          detail: string
+          earned_at: string
+          label: string
+        }[]
+      }
       get_member_duplicate_candidates: {
         Args: never
         Returns: {
@@ -1320,6 +1340,15 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_member_heartrate_trend: {
+        Args: { _user_id: string; _year: number }
+        Returns: {
+          avg_hr: number
+          max_hr: number
+          month: number
+          rides: number
+        }[]
+      }
       get_member_highlights: {
         Args: { _user_id: string; _year?: number }
         Returns: {
@@ -1338,6 +1367,17 @@ export type Database = {
           total_calories: number
           total_elevation: number
           total_km: number
+        }[]
+      }
+      get_member_records: {
+        Args: { _user_id: string }
+        Returns: {
+          fastest_date: string
+          fastest_kmh: number
+          longest_date: string
+          longest_km: number
+          most_elevation: number
+          most_elevation_date: string
         }[]
       }
       get_member_sport_breakdown: {
@@ -1365,6 +1405,15 @@ export type Database = {
           strava_ytd_elevation: number
         }[]
       }
+      get_member_statistics_filtered: {
+        Args: { _include_commute?: boolean; _include_trainer?: boolean }
+        Returns: {
+          elevation: number
+          km: number
+          rides: number
+          user_id: string
+        }[]
+      }
       get_member_strava_connections: {
         Args: never
         Returns: {
@@ -1375,6 +1424,16 @@ export type Database = {
           last_synced_at: string
           needs_reauth: boolean
           user_id: string
+        }[]
+      }
+      get_member_weekly_load: {
+        Args: { _user_id: string; _weeks?: number }
+        Returns: {
+          elevation: number
+          km: number
+          rides: number
+          suffer: number
+          week_start: string
         }[]
       }
       get_member_yearly_progress: {
@@ -1396,7 +1455,29 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_shared_rides: {
+        Args: { _user_id: string }
+        Returns: {
+          activity_date: string
+          own_distance_km: number
+          partner_avatar: string
+          partner_distance_km: number
+          partner_id: string
+          partner_name: string
+        }[]
+      }
       get_top_members: { Args: { limit_count?: number }; Returns: Json }
+      get_weekly_leaderboard: {
+        Args: never
+        Returns: {
+          avatar_url: string
+          elevation: number
+          full_name: string
+          km: number
+          rides: number
+          user_id: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
