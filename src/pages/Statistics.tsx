@@ -1,7 +1,7 @@
 import Seo from "@/components/Seo";
 import { useEffect, useRef, useState } from "react";
 import StatisticsExportButton from "@/components/statistics/StatisticsExportButton";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
