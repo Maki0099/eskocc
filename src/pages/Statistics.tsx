@@ -553,6 +553,15 @@ const Statistics = () => {
                                   value={progress}
                                   className={`h-3 bg-muted border border-border/60 ${isCompleted ? '[&>div]:bg-green-600' : '[&>div]:bg-primary'}`}
                                 />
+                                {pace && (
+                                  <p className={`mt-1.5 text-[11px] font-medium ${
+                                    pace.done || pace.ahead
+                                      ? "text-green-600 dark:text-green-400"
+                                      : "text-amber-600 dark:text-amber-400"
+                                  }`}>
+                                    {pace.label}
+                                  </p>
+                                )}
                               </div>
 
                               <div className="flex-shrink-0 text-right md:hidden whitespace-nowrap">
