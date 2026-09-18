@@ -628,7 +628,7 @@ const Statistics = () => {
                             </div>
 
                             {pace && (
-                              <p className={`mt-2 text-[11px] font-medium ${
+                              <p className={`mt-2 text-[11px] font-medium md:hidden ${
                                 pace.done
                                   ? "text-green-600 dark:text-green-400"
                                   : pace.ahead
