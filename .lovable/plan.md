@@ -1,21 +1,33 @@
-# Duplicity: označená jízda se objevuje ve více dvojicích
+# Duplicity: chybné datum „načteno" a označování ve více dvojicích
 
-## Co se opravdu stalo
+## Zjištění 1 — proč má 189 jízd datum 1. 9. 2026
 
-V databázi jsou označené přesně 3 jízdy — tedy jen ty, které jste označil. Nic navíc se neoznačilo.
+Všech 189 jízd má naprosto stejný časový údaj `1. 9. 2026 16:00:10`, přestože do databáze přibyly už v červenci a srpnu. Důvod: synchronizace při každém běhu přepíše u všech jízd, které Strava v klubovém přehledu stále nabízí, datum na aktuální čas běhu. Poslední takový běh proběhl 1. 9. 2026 v 16:00.
 
-Problém je v zobrazení: stejná jízda se v přehledu objevuje v mnoha dvojicích. Jízda z 1. 9. je například součástí 41 různých dvojic (všechny jízdy Milana H. z téhož dne synchronizace se navzájem kombinují). Jakmile ji označíte, ukáže se jako „nepočítá se" ve všech 41 dvojicích — vypadá to, jako by se označilo víc jízd.
+Důsledek: údaj „načteno" nevypovídá o ničem užitečném a hlavně rozbíjí detekci duplicit podle „stejného dne synchronizace" — 189 nesouvisejících jízd různých jezdců spadlo do jednoho dne.
 
-## Úprava přehledu
+## Zjištění 2 — proč se označilo víc jízd, než jste označil
 
-1. **Skrýt už vyřešené dvojice** — dvojice, kde je aspoň jedna jízda označená jako duplicita, se z hlavního seznamu odstraní. Zůstanou jen dvojice, kde je ještě potřeba rozhodnout.
-2. **Samostatný seznam „Označené jako duplicita"** — sbalitelná sekce se seznamem jednotlivých označených jízd (ne dvojic), každá jen jednou, s tlačítkem „Přece jen počítat".
-3. **Počítadla** — u nadpisu počet dvojic k rozhodnutí a počet už označených jízd.
-4. **Upozornění u dvojice** — pokud se jízda z dvojice objevuje i v dalších dvojicích, u ní bude drobný popisek „součástí dalších X dvojic", aby bylo jasné, proč zmizí víc řádků najednou.
+V databázi jsou označené přesně 3 jízdy, tedy jen vaše volby. Ale jedna a tatáž jízda se v přehledu objevuje v mnoha dvojicích (jízda z 1. 9. je součástí 41 dvojic), takže po označení se tvářila jako „nepočítá se" úplně všude.
+
+## Změny
+
+### 1. Nepřepisovat datum při synchronizaci
+`sync-club-activities` bude datum nastavovat jen u nově vkládaných jízd; u již existujících zůstane původní první načtení. Tím se datum ustálí a dál se nebude hromadně měnit.
+
+### 2. Opravit už poškozená data
+Jednorázově u jízd s hromadným datem `1. 9. 2026 16:00:10` nastavit datum podle skutečného prvního načtení (`created_at` daného záznamu). Tím se 189 jízd rozpadne zpět do reálných dnů.
+
+### 3. Přehled duplicit — čitelnější seznam
+- Dvojice, kde je aspoň jedna jízda už označená, zmizí z hlavního seznamu.
+- Samostatná sekce „Označené jako duplicita" vypíše jednotlivé označené jízdy (každou jen jednou) s tlačítkem „Přece jen počítat".
+- U nadpisu počet dvojic k rozhodnutí a počet označených jízd.
+- U jízdy, která patří do více dvojic, drobný popisek „součástí dalších X dvojic".
+- Popisek data změnit na „první načtení", aby bylo jasné, co číslo znamená.
 
 ## Technické detaily
 
-- Změna jen ve frontendu: `src/components/admin/DuplicateActivitiesAdmin.tsx`.
-- Rozdělení výsledku RPC na `openPairs` (obě jízdy neoznačené) a `excludedActivities` (unikátní podle `id`, sesbírané z `a_*`/`b_*` polí).
-- Počet výskytů jízdy spočítat v paměti z vrácených dvojic (mapa `id -> počet`).
-- Bez migrace, bez změny `get_duplicate_activity_candidates()`, `set_activity_duplicate()` ani přepočtu statistik.
+- Edge funkce `supabase/functions/sync-club-activities/index.ts`: rozdělit upsert — nové řádky s `activity_date: syncedAt`, existující aktualizovat bez sloupce `activity_date` (např. nejprve načíst existující fingerprinty a pole `activity_date` a u nich zachovat původní hodnotu).
+- Datová oprava: `UPDATE public.club_activities SET activity_date = created_at WHERE activity_date = '2026-09-01 16:00:10.856+00'` (189 řádků, žádné mazání).
+- Frontend `src/components/admin/DuplicateActivitiesAdmin.tsx`: rozdělení výsledku RPC na otevřené dvojice a unikátní označené jízdy, mapa `id -> počet výskytů`, upravené popisky.
+- Beze změny zůstávají `get_duplicate_activity_candidates()`, `set_activity_duplicate()` i přepočet statistik.
