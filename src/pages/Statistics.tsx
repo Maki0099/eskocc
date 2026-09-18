@@ -86,7 +86,7 @@ const Statistics = () => {
     let active = true;
     const load = async () => {
       const { data } = await supabase.rpc("get_member_statistics_filtered" as any, {
-        _include_trainer: rideFilter === "all" ? true : false,
+        _include_trainer: false,
         _include_commute: rideFilter === "outdoor" ? false : true,
       });
       if (!active) return;
