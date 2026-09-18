@@ -18,6 +18,9 @@ import { ROLE_LABELS } from "@/lib/constants";
 import { getInitials } from "@/lib/user-utils";
 import { MemberProfileSkeleton } from "@/components/skeletons/PageSkeletons";
 import YearlyProgressChart from "@/components/member/YearlyProgressChart";
+import MemberHighlights from "@/components/member/MemberHighlights";
+import ActivityHeatmap from "@/components/member/ActivityHeatmap";
+import SportBreakdown from "@/components/member/SportBreakdown";
 
 interface MemberData {
   full_name: string | null;
@@ -266,6 +269,10 @@ const MemberProfile = () => {
         </Card>
 
         {userId && <YearlyProgressChart userId={userId} />}
+
+        {userId && <MemberHighlights userId={userId} />}
+        {userId && <ActivityHeatmap userId={userId} />}
+        {userId && <SportBreakdown userId={userId} />}
 
 
         <div className="grid grid-cols-2 gap-4 mb-8" data-tour="member-stats">

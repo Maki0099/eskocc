@@ -167,6 +167,21 @@ Deno.serve(async (req) => {
         moving_time: Math.round(a.moving_time || 0),
         elevation_gain: Math.round(a.total_elevation_gain || 0),
         sport_type: a.sport_type || a.type || null,
+        elapsed_time: a.elapsed_time ? Math.round(a.elapsed_time) : null,
+        average_speed: a.average_speed ?? null,
+        max_speed: a.max_speed ?? null,
+        average_heartrate: a.average_heartrate ?? null,
+        max_heartrate: a.max_heartrate ?? null,
+        average_watts: a.average_watts ?? null,
+        average_cadence: a.average_cadence ?? null,
+        calories: a.calories ?? a.kilojoules ?? null,
+        suffer_score: a.suffer_score ?? null,
+        is_trainer: Boolean(a.trainer),
+        is_commute: Boolean(a.commute),
+        is_race: a.workout_type === 1 || a.workout_type === 11,
+        start_lat: Array.isArray(a.start_latlng) ? a.start_latlng[0] ?? null : null,
+        start_lng: Array.isArray(a.start_latlng) ? a.start_latlng[1] ?? null : null,
+        map_polyline: a.map?.summary_polyline ?? null,
       }));
 
       if (activityRows.length > 0) {
