@@ -8,7 +8,9 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import MemberOnlyContent from "@/components/MemberOnlyContent";
 import { Card, CardContent } from "@/components/ui/card";
-import { MapPin } from "lucide-react";
+import { MapPin, ArrowLeft } from "lucide-react";
+import { Link } from "react-router-dom";
+import { ROUTES } from "@/lib/routes";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
 
@@ -40,6 +42,7 @@ const ClubMap = () => {
   const [period, setPeriod] = useState<Period>(90);
   const [points, setPoints] = useState<StartPoint[]>([]);
   const [loading, setLoading] = useState(true);
+  const [mapError, setMapError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isMember) return;
@@ -60,14 +63,29 @@ const ClubMap = () => {
   useEffect(() => {
     if (!isMember || !mapContainer.current || map.current) return;
 
-    mapboxgl.accessToken = MAPBOX_TOKEN;
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: "mapbox://styles/mapbox/light-v11",
-      center: CLUB_CENTER,
-      zoom: 9,
-    });
-    map.current.addControl(new mapboxgl.NavigationControl(), "top-right");
+    try {
+      mapboxgl.accessToken = MAPBOX_TOKEN;
+      map.current = new mapboxgl.Map({
+        container: mapContainer.current,
+        style: "mapbox://styles/mapbox/light-v11",
+        center: CLUB_CENTER,
+        zoom: 9,
+      });
+      map.current.addControl(new mapboxgl.NavigationControl(), "top-right");
+
+      map.current.on("load", () => {
+        // Recalculate size in case the container was laid out after init
+        map.current?.resize();
+      });
+
+      map.current.on("error", (e) => {
+        console.error("Mapbox error:", e);
+        setMapError("Nepodařilo se načíst mapu");
+      });
+    } catch (e) {
+      console.error("Map initialization error:", e);
+      setMapError("Nepodařilo se inicializovat mapu");
+    }
 
     return () => {
       markers.current.forEach((m) => m.remove());
@@ -127,6 +145,13 @@ const ClubMap = () => {
 
       <main className="flex-1 container mx-auto px-4 pt-24 pb-12">
         <div className="max-w-5xl mx-auto space-y-6">
+          <Link
+            to={ROUTES.STATISTICS}
+            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Zpět na statistiky
+          </Link>
           <div className="text-center space-y-2">
             <div className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary mb-4">
               <MapPin className="w-4 h-4" />
@@ -167,7 +192,13 @@ const ClubMap = () => {
               <Card className="overflow-hidden">
                 <CardContent className="p-0">
                   <div className="h-[60vh] min-h-[400px] relative">
-                    <div ref={mapContainer} className="absolute inset-0" />
+                    {mapError ? (
+                      <div className="absolute inset-0 bg-muted flex items-center justify-center">
+                        <p className="text-muted-foreground">{mapError}</p>
+                      </div>
+                    ) : (
+                      <div ref={mapContainer} className="absolute inset-0" />
+                    )}
                   </div>
                 </CardContent>
               </Card>
