@@ -21,6 +21,11 @@ import YearlyProgressChart from "@/components/member/YearlyProgressChart";
 import MemberHighlights from "@/components/member/MemberHighlights";
 import ActivityHeatmap from "@/components/member/ActivityHeatmap";
 import SportBreakdown from "@/components/member/SportBreakdown";
+import MemberBadges from "@/components/member/MemberBadges";
+import MemberRecords from "@/components/member/MemberRecords";
+import WeeklyLoadChart from "@/components/member/WeeklyLoadChart";
+import HeartrateTrend from "@/components/member/HeartrateTrend";
+import SharedRides from "@/components/member/SharedRides";
 
 interface MemberData {
   full_name: string | null;
@@ -271,8 +276,13 @@ const MemberProfile = () => {
         {userId && <YearlyProgressChart userId={userId} />}
 
         {userId && <MemberHighlights userId={userId} />}
+        {userId && <MemberBadges userId={userId} />}
+        {userId && <MemberRecords userId={userId} />}
+        {userId && <WeeklyLoadChart userId={userId} />}
+        {userId && <HeartrateTrend userId={userId} />}
         {userId && <ActivityHeatmap userId={userId} />}
         {userId && <SportBreakdown userId={userId} />}
+        {userId && <SharedRides userId={userId} />}
 
 
         <div className="grid grid-cols-2 gap-4 mb-8" data-tour="member-stats">

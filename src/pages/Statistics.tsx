@@ -27,6 +27,7 @@ import {
   AlertCircle,
   CheckCircle2,
   HelpCircle,
+  MapPin,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { AppRole } from "@/lib/types";
@@ -34,6 +35,7 @@ import type { ChallengeSettings } from "@/lib/types";
 import { getInitials } from "@/lib/user-utils";
 import { ROUTES } from "@/lib/routes";
 import StravaConnectPrompt from "@/components/strava/StravaConnectPrompt";
+import WeeklyLeaderboard from "@/components/statistics/WeeklyLeaderboard";
 import {
   Dialog,
   DialogContent,
@@ -56,6 +58,7 @@ interface MemberStats {
 }
 
 type SortMode = "distance" | "elevation";
+type RideFilter = "all" | "no-trainer" | "outdoor";
 
 const Statistics = () => {
   const { user } = useAuth();
@@ -71,7 +74,33 @@ const Statistics = () => {
   const [clubElevation, setClubElevation] = useState(0);
   const [sortMode, setSortMode] = useState<SortMode>("distance");
   const [error, setError] = useState<string | null>(null);
+  const [rideFilter, setRideFilter] = useState<RideFilter>("all");
+  const [filteredStats, setFilteredStats] = useState<Record<string, { km: number; elevation: number }> | null>(null);
   const exportRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (rideFilter === "all") {
+      setFilteredStats(null);
+      return;
+    }
+    let active = true;
+    const load = async () => {
+      const { data } = await supabase.rpc("get_member_statistics_filtered" as any, {
+        _include_trainer: false,
+        _include_commute: rideFilter === "outdoor" ? false : true,
+      });
+      if (!active) return;
+      const map: Record<string, { km: number; elevation: number }> = {};
+      (data as any[] || []).forEach((row) => {
+        map[row.user_id] = { km: Number(row.km), elevation: Number(row.elevation) };
+      });
+      setFilteredStats(map);
+    };
+    load();
+    return () => {
+      active = false;
+    };
+  }, [rideFilter]);
 
   const handleStartTour = () => {
     setTourRunning(true);
@@ -188,10 +217,36 @@ const Statistics = () => {
     return "Pod 40";
   };
 
+  const startOfYear = new Date(currentYear, 0, 1);
+  const dayOfYear = Math.max(1, Math.floor((Date.now() - startOfYear.getTime()) / 86400000) + 1);
+  const daysInYear = new Date(currentYear, 11, 31).getDate() === 31
+    ? (new Date(currentYear, 1, 29).getMonth() === 1 ? 366 : 365)
+    : 365;
+
+  const getDisplayDistance = (m: MemberStats) =>
+    filteredStats && m.is_connected ? (filteredStats[m.id]?.km ?? 0) : m.ytd_distance;
+  const getDisplayElevation = (m: MemberStats) =>
+    filteredStats && m.is_connected ? (filteredStats[m.id]?.elevation ?? 0) : m.ytd_elevation;
+
+  const getPaceInfo = (m: MemberStats) => {
+    if (m.target <= 0) return null;
+    const distance = getDisplayDistance(m);
+    const expected = (m.target * dayOfYear) / daysInYear;
+    const diff = distance - expected;
+    if (distance >= m.target) return { label: "Cíl splněn", done: true, ahead: true };
+    return {
+      label: diff >= 0
+        ? `Napřed o ${Math.round(diff).toLocaleString("cs-CZ")} km`
+        : `Pozadu o ${Math.round(-diff).toLocaleString("cs-CZ")} km`,
+      done: false,
+      ahead: diff >= 0,
+    };
+  };
+
   const sortedMembers = [...members].sort((a, b) =>
     sortMode === "elevation"
-      ? b.ytd_elevation - a.ytd_elevation
-      : b.ytd_distance - a.ytd_distance
+      ? getDisplayElevation(b) - getDisplayElevation(a)
+      : getDisplayDistance(b) - getDisplayDistance(a)
   );
 
   if (loading) {
@@ -361,6 +416,17 @@ const Statistics = () => {
 
               <ClubSummaryStats members={members} clubTotal={clubTotal} clubElevation={clubElevation} />
 
+              <WeeklyLeaderboard />
+
+              <div className="flex justify-center" data-export-ignore="true">
+                <Button variant="outline" className="rounded-xl" asChild>
+                  <Link to={ROUTES.CLUB_MAP}>
+                    <MapPin className="w-4 h-4 mr-2" />
+                    Mapa klubu — kde jezdíme
+                  </Link>
+                </Button>
+              </div>
+
               <Card className="animate-fade-up animation-delay-400" data-tour="leaderboard">
                 <CardHeader className="pb-4">
                   <div className="flex flex-wrap items-center justify-between gap-3">
@@ -368,25 +434,45 @@ const Statistics = () => {
                       <Trophy className="w-5 h-5 text-primary" />
                       Pořadí členů
                     </CardTitle>
-                    <div className="inline-flex rounded-lg bg-muted p-0.5" data-export-ignore="true">
-                      <button
-                        type="button"
-                        onClick={() => setSortMode("distance")}
-                        className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                          sortMode === "distance" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"
-                        }`}
-                      >
-                        Kilometry
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setSortMode("elevation")}
-                        className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                          sortMode === "elevation" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"
-                        }`}
-                      >
-                        Převýšení
-                      </button>
+                    <div className="flex flex-wrap items-center gap-2" data-export-ignore="true">
+                      <div className="inline-flex rounded-lg bg-muted p-0.5">
+                        <button
+                          type="button"
+                          onClick={() => setSortMode("distance")}
+                          className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                            sortMode === "distance" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"
+                          }`}
+                        >
+                          Kilometry
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSortMode("elevation")}
+                          className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                            sortMode === "elevation" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"
+                          }`}
+                        >
+                          Převýšení
+                        </button>
+                      </div>
+                      <div className="inline-flex rounded-lg bg-muted p-0.5">
+                        {([
+                          ["all", "Vše"],
+                          ["no-trainer", "Bez trenažéru"],
+                          ["outdoor", "Jen venku"],
+                        ] as [RideFilter, string][]).map(([value, label]) => (
+                          <button
+                            key={value}
+                            type="button"
+                            onClick={() => setRideFilter(value)}
+                            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                              rideFilter === value ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"
+                            }`}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </CardHeader>
@@ -398,11 +484,14 @@ const Statistics = () => {
                   ) : (
                     <div className="space-y-2">
                       {sortedMembers.map((member, index) => {
+                        const displayDistance = getDisplayDistance(member);
+                        const displayElevation = getDisplayElevation(member);
+                        const pace = getPaceInfo(member);
                         const rawPercentage = member.target > 0
-                          ? Math.round((member.ytd_distance / member.target) * 100)
+                          ? Math.round((displayDistance / member.target) * 100)
                           : 0;
                         const progress = Math.min(rawPercentage, 100);
-                        const isCompleted = member.ytd_distance >= member.target && member.target > 0;
+                        const isCompleted = displayDistance >= member.target && member.target > 0;
                         const isCurrentUser = user?.id === member.id;
 
                         return (
@@ -437,7 +526,7 @@ const Statistics = () => {
                                     {getAgeCategoryLabel(member.age_category)}
                                     <span className="md:hidden inline-flex items-center gap-0.5 ml-1.5">
                                       <Mountain className="w-3 h-3" />
-                                      {member.ytd_elevation.toLocaleString("cs-CZ")} m
+                                      {Math.round(displayElevation).toLocaleString("cs-CZ")} m
                                     </span>
                                   </p>
                                   {!member.is_connected && (
@@ -474,14 +563,14 @@ const Statistics = () => {
                               <div className="flex-1 min-w-0 hidden md:block">
                                 <div className="flex items-baseline justify-between gap-3 text-sm mb-1.5">
                                   <span className="font-semibold">
-                                    {member.ytd_distance.toLocaleString()} km
+                                    {Math.round(displayDistance).toLocaleString()} km
                                   </span>
                                   <span className="text-muted-foreground">
                                     / {member.target.toLocaleString()} km
                                   </span>
                                   <span className="text-muted-foreground inline-flex items-center gap-1 whitespace-nowrap">
                                     <Mountain className="w-3.5 h-3.5" />
-                                    {member.ytd_elevation.toLocaleString("cs-CZ")} m
+                                    {Math.round(displayElevation).toLocaleString("cs-CZ")} m
                                   </span>
                                   <span
                                     className={`ml-auto font-medium inline-flex items-center gap-1 ${
@@ -496,6 +585,15 @@ const Statistics = () => {
                                   value={progress}
                                   className={`h-3 bg-muted border border-border/60 ${isCompleted ? '[&>div]:bg-green-600' : '[&>div]:bg-primary'}`}
                                 />
+                                {pace && (
+                                  <p className={`mt-1.5 text-[11px] font-medium ${
+                                    pace.done || pace.ahead
+                                      ? "text-green-600 dark:text-green-400"
+                                      : "text-amber-600 dark:text-amber-400"
+                                  }`}>
+                                    {pace.label}
+                                  </p>
+                                )}
                               </div>
 
                               <div className="flex-shrink-0 text-right md:hidden whitespace-nowrap">
@@ -506,7 +604,7 @@ const Statistics = () => {
                                       {rawPercentage}%
                                     </Badge>
                                     <span className="text-[11px] text-muted-foreground whitespace-nowrap">
-                                      {member.ytd_distance.toLocaleString()} km
+                                      {Math.round(displayDistance).toLocaleString()} km
                                     </span>
                                   </div>
                                 ) : (
@@ -515,7 +613,7 @@ const Statistics = () => {
                                       {rawPercentage}%
                                     </div>
                                     <div className="text-[11px] text-muted-foreground whitespace-nowrap mt-0.5">
-                                      {member.ytd_distance.toLocaleString()} km
+                                      {Math.round(displayDistance).toLocaleString()} km
                                     </div>
                                   </>
                                 )}
@@ -528,6 +626,18 @@ const Statistics = () => {
                                 className={`h-2 bg-muted border border-border/60 ${isCompleted ? '[&>div]:bg-green-600' : '[&>div]:bg-primary'}`}
                               />
                             </div>
+
+                            {pace && (
+                              <p className={`mt-2 text-[11px] font-medium ${
+                                pace.done
+                                  ? "text-green-600 dark:text-green-400"
+                                  : pace.ahead
+                                    ? "text-green-600 dark:text-green-400"
+                                    : "text-amber-600 dark:text-amber-400"
+                              }`}>
+                                {pace.label}
+                              </p>
+                            )}
 
                           </div>
                         );
