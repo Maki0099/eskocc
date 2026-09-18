@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { CopyCheck, RefreshCw, Undo2, Mountain, Timer, Route as RouteIcon } from "lucide-react";
+import { CopyCheck, RefreshCw, Undo2, Mountain, Timer, Route as RouteIcon, ChevronDown, ChevronUp } from "lucide-react";
 
 interface DuplicatePair {
   a_id: string;
@@ -36,11 +36,22 @@ const formatTime = (s: number) => {
 const formatDate = (iso: string) =>
   new Date(iso).toLocaleDateString("cs-CZ", { day: "numeric", month: "numeric", year: "numeric" });
 
+interface ExcludedActivity {
+  id: string;
+  athlete_full: string;
+  distance_m: number;
+  moving_time: number;
+  elevation: number;
+  sport_type: string | null;
+  date: string;
+}
+
 export const DuplicateActivitiesAdmin = () => {
   const { toast } = useToast();
   const [pairs, setPairs] = useState<DuplicatePair[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [showExcluded, setShowExcluded] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -62,6 +73,43 @@ export const DuplicateActivitiesAdmin = () => {
   useEffect(() => {
     load();
   }, [load]);
+
+  const openPairs = pairs.filter((p) => !p.a_excluded && !p.b_excluded);
+
+  const occurrences = new Map<string, number>();
+  pairs.forEach((p) => {
+    occurrences.set(p.a_id, (occurrences.get(p.a_id) ?? 0) + 1);
+    occurrences.set(p.b_id, (occurrences.get(p.b_id) ?? 0) + 1);
+  });
+
+  const excludedMap = new Map<string, ExcludedActivity>();
+  pairs.forEach((p) => {
+    if (p.a_excluded && !excludedMap.has(p.a_id)) {
+      excludedMap.set(p.a_id, {
+        id: p.a_id,
+        athlete_full: p.athlete_full,
+        distance_m: p.a_distance_m,
+        moving_time: p.a_moving_time,
+        elevation: p.a_elevation,
+        sport_type: p.a_sport_type,
+        date: p.a_date,
+      });
+    }
+    if (p.b_excluded && !excludedMap.has(p.b_id)) {
+      excludedMap.set(p.b_id, {
+        id: p.b_id,
+        athlete_full: p.athlete_full,
+        distance_m: p.b_distance_m,
+        moving_time: p.b_moving_time,
+        elevation: p.b_elevation,
+        sport_type: p.b_sport_type,
+        date: p.b_date,
+      });
+    }
+  });
+  const excludedActivities = Array.from(excludedMap.values()).sort((a, b) =>
+    a.athlete_full.localeCompare(b.athlete_full, "cs")
+  );
 
   const toggle = async (activityId: string, excluded: boolean) => {
     setBusyId(activityId);
@@ -89,57 +137,61 @@ export const DuplicateActivitiesAdmin = () => {
     sport: string | null,
     date: string,
     excluded: boolean
-  ) => (
-    <div
-      className={`flex flex-col gap-2 rounded-xl border p-3 sm:flex-row sm:items-center sm:justify-between ${
-        excluded ? "border-destructive/40 bg-destructive/5" : "border-border bg-muted/30"
-      }`}
-    >
-      <div className="space-y-1">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-          <span className="inline-flex items-center gap-1 font-medium">
-            <RouteIcon className="h-3.5 w-3.5" />
-            {formatKm(distance)}
-          </span>
-          <span className="inline-flex items-center gap-1 text-muted-foreground">
-            <Timer className="h-3.5 w-3.5" />
-            {formatTime(time)}
-          </span>
-          <span className="inline-flex items-center gap-1 text-muted-foreground">
-            <Mountain className="h-3.5 w-3.5" />
-            {elevation.toLocaleString("cs-CZ")} m
-          </span>
+  ) => {
+    const inPairs = occurrences.get(id) ?? 0;
+    return (
+      <div
+        className={`flex flex-col gap-2 rounded-xl border p-3 sm:flex-row sm:items-center sm:justify-between ${
+          excluded ? "border-destructive/40 bg-destructive/5" : "border-border bg-muted/30"
+        }`}
+      >
+        <div className="space-y-1">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+            <span className="inline-flex items-center gap-1 font-medium">
+              <RouteIcon className="h-3.5 w-3.5" />
+              {formatKm(distance)}
+            </span>
+            <span className="inline-flex items-center gap-1 text-muted-foreground">
+              <Timer className="h-3.5 w-3.5" />
+              {formatTime(time)}
+            </span>
+            <span className="inline-flex items-center gap-1 text-muted-foreground">
+              <Mountain className="h-3.5 w-3.5" />
+              {elevation.toLocaleString("cs-CZ")} m
+            </span>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {sport || "Ride"} · první načtení {formatDate(date)}
+            {excluded && " · nepočítá se"}
+            {!excluded && inPairs > 1 && ` · součástí dalších ${inPairs - 1} dvojic`}
+          </p>
         </div>
-        <p className="text-xs text-muted-foreground">
-          {sport || "Ride"} · načteno {formatDate(date)}
-          {excluded && " · nepočítá se"}
-        </p>
+        {excluded ? (
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={busyId === id}
+            onClick={() => toggle(id, false)}
+            className="gap-2"
+          >
+            <Undo2 className="h-4 w-4" />
+            Přece jen počítat
+          </Button>
+        ) : (
+          <Button
+            size="sm"
+            variant="secondary"
+            disabled={busyId === id}
+            onClick={() => toggle(id, true)}
+            className="gap-2"
+          >
+            <CopyCheck className="h-4 w-4" />
+            Označit jako duplicitu
+          </Button>
+        )}
       </div>
-      {excluded ? (
-        <Button
-          size="sm"
-          variant="outline"
-          disabled={busyId === id}
-          onClick={() => toggle(id, false)}
-          className="gap-2"
-        >
-          <Undo2 className="h-4 w-4" />
-          Přece jen počítat
-        </Button>
-      ) : (
-        <Button
-          size="sm"
-          variant="secondary"
-          disabled={busyId === id}
-          onClick={() => toggle(id, true)}
-          className="gap-2"
-        >
-          <CopyCheck className="h-4 w-4" />
-          Označit jako duplicitu
-        </Button>
-      )}
-    </div>
-  );
+    );
+  };
 
   return (
     <Card>
@@ -150,12 +202,23 @@ export const DuplicateActivitiesAdmin = () => {
             Možné duplicitní jízdy
           </CardTitle>
           <CardDescription>
-            Jízdy stejného jezdce synchronizované ve stejný den — typické pro nahrání stejné trasy
-            ze dvou zařízení (např. hodinky + cyklopočítač) v jedné dávce. Jako pravděpodobná
-            duplicita se označí dvojice se shodnou vzdáleností (do 500 m), časem jízdy (do 6 min)
-            i převýšením (do 30 m nebo 10 %). Označená jízda se přestane počítat do statistik,
-            ale zůstane uložená.
+            Jízdy stejného jezdce načtené ve stejný den — typické pro nahrání stejné trasy
+            ze dvou zařízení (např. hodinky + cyklopočítač). Jako pravděpodobná duplicita se
+            označí dvojice se shodnou vzdáleností (do 500 m), časem jízdy (do 6 min) i
+            převýšením (do 30 m nebo 10 %). Označená jízda se přestane počítat do statistik,
+            ale zůstane uložená. Jedna jízda se může objevit ve více dvojicích — po označení
+            proto zmizí všechny dvojice, kterých se týká.
           </CardDescription>
+          {!loading && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Badge variant="outline" className="text-xs">
+                {openPairs.length} dvojic k rozhodnutí
+              </Badge>
+              <Badge variant="outline" className="text-xs">
+                {excludedActivities.length} označených jízd
+              </Badge>
+            </div>
+          )}
         </div>
         <Button variant="outline" size="sm" onClick={load} disabled={loading} className="gap-2 shrink-0">
           <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
@@ -168,49 +231,91 @@ export const DuplicateActivitiesAdmin = () => {
             <Skeleton className="h-32 w-full" />
             <Skeleton className="h-32 w-full" />
           </>
-        ) : pairs.length === 0 ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">
-            Žádné podezřelé dvojice jsme nenašli.
-          </p>
         ) : (
-          pairs.map((p) => {
-            const distDiff = Math.abs(p.a_distance_m - p.b_distance_m);
-            const timeDiff = Math.abs(p.a_moving_time - p.b_moving_time);
-            const elevDiff = Math.abs((p.a_elevation ?? 0) - (p.b_elevation ?? 0));
-            return (
-              <div key={`${p.a_id}-${p.b_id}`} className="space-y-2 rounded-2xl border border-border/60 p-4">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-semibold">{p.athlete_full}</span>
-                  {p.likely_duplicate && (
-                    <Badge variant="destructive" className="text-xs">
-                      Pravděpodobná duplicita
-                    </Badge>
+          <>
+            {excludedActivities.length > 0 && (
+              <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-4">
+                <button
+                  type="button"
+                  onClick={() => setShowExcluded((v) => !v)}
+                  className="flex w-full items-center justify-between gap-2 text-left text-sm font-semibold"
+                >
+                  <span className="inline-flex items-center gap-2">
+                    <CopyCheck className="h-4 w-4" />
+                    Označené jako duplicita ({excludedActivities.length})
+                  </span>
+                  {showExcluded ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
                   )}
-                  <Badge variant="outline" className="text-xs">
-                    rozdíl {distDiff} m · {timeDiff} s · {elevDiff} m převýšení
-                  </Badge>
-                </div>
-                {renderRide(
-                  p.a_id,
-                  p.a_distance_m,
-                  p.a_moving_time,
-                  p.a_elevation,
-                  p.a_sport_type,
-                  p.a_date,
-                  p.a_excluded
-                )}
-                {renderRide(
-                  p.b_id,
-                  p.b_distance_m,
-                  p.b_moving_time,
-                  p.b_elevation,
-                  p.b_sport_type,
-                  p.b_date,
-                  p.b_excluded
+                </button>
+                {showExcluded && (
+                  <div className="mt-3 space-y-2">
+                    {excludedActivities.map((a) => (
+                      <div key={a.id} className="space-y-1">
+                        <p className="text-xs font-medium text-muted-foreground">{a.athlete_full}</p>
+                        {renderRide(
+                          a.id,
+                          a.distance_m,
+                          a.moving_time,
+                          a.elevation,
+                          a.sport_type,
+                          a.date,
+                          true
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
-            );
-          })
+            )}
+
+            {openPairs.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                Žádné dvojice k rozhodnutí.
+              </p>
+            ) : (
+              openPairs.map((p) => {
+                const distDiff = Math.abs(p.a_distance_m - p.b_distance_m);
+                const timeDiff = Math.abs(p.a_moving_time - p.b_moving_time);
+                const elevDiff = Math.abs((p.a_elevation ?? 0) - (p.b_elevation ?? 0));
+                return (
+                  <div key={`${p.a_id}-${p.b_id}`} className="space-y-2 rounded-2xl border border-border/60 p-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-semibold">{p.athlete_full}</span>
+                      {p.likely_duplicate && (
+                        <Badge variant="destructive" className="text-xs">
+                          Pravděpodobná duplicita
+                        </Badge>
+                      )}
+                      <Badge variant="outline" className="text-xs">
+                        rozdíl {distDiff} m · {timeDiff} s · {elevDiff} m převýšení
+                      </Badge>
+                    </div>
+                    {renderRide(
+                      p.a_id,
+                      p.a_distance_m,
+                      p.a_moving_time,
+                      p.a_elevation,
+                      p.a_sport_type,
+                      p.a_date,
+                      p.a_excluded
+                    )}
+                    {renderRide(
+                      p.b_id,
+                      p.b_distance_m,
+                      p.b_moving_time,
+                      p.b_elevation,
+                      p.b_sport_type,
+                      p.b_date,
+                      p.b_excluded
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </>
         )}
       </CardContent>
     </Card>

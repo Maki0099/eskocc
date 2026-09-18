@@ -244,10 +244,22 @@ Deno.serve(async (req) => {
     }
 
     const syncedAt = new Date().toISOString();
+
+    // Keep the original first-seen date for activities we already have,
+    // otherwise every sync would rewrite all dates to the current run.
+    const { data: existingActs } = await supabase
+      .from("club_activities")
+      .select("fingerprint, activity_date");
+    const existingDateByFp = new Map<string, string>();
+    for (const e of existingActs || []) {
+      if (e.fingerprint) existingDateByFp.set(e.fingerprint, e.activity_date);
+    }
+
     const newMappings = new Map<string, { firstname: string; lastInit: string }>();
     const seenFp = new Set<string>();
     const rows: any[] = [];
     let matched = 0;
+
 
     for (const a of allActs) {
       const firstname = a.athlete?.firstname || "";
@@ -281,7 +293,7 @@ Deno.serve(async (req) => {
         athlete_lastname_initial: lastInit,
         athlete_full: fullName,
         matched_user_id: matchedUserId,
-        activity_date: syncedAt,
+        activity_date: existingDateByFp.get(fp) ?? syncedAt,
         distance_m: distance,
         moving_time: movingTime,
         elevation_gain: elevation,
