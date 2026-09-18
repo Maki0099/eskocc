@@ -24,6 +24,7 @@ interface DuplicatePair {
   b_date: string;
   a_excluded: boolean;
   b_excluded: boolean;
+  likely_duplicate: boolean;
 }
 
 const formatKm = (m: number) => `${(m / 1000).toFixed(2)} km`;
@@ -147,7 +148,8 @@ export const DuplicateActivitiesAdmin = () => {
             Možné duplicitní jízdy
           </CardTitle>
           <CardDescription>
-            Dvojice jízd stejného jezdce s téměř shodnou vzdáleností i převýšením. Označená jízda se
+            Dvojice jízd stejného jezdce s téměř shodnou vzdáleností a časem jízdy — typické pro
+            nahrání stejné trasy ze dvou zařízení (např. hodinky + cyklopočítač). Označená jízda se
             přestane počítat do statistik, ale zůstane uložená.
           </CardDescription>
         </div>
