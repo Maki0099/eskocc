@@ -36,6 +36,7 @@ import { getInitials } from "@/lib/user-utils";
 import { ROUTES } from "@/lib/routes";
 import StravaConnectPrompt from "@/components/strava/StravaConnectPrompt";
 import WeeklyLeaderboard from "@/components/statistics/WeeklyLeaderboard";
+import MonthlyLeaderboard from "@/components/statistics/MonthlyLeaderboard";
 import {
   Dialog,
   DialogContent,
@@ -417,12 +418,19 @@ const Statistics = () => {
               <ClubSummaryStats members={members} clubTotal={clubTotal} clubElevation={clubElevation} />
 
               <WeeklyLeaderboard />
+              <MonthlyLeaderboard />
 
-              <div className="flex justify-center" data-export-ignore="true">
+              <div className="flex flex-wrap justify-center gap-3" data-export-ignore="true">
                 <Button variant="outline" className="rounded-xl" asChild>
                   <Link to={ROUTES.CLUB_MAP}>
                     <MapPin className="w-4 h-4 mr-2" />
                     Mapa klubu — kde jezdíme
+                  </Link>
+                </Button>
+                <Button variant="outline" className="rounded-xl" asChild>
+                  <Link to={ROUTES.CLUB_RECORDS}>
+                    <Trophy className="w-4 h-4 mr-2" />
+                    Rekordy klubu
                   </Link>
                 </Button>
               </div>

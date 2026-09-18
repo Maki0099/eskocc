@@ -17,13 +17,14 @@ import { cs } from "date-fns/locale";
 const MAPBOX_TOKEN = "pk.eyJ1IjoibWFraTA5OSIsImEiOiJjbWdydmlmYTgwN3NvMnNyNXg0NjgzYW5iIn0.AiNtdl1RlCCszZnRDT8zUw";
 const CLUB_CENTER: [number, number] = [18.2401, 49.3513];
 
-interface StartPoint {
+interface ActivityLine {
   user_id: string;
   full_name: string | null;
-  start_lat: number;
-  start_lng: number;
   activity_date: string;
-  distance_m: number;
+  distance_km: number;
+  start_lat: number | null;
+  start_lng: number | null;
+  map_polyline: string | null;
 }
 
 type Period = 30 | 90 | 365;
@@ -34,13 +35,48 @@ const PERIOD_LABELS: { value: Period; label: string }[] = [
   { value: 365, label: "Rok" },
 ];
 
+function decodePolyline(encoded: string): [number, number][] {
+  const len = encoded.length;
+  let index = 0;
+  let lat = 0;
+  let lng = 0;
+  const coordinates: [number, number][] = [];
+
+  while (index < len) {
+    let b;
+    let shift = 0;
+    let result = 0;
+    do {
+      b = encoded.charCodeAt(index++) - 63;
+      result |= (b & 0x1f) << shift;
+      shift += 5;
+    } while (b >= 0x20);
+    const dlat = result & 1 ? ~(result >> 1) : result >> 1;
+    lat += dlat;
+
+    shift = 0;
+    result = 0;
+    do {
+      b = encoded.charCodeAt(index++) - 63;
+      result |= (b & 0x1f) << shift;
+      shift += 5;
+    } while (b >= 0x20);
+    const dlng = result & 1 ? ~(result >> 1) : result >> 1;
+    lng += dlng;
+
+    coordinates.push([lng / 1e5, lat / 1e5]);
+  }
+
+  return coordinates;
+}
+
 const ClubMap = () => {
   const { isMember, loading: roleLoading } = useUserRole();
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markers = useRef<mapboxgl.Marker[]>([]);
   const [period, setPeriod] = useState<Period>(90);
-  const [points, setPoints] = useState<StartPoint[]>([]);
+  const [activities, setActivities] = useState<ActivityLine[]>([]);
   const [loading, setLoading] = useState(true);
   const [mapError, setMapError] = useState<string | null>(null);
 
@@ -49,9 +85,9 @@ const ClubMap = () => {
     let active = true;
     const load = async () => {
       setLoading(true);
-      const { data } = await supabase.rpc("get_club_activity_starts" as any, { _days: period });
+      const { data } = await supabase.rpc("get_club_activity_polylines" as any, { _days: period });
       if (!active) return;
-      setPoints((data as any as StartPoint[]) || []);
+      setActivities((data as any as ActivityLine[]) || []);
       setLoading(false);
     };
     load();
@@ -77,8 +113,28 @@ const ClubMap = () => {
       map.current.addControl(new mapboxgl.NavigationControl(), "top-right");
 
       map.current.on("load", () => {
-        // Recalculate size in case the container was laid out after init
-        map.current?.resize();
+        const m = map.current;
+        if (!m) return;
+        m.resize();
+        m.addSource("route-lines", {
+          type: "geojson",
+          data: { type: "FeatureCollection", features: [] },
+          lineMetrics: true,
+        });
+        m.addLayer({
+          id: "route-lines-layer",
+          type: "line",
+          source: "route-lines",
+          layout: {
+            "line-join": "round",
+            "line-cap": "round",
+          },
+          paint: {
+            "line-color": "#7A6855",
+            "line-width": 2,
+            "line-opacity": 0.55,
+          },
+        });
       });
 
       resizeObserver = new ResizeObserver(() => {
@@ -109,45 +165,78 @@ const ClubMap = () => {
     markers.current.forEach((m) => m.remove());
     markers.current = [];
 
-    const addMarkers = () => {
-      points.forEach((p) => {
-        const el = document.createElement("div");
-        el.style.width = "12px";
-        el.style.height = "12px";
-        el.style.borderRadius = "50%";
-        el.style.backgroundColor = "#7A6855";
-        el.style.border = "2px solid #fff";
-        el.style.boxShadow = "0 1px 4px rgba(0,0,0,0.3)";
+    const updateLayers = () => {
+      const m = map.current;
+      if (!m) return;
 
-        const marker = new mapboxgl.Marker({ element: el })
-          .setLngLat([Number(p.start_lng), Number(p.start_lat)])
-          .setPopup(
-            new mapboxgl.Popup({ offset: 12, focusAfterOpen: false }).setHTML(`
-              <div style="padding: 6px;">
-                <strong style="font-size: 13px;">${p.full_name || "Člen klubu"}</strong>
-                <p style="margin: 2px 0 0; font-size: 12px; color: #666;">
-                  ${(p.distance_m / 1000).toLocaleString("cs-CZ")} km · ${format(new Date(p.activity_date), "d. M. yyyy", { locale: cs })}
-                </p>
-              </div>
-            `)
-          )
-          .addTo(map.current!);
-        markers.current.push(marker);
+      const features: GeoJSON.Feature<GeoJSON.LineString>[] = [];
+
+      activities.forEach((a) => {
+        if (a.map_polyline) {
+          const coords = decodePolyline(a.map_polyline);
+          if (coords.length >= 2) {
+            features.push({
+              type: "Feature",
+              properties: {
+                name: a.full_name || "Člen klubu",
+                distance: a.distance_km,
+                date: a.activity_date,
+              },
+              geometry: {
+                type: "LineString",
+                coordinates: coords,
+              },
+            });
+          }
+        }
+
+        if (a.start_lat != null && a.start_lng != null) {
+          const el = document.createElement("div");
+          el.style.width = "12px";
+          el.style.height = "12px";
+          el.style.borderRadius = "50%";
+          el.style.backgroundColor = "#7A6855";
+          el.style.border = "2px solid #fff";
+          el.style.boxShadow = "0 1px 4px rgba(0,0,0,0.3)";
+
+          const marker = new mapboxgl.Marker({ element: el })
+            .setLngLat([Number(a.start_lng), Number(a.start_lat)])
+            .setPopup(
+              new mapboxgl.Popup({ offset: 12, focusAfterOpen: false }).setHTML(`
+                <div style="padding: 6px;">
+                  <strong style="font-size: 13px;">${a.full_name || "Člen klubu"}</strong>
+                  <p style="margin: 2px 0 0; font-size: 12px; color: #666;">
+                    ${Number(a.distance_km).toLocaleString("cs-CZ")} km · ${format(new Date(a.activity_date), "d. M. yyyy", { locale: cs })}
+                  </p>
+                </div>
+              `)
+            )
+            .addTo(m);
+          markers.current.push(marker);
+        }
+      });
+
+      const source = m.getSource("route-lines") as mapboxgl.GeoJSONSource | undefined;
+      source?.setData({
+        type: "FeatureCollection",
+        features,
       });
     };
 
     if (map.current.loaded()) {
-      addMarkers();
+      updateLayers();
     } else {
-      map.current.once("load", addMarkers);
+      map.current.once("load", updateLayers);
     }
-  }, [points]);
+  }, [activities]);
+
+  const hasData = activities.length > 0;
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Seo
         title="Mapa klubu | ESKO.cc"
-        description="Mapa startovních bodů jízd členů cyklistického klubu ESKO.cc."
+        description="Mapa startovních bodů a tras jízd členů cyklistického klubu ESKO.cc."
         path="/mapa-klubu"
       />
       <Header />
@@ -168,7 +257,7 @@ const ClubMap = () => {
             </div>
             <h1 className="text-display font-bold">Mapa klubu</h1>
             <p className="text-lg text-muted-foreground max-w-md mx-auto">
-              Startovní body jízd členů s propojenou Stravou
+              Startovní body a trasy jízd členů s propojenou Stravou
             </p>
           </div>
 
@@ -215,9 +304,9 @@ const ClubMap = () => {
               <p className="text-center text-sm text-muted-foreground">
                 {loading
                   ? "Načítám jízdy…"
-                  : points.length === 0
-                    ? "Za zvolené období nejsou k dispozici žádné jízdy s polohou startu."
-                    : `${points.length} jízd za posledních ${period} dní`}
+                  : hasData
+                    ? `${activities.length} jízd za posledních ${period} dní · polyliny se zobrazí, pokud je Strava poskytla`
+                    : "Za zvolené období nejsou k dispozici žádné jízdy s polohou."}
               </p>
             </>
           )}

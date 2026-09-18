@@ -31,6 +31,7 @@ const About = lazy(() => import("./pages/About"));
 const Admin = lazy(() => import("./pages/Admin"));
 const Statistics = lazy(() => import("./pages/Statistics"));
 const ClubMap = lazy(() => import("./pages/ClubMap"));
+const ClubRecords = lazy(() => import("./pages/ClubRecords"));
 const Install = lazy(() => import("./pages/Install"));
 const Documents = lazy(() => import("./pages/Documents"));
 const Notifications = lazy(() => import("./pages/Notifications"));
@@ -66,6 +67,7 @@ const App = () => (
                 <Route path={ROUTES.STATISTICS} element={<Statistics />} />
                 <Route path={ROUTES.CLUB_MAP} element={<ClubMap />} />
                 <Route path="/club-map" element={<Navigate to={ROUTES.CLUB_MAP} replace />} />
+                <Route path={ROUTES.CLUB_RECORDS} element={<ClubRecords />} />
                 <Route path={ROUTE_PATTERNS.MEMBER_PROFILE} element={<MemberProfile />} />
                 <Route path={ROUTES.ABOUT} element={<About />} />
                 <Route path={ROUTES.INSTALL} element={<Install />} />
