@@ -482,6 +482,11 @@ const Statistics = () => {
                       </div>
                     </div>
                   </div>
+                  {rideFilter !== "all" && (
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Počítají se jen jízdy na kole · „Trenažér" zahrnuje i virtuální jízdy (Zwift)
+                    </p>
+                  )}
                 </CardHeader>
                 <CardContent className="px-4 pb-4">
                   {members.length === 0 ? (
