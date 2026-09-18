@@ -52,6 +52,7 @@ import BeskydyRoutesAdmin from "@/components/admin/BeskydyRoutesAdmin";
 import VersionInfo from "@/components/admin/VersionInfo";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ClubStravaAdmin } from "@/components/admin/ClubStravaAdmin";
+import { DuplicateActivitiesAdmin } from "@/components/admin/DuplicateActivitiesAdmin";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
@@ -265,6 +266,7 @@ const Admin = () => {
                 { id: "beskydy", label: "Beskydy", icon: Mountain },
                 { id: "ai", label: "AI", icon: Sparkles },
                 { id: "club-strava", label: "Strava klub", icon: Activity },
+                { id: "duplicates", label: "Duplicity", icon: CopyCheck },
                 { id: "albums", label: "Alba", icon: Images },
                 { id: "gallery-photos", label: "Fotky", icon: Images },
               ];
