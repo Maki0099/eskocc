@@ -112,6 +112,15 @@ const ClubRecords = () => {
                 <Skeleton key={i} className="h-40 rounded-xl" />
               ))}
             </div>
+          ) : loadError ? (
+            <Card>
+              <CardContent className="py-12 text-center space-y-4">
+                <p className="text-muted-foreground">{loadError}</p>
+                <Button variant="outline" onClick={() => setReloadKey((k) => k + 1)}>
+                  Zkusit znovu
+                </Button>
+              </CardContent>
+            </Card>
           ) : records.length === 0 ? (
             <Card>
               <CardContent className="py-12 text-center">
