@@ -215,15 +215,32 @@ export const ClubStravaAdmin = ({ preselectedAthleteKey, onAthleteSelected }: Cl
     setSyncing(true);
     try {
       const { data, error } = await supabase.functions.invoke("sync-club-activities");
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+
+      // Edge function vrátilo chybový status – přečteme tělo odpovědi
+      if (error) {
+        let payload: any = data;
+        const res = (error as any)?.context;
+        if (!payload && res && typeof res.json === "function") {
+          payload = await res.json().catch(() => null);
+        }
+        if (payload?.endpoint_removed) {
+          toast.error(payload.error, { duration: 10000 });
+          return;
+        }
+        throw new Error(payload?.error || error.message);
+      }
+
+      if (data?.error) {
+        toast.error(data.error, { duration: data.endpoint_removed ? 10000 : 5000 });
+        return;
+      }
 
       toast.success(
         `Sync hotov: ${data.fetched} aktivit, ${data.matched} spárováno, ${data.new_athletes ?? 0} nových atletů, ${data.users_updated} členů aktualizováno`
       );
       fetchData();
     } catch (err: any) {
-      toast.error(err.message || "Sync selhal");
+      toast.error(err?.message || "Sync selhal");
     } finally {
       setSyncing(false);
     }

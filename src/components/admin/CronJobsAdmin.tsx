@@ -106,8 +106,20 @@ const CronJobsAdmin = () => {
     setRefreshingStats(true);
     try {
       const { data, error } = await supabase.functions.invoke("sync-club-activities");
+
+      let payload: any = data;
+      if (error) {
+        const res = (error as any)?.context;
+        if (!payload && res && typeof res.json === "function") {
+          payload = await res.json().catch(() => null);
+        }
+      }
+
+      if (payload?.error) {
+        toast.error(payload.error, { duration: payload.endpoint_removed ? 10000 : 5000 });
+        return;
+      }
       if (error) throw error;
-      if (data?.error) throw new Error(data.error);
 
       toast.success(
         `Klubový sync: ${data.fetched} aktivit, ${data.matched} spárováno, ${data.users_updated} uživatelů aktualizováno`
