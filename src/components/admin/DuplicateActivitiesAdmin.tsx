@@ -150,8 +150,8 @@ export const DuplicateActivitiesAdmin = () => {
             Možné duplicitní jízdy
           </CardTitle>
           <CardDescription>
-            Dvojice jízd stejného jezdce s téměř shodnou vzdáleností a časem jízdy — typické pro
-            nahrání stejné trasy ze dvou zařízení (např. hodinky + cyklopočítač). Označená jízda se
+            Jízdy stejného jezdce synchronizované ve stejný den — typické pro nahrání stejné trasy
+            ze dvou zařízení (např. hodinky + cyklopočítač) v jedné dávce. Označená jízda se
             přestane počítat do statistik, ale zůstane uložená.
           </CardDescription>
         </div>
