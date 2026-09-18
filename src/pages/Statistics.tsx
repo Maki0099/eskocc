@@ -34,6 +34,7 @@ import type { ChallengeSettings } from "@/lib/types";
 import { getInitials } from "@/lib/user-utils";
 import { ROUTES } from "@/lib/routes";
 import StravaConnectPrompt from "@/components/strava/StravaConnectPrompt";
+import WeeklyLeaderboard from "@/components/statistics/WeeklyLeaderboard";
 import {
   Dialog,
   DialogContent,
