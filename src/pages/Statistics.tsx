@@ -216,10 +216,36 @@ const Statistics = () => {
     return "Pod 40";
   };
 
+  const startOfYear = new Date(currentYear, 0, 1);
+  const dayOfYear = Math.max(1, Math.floor((Date.now() - startOfYear.getTime()) / 86400000) + 1);
+  const daysInYear = new Date(currentYear, 11, 31).getDate() === 31
+    ? (new Date(currentYear, 1, 29).getMonth() === 1 ? 366 : 365)
+    : 365;
+
+  const getDisplayDistance = (m: MemberStats) =>
+    filteredStats && m.is_connected ? (filteredStats[m.id]?.km ?? 0) : m.ytd_distance;
+  const getDisplayElevation = (m: MemberStats) =>
+    filteredStats && m.is_connected ? (filteredStats[m.id]?.elevation ?? 0) : m.ytd_elevation;
+
+  const getPaceInfo = (m: MemberStats) => {
+    if (m.target <= 0) return null;
+    const distance = getDisplayDistance(m);
+    const expected = (m.target * dayOfYear) / daysInYear;
+    const diff = distance - expected;
+    if (distance >= m.target) return { label: "Cíl splněn", done: true, ahead: true };
+    return {
+      label: diff >= 0
+        ? `Napřed o ${Math.round(diff).toLocaleString("cs-CZ")} km`
+        : `Pozadu o ${Math.round(-diff).toLocaleString("cs-CZ")} km`,
+      done: false,
+      ahead: diff >= 0,
+    };
+  };
+
   const sortedMembers = [...members].sort((a, b) =>
     sortMode === "elevation"
-      ? b.ytd_elevation - a.ytd_elevation
-      : b.ytd_distance - a.ytd_distance
+      ? getDisplayElevation(b) - getDisplayElevation(a)
+      : getDisplayDistance(b) - getDisplayDistance(a)
   );
 
   if (loading) {
