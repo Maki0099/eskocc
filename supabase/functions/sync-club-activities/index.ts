@@ -228,6 +228,32 @@ Deno.serve(async (req) => {
     );
     if (!r.ok) {
       const t = await r.text();
+      if (r.status === 404) {
+        // Strava returns 404 when the connected athlete can't read this club's activities
+        // (no longer a member, club made private, or wrong club id). Show which clubs
+        // the connected account actually has, so an admin can fix it.
+        let clubsInfo = "";
+        try {
+          const cr = await fetch("https://www.strava.com/api/v3/athlete/clubs?per_page=50", {
+            headers: { Authorization: `Bearer ${accessToken}` },
+          });
+          if (cr.ok) {
+            const clubs = await cr.json();
+            clubsInfo = Array.isArray(clubs)
+              ? clubs.map((c: any) => `${c.name} (id ${c.id})`).join(", ") || "žádné kluby"
+              : "";
+          }
+        } catch (_e) { /* diagnostic only */ }
+        const msg =
+          `Strava nevrací jízdy klubu ${CLUB_ID}. Připojený účet (athlete ${creds.athlete_id}) ` +
+          `už zřejmě není členem klubu, nebo klub skryl aktivity členů. ` +
+          (clubsInfo ? `Kluby tohoto účtu: ${clubsInfo}.` : "");
+        await finalize({ status: "error", error_message: msg });
+        return new Response(
+          JSON.stringify({ error: msg, needs_reauth: false }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
       throw new Error(`Strava API error ${r.status}: ${t}`);
     }
     const allActs: any[] = await r.json();
