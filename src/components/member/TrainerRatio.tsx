@@ -58,6 +58,7 @@ const TrainerRatio = ({ userId }: { userId: string }) => {
     <Card className="mb-8">
       <CardHeader>
         <CardTitle className="text-lg">Venku vs trenažér</CardTitle>
+        <p className="text-xs text-muted-foreground">Jen jízdy na kole · uvnitř = trenažér i virtuální jízdy (Zwift)</p>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="h-3 rounded-full bg-muted border border-border/60 overflow-hidden flex">
@@ -84,7 +85,7 @@ const TrainerRatio = ({ userId }: { userId: string }) => {
           <div className="p-3 rounded-xl bg-secondary/10 border border-secondary/20">
             <div className="flex items-center gap-2 mb-1">
               <Home className="w-4 h-4 text-secondary-foreground" />
-              <span className="text-sm font-medium">Trenažér</span>
+              <span className="text-sm font-medium">Trenažér / Zwift</span>
             </div>
             <p className="text-lg font-bold">{Number(trainer?.km || 0).toLocaleString("cs-CZ")} km</p>
             <p className="text-xs text-muted-foreground">
