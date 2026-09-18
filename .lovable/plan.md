@@ -1,22 +1,26 @@
-# Proč se u Milana Holce ukazují jen 3 duplicity
+# Kontrola nových funkcí v mobilní aplikaci (PWA)
 
-## Co jsem ověřil v datech
+## Co jsem ověřil
 
-Původních 7 skupin se našlo v době, kdy detekce porovnávala jízdy **podle podobných čísel** (vzdálenost, čas, převýšení). Potom jsme detekci zpřísnili tak, aby se porovnávaly jen jízdy **ze stejného dne**.
+Spustil jsem nové stránky v mobilní velikosti obrazovky (390 px) jako přihlášený člen:
 
-Jenže u dat staženýchz klubu není uložené skutečné datum jízdy — je tam čas, kdy záznam přibyl do aplikace. Po opravě, která tato data srovnala podle času vložení, se dvojice rozpadly do různých dnů.
+- **Rekordy klubu**, **Mapa klubu**, **Profil člena** a **Nástěnka** se načtou správně, bez chyb a bez vodorovného posouvání.
+- **Statistiky klubu** se zobrazují, ale stránka je o kousek širší než displej — jde jí posouvat do stran, což v aplikaci na telefonu působí rozbitě.
+- Nové stránky **Mapa klubu** a **Rekordy klubu** nejsou v menu — dostat se na ně jde jen odkazem ze statistik. V nainstalované aplikaci to působí, že chybí.
+- Mapa klubu si stahuje mapové podklady; ty se ukládají pro rychlejší další otevření, ale bez internetu se mapa nezobrazí.
+- Offline stránka a rychlé zkratky v aplikaci zatím nové stránky neznají.
 
-Konkrétně u Milana: dvojice 60,7 × 60,9 km, 46,6 × 46,8 km, 47,5 × 47,4 km, 54,5 × 54,9 km, 50,5 × 50,4 km, 48,9 × 48,7 km a 32,2 × 32,1 km v databázi pořád jsou — ale jejich dva záznamy mají různá "data", takže je podmínka stejného dne vyřadí. Projdou jen 3 dvojice, kde datum náhodou vyšlo stejné.
+## Co navrhuji opravit
 
-## Návrh opravy
-
-1. U starých klubových dat detekci **přestat vázat na stejný den** a vrátit porovnání podle podobnosti čísel: rozdíl vzdálenosti do 500 m, rozdíl času do 6 minut a rozdíl převýšení do 30 m nebo do 10 %. Tím se znovu objeví všech 7 skupin.
-2. Datum u klubových záznamů v přehledu **označit jako „načteno"**, ne jako datum jízdy, aby bylo jasné, že se podle něj nedá párovat.
-3. U nových dat z osobního propojení Stravy (kde skutečné datum jízdy je) **den ponechat** jako součást porovnání — tam je spolehlivý.
-4. Už označené jízdy (3 kusy) zůstanou označené, nic se nepřepíše.
+1. **Statistiky na mobilu** — odstranit přetečení do stran (přepínač Vše/Trenažér/Venku, řádky pořadí a měsíční žebříček zúžit na šířku displeje).
+2. **Menu** — přidat do hlavního i mobilního menu položky **Mapa klubu** a **Rekordy klubu** (jen pro přihlášené členy, vedle Statistik), ať jsou v aplikaci dostupné napřímo.
+3. **Zkratky v aplikaci** — k dlouhému podržení ikony aplikace přidat zkratku na Statistiky (už je) a nově na Rekordy klubu.
+4. **Chování bez internetu** — na mapě a rekordech ukázat srozumitelnou hlášku „Data se nepodařilo načíst, zkontroluj připojení" místo prázdné stránky.
+5. **Po nasazení** — ověřit na telefonu přes tlačítko Aktualizovat, protože nainstalovaná aplikace si drží starou verzi v paměti.
 
 ## Technické detaily
 
-- Nová migrace přepíše `get_duplicate_activity_candidates()`: z JOIN se odstraní podmínka `a.activity_date::date = b.activity_date::date` a nahradí ji podmínky podobnosti (`abs(distance) <= 500`, `abs(moving_time) <= 360`, `sport_type` shodný); `likely_duplicate` zůstane dnešní přísnější test včetně převýšení. Řazení: `likely_duplicate DESC, athlete_full, distance DESC`.
-- `get_member_duplicate_candidates()` (osobní jízdy) se nemění — tam je `activity_date` skutečné datum jízdy.
-- `DuplicateActivitiesAdmin.tsx`: popisek data u klubových dvojic změnit na „načteno" a doplnit krátkou poznámku, že u klubových dat není k dispozici skutečné datum jízdy.
+- Přetečení na `/statistiky`: `document.documentElement.scrollWidth` = 407 při viewportu 390. Projít `src/pages/Statistics.tsx` a `src/components/statistics/MonthlyLeaderboard.tsx` — přidat `min-w-0`, `overflow-x-auto` na tabulkové bloky, u fixní šířky jmen `w-56` použít responzivní variantu (`w-40 sm:w-56`).
+- Menu: doplnit `CLUB_MAP` a `CLUB_RECORDS` do `NAV_ITEMS` v `src/lib/routes.ts` jako položky vyžadující přihlášení, případně samostatné pole `MEMBER_NAV_ITEMS`, a vykreslit je v `Header.tsx` (desktop i mobilní sheet) podle stavu přihlášení.
+- Manifest `shortcuts` ve `vite.config.ts`: přidat položku pro `/rekordy-klubu`. Změna se u již nainstalovaných aplikací projeví až po přeinstalaci.
+- Offline stav: v `ClubMap.tsx` a `ClubRecords.tsx` doplnit ošetření chyby načtení (`navigator.onLine` + chybový stav RPC) s tlačítkem Zkusit znovu. Service worker a jeho cachování se nemění.
