@@ -17,6 +17,7 @@ export const ROUTES = {
   ABOUT: '/about',
   STATISTICS: '/statistiky',
   CLUB_MAP: '/mapa-klubu',
+  CLUB_RECORDS: '/rekordy-klubu',
   DOCUMENTS: '/dokumenty',
   INSTALL: '/install',
   NOTIFICATIONS: '/notifications',
