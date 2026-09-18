@@ -57,6 +57,7 @@ interface MemberStats {
 }
 
 type SortMode = "distance" | "elevation";
+type RideFilter = "all" | "no-trainer" | "outdoor";
 
 const Statistics = () => {
   const { user } = useAuth();
@@ -72,7 +73,33 @@ const Statistics = () => {
   const [clubElevation, setClubElevation] = useState(0);
   const [sortMode, setSortMode] = useState<SortMode>("distance");
   const [error, setError] = useState<string | null>(null);
+  const [rideFilter, setRideFilter] = useState<RideFilter>("all");
+  const [filteredStats, setFilteredStats] = useState<Record<string, { km: number; elevation: number }> | null>(null);
   const exportRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (rideFilter === "all") {
+      setFilteredStats(null);
+      return;
+    }
+    let active = true;
+    const load = async () => {
+      const { data } = await supabase.rpc("get_member_statistics_filtered" as any, {
+        _include_trainer: rideFilter === "all" ? true : false,
+        _include_commute: rideFilter === "outdoor" ? false : true,
+      });
+      if (!active) return;
+      const map: Record<string, { km: number; elevation: number }> = {};
+      (data as any[] || []).forEach((row) => {
+        map[row.user_id] = { km: Number(row.km), elevation: Number(row.elevation) };
+      });
+      setFilteredStats(map);
+    };
+    load();
+    return () => {
+      active = false;
+    };
+  }, [rideFilter]);
 
   const handleStartTour = () => {
     setTourRunning(true);
