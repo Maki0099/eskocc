@@ -151,8 +151,10 @@ export const DuplicateActivitiesAdmin = () => {
           </CardTitle>
           <CardDescription>
             Jízdy stejného jezdce synchronizované ve stejný den — typické pro nahrání stejné trasy
-            ze dvou zařízení (např. hodinky + cyklopočítač) v jedné dávce. Označená jízda se
-            přestane počítat do statistik, ale zůstane uložená.
+            ze dvou zařízení (např. hodinky + cyklopočítač) v jedné dávce. Jako pravděpodobná
+            duplicita se označí dvojice se shodnou vzdáleností (do 500 m), časem jízdy (do 6 min)
+            i převýšením (do 30 m nebo 10 %). Označená jízda se přestane počítat do statistik,
+            ale zůstane uložená.
           </CardDescription>
         </div>
         <Button variant="outline" size="sm" onClick={load} disabled={loading} className="gap-2 shrink-0">
