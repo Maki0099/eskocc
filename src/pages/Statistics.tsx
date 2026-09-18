@@ -34,6 +34,13 @@ import type { ChallengeSettings } from "@/lib/types";
 import { getInitials } from "@/lib/user-utils";
 import { ROUTES } from "@/lib/routes";
 import StravaConnectPrompt from "@/components/strava/StravaConnectPrompt";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface MemberStats {
   id: string;
@@ -56,6 +63,7 @@ const Statistics = () => {
   const { startTour, shouldAutoStart, isTourCompleted } = useTour();
   const navigate = useNavigate();
   const [tourRunning, setTourRunning] = useState(false);
+  const [howToOpen, setHowToOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [settings, setSettings] = useState<ChallengeSettings | null>(null);
   const [members, setMembers] = useState<MemberStats[]>([]);
@@ -445,12 +453,20 @@ const Statistics = () => {
                                         <AlertCircle className="w-3 h-3" />
                                         Propojit Stravu
                                       </button>
-                                    ) : (
-                                      <span className="mt-1 inline-flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
-                                        <AlertCircle className="w-3 h-3" />
-                                        Nepropojená Strava
-                                      </span>
-                                    )
+                                     ) : (
+                                       <button
+                                         type="button"
+                                         onClick={(e) => {
+                                           e.preventDefault();
+                                           e.stopPropagation();
+                                           setHowToOpen(true);
+                                         }}
+                                         className="mt-1 inline-flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400 hover:underline text-left"
+                                       >
+                                         <AlertCircle className="w-3 h-3 shrink-0" />
+                                         Nepropojená Strava — jak propojit?
+                                       </button>
+                                     )
                                   )}
                                 </div>
                               </Link>
@@ -535,6 +551,37 @@ const Statistics = () => {
       </main>
       <Footer />
       <TourProvider tourId="statistics" run={tourRunning} onFinish={() => setTourRunning(false)} />
+
+      <Dialog open={howToOpen} onOpenChange={setHowToOpen}>
+        <DialogContent className="sm:max-w-md rounded-2xl">
+          <DialogHeader>
+            <DialogTitle>Jak propojit Stravu</DialogTitle>
+            <DialogDescription>
+              Propojení si musí provést každý člen sám ze svého účtu — za někoho jiného to nejde.
+            </DialogDescription>
+          </DialogHeader>
+          <ol className="space-y-3 text-sm text-muted-foreground list-decimal pl-5">
+            <li>Přihlaš se do svého účtu na ESKO.cc.</li>
+            <li>Otevři <span className="font-medium text-foreground">Nastavení účtu</span>.</li>
+            <li>
+              Klikni na <span className="font-medium text-foreground">Propojit Stravu</span> a potvrď
+              přístup ve Stravě.
+            </li>
+          </ol>
+          <p className="text-xs text-muted-foreground">
+            Bez propojení se kilometry ani převýšení do klubových statistik nepočítají.
+          </p>
+          <Button
+            className="rounded-xl"
+            onClick={() => {
+              setHowToOpen(false);
+              navigate(ROUTES.ACCOUNT);
+            }}
+          >
+            Otevřít nastavení účtu
+          </Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
