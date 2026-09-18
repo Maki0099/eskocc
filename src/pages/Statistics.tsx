@@ -27,6 +27,7 @@ import {
   AlertCircle,
   CheckCircle2,
   HelpCircle,
+  MapPin,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { AppRole } from "@/lib/types";
@@ -414,6 +415,17 @@ const Statistics = () => {
               )}
 
               <ClubSummaryStats members={members} clubTotal={clubTotal} clubElevation={clubElevation} />
+
+              <WeeklyLeaderboard />
+
+              <div className="flex justify-center" data-export-ignore="true">
+                <Button variant="outline" className="rounded-xl" asChild>
+                  <Link to={ROUTES.CLUB_MAP}>
+                    <MapPin className="w-4 h-4 mr-2" />
+                    Mapa klubu — kde jezdíme
+                  </Link>
+                </Button>
+              </div>
 
               <Card className="animate-fade-up animation-delay-400" data-tour="leaderboard">
                 <CardHeader className="pb-4">
