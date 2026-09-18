@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { CopyCheck, RefreshCw, Undo2, Mountain, Timer, Route as RouteIcon } from "lucide-react";
+import { CopyCheck, RefreshCw, Undo2, Mountain, Timer, Route as RouteIcon, ChevronDown, ChevronUp } from "lucide-react";
 
 interface DuplicatePair {
   a_id: string;
