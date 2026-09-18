@@ -243,11 +243,15 @@ const Statistics = () => {
     };
   };
 
-  const sortedMembers = [...members].sort((a, b) =>
-    sortMode === "elevation"
-      ? getDisplayElevation(b) - getDisplayElevation(a)
-      : getDisplayDistance(b) - getDisplayDistance(a)
-  );
+  const connectedCount = members.filter((m) => m.is_connected).length;
+
+  const sortedMembers = members
+    .filter((m) => rideFilter === "all" || m.is_connected)
+    .sort((a, b) =>
+      sortMode === "elevation"
+        ? getDisplayElevation(b) - getDisplayElevation(a)
+        : getDisplayDistance(b) - getDisplayDistance(a)
+    );
 
   if (loading) {
     return (
@@ -489,7 +493,7 @@ const Statistics = () => {
                   )}
                 </CardHeader>
                 <CardContent className="px-4 pb-4">
-                  {members.length === 0 ? (
+                  {sortedMembers.length === 0 ? (
                     <p className="text-center text-muted-foreground py-8">
                       Zatím nejsou k dispozici žádná data
                     </p>
@@ -660,6 +664,12 @@ const Statistics = () => {
                         );
                       })}
                     </div>
+                  )}
+                  {rideFilter !== "all" && (
+                    <p className="mt-4 text-xs text-muted-foreground">
+                      Zobrazeni jen členové s vlastním propojením Stravy ({connectedCount} z {members.length}).
+                      U ostatních nelze trenažér a venkovní jízdy rozlišit — propojením Stravy se to změní.
+                    </p>
                   )}
                 </CardContent>
               </Card>
