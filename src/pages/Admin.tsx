@@ -53,6 +53,7 @@ import VersionInfo from "@/components/admin/VersionInfo";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ClubStravaAdmin } from "@/components/admin/ClubStravaAdmin";
 import { DuplicateActivitiesAdmin } from "@/components/admin/DuplicateActivitiesAdmin";
+import { MemberStravaAdmin } from "@/components/admin/MemberStravaAdmin";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
@@ -265,6 +266,7 @@ const Admin = () => {
                 { id: "routes", label: "Trasy", icon: Route },
                 { id: "beskydy", label: "Beskydy", icon: Mountain },
                 { id: "ai", label: "AI", icon: Sparkles },
+                { id: "member-strava", label: "Strava členů", icon: Activity },
                 { id: "club-strava", label: "Strava klub", icon: Activity },
                 { id: "duplicates", label: "Duplicity", icon: CopyCheck },
                 { id: "albums", label: "Alba", icon: Images },
@@ -633,6 +635,10 @@ const Admin = () => {
 
             <TabsContent value="ai">
               <AiSettingsAdmin />
+            </TabsContent>
+
+            <TabsContent value="member-strava">
+              <MemberStravaAdmin />
             </TabsContent>
 
             <TabsContent value="club-strava">

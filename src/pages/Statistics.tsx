@@ -32,6 +32,7 @@ import { Button } from "@/components/ui/button";
 import type { AppRole } from "@/lib/types";
 import type { ChallengeSettings } from "@/lib/types";
 import { getInitials } from "@/lib/user-utils";
+import StravaConnectPrompt from "@/components/strava/StravaConnectPrompt";
 
 interface MemberStats {
   id: string;
@@ -43,6 +44,7 @@ interface MemberStats {
   ytd_elevation: number;
   target: number;
   age_category: string;
+  is_connected: boolean;
 }
 
 type SortMode = "distance" | "elevation";
@@ -121,6 +123,7 @@ const Statistics = () => {
             ytd_elevation: profile.strava_ytd_elevation || 0,
             target,
             age_category: profile.age_category,
+            is_connected: profile.is_connected ?? false,
           };
         });
 
@@ -256,6 +259,7 @@ const Statistics = () => {
             </Card>
           ) : (
             <div className="space-y-6">
+              <StravaConnectPrompt />
               <div className="flex justify-end">
                 <StatisticsExportButton targetRef={exportRef} year={currentYear} />
               </div>
@@ -426,6 +430,12 @@ const Statistics = () => {
                                       {member.ytd_elevation.toLocaleString("cs-CZ")} m
                                     </span>
                                   </p>
+                                  {!member.is_connected && (
+                                    <span className="mt-1 inline-flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
+                                      <AlertCircle className="w-3 h-3" />
+                                      {isCurrentUser ? "Propoj si Stravu" : "Nepropojená Strava"}
+                                    </span>
+                                  )}
                                 </div>
                               </Link>
 
