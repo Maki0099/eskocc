@@ -36,6 +36,7 @@ export const ROUTE_PATTERNS = {
 export const getEventDetailPath = (id: string): string => `/events/${id}`;
 export const getMemberProfilePath = (userId: string): string => `/member/${userId}`;
 export const getRouteDetailPath = (id: string): string => `/routes/${id}`;
+export const getClubRecordsPath = (): string => '/rekordy-klubu';
 
 // Navigation items for header/footer
 export const NAV_ITEMS = [
