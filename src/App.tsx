@@ -31,6 +31,7 @@ const About = lazy(() => import("./pages/About"));
 const Admin = lazy(() => import("./pages/Admin"));
 const Statistics = lazy(() => import("./pages/Statistics"));
 const ClubMap = lazy(() => import("./pages/ClubMap"));
+const ClubRecords = lazy(() => import("./pages/ClubRecords"));
 const Install = lazy(() => import("./pages/Install"));
 const Documents = lazy(() => import("./pages/Documents"));
 const Notifications = lazy(() => import("./pages/Notifications"));
