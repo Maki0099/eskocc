@@ -284,6 +284,10 @@ const MemberProfile = () => {
         {userId && <MemberRecords userId={userId} />}
         {userId && <WeeklyLoadChart userId={userId} />}
         {userId && <HeartrateTrend userId={userId} />}
+        {userId && <HeartRateZones userId={userId} />}
+        {userId && <PowerTrend userId={userId} />}
+        {userId && <CaloriesChart userId={userId} />}
+        {userId && <TrainerRatio userId={userId} />}
         {userId && <ActivityHeatmap userId={userId} />}
         {userId && <SportBreakdown userId={userId} />}
         {userId && <SharedRides userId={userId} />}
