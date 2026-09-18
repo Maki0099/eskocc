@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import ScrollToTop from "./components/ScrollToTop";
@@ -65,6 +65,7 @@ const App = () => (
                 <Route path={ROUTES.CAFE} element={<Cafe />} />
                 <Route path={ROUTES.STATISTICS} element={<Statistics />} />
                 <Route path={ROUTES.CLUB_MAP} element={<ClubMap />} />
+                <Route path="/club-map" element={<Navigate to={ROUTES.CLUB_MAP} replace />} />
                 <Route path={ROUTE_PATTERNS.MEMBER_PROFILE} element={<MemberProfile />} />
                 <Route path={ROUTES.ABOUT} element={<About />} />
                 <Route path={ROUTES.INSTALL} element={<Install />} />
