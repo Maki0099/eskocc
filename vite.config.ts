@@ -100,6 +100,13 @@ export default defineConfig(({ mode }) => ({
             description: "Statistiky členů a klubu",
             url: "/statistiky",
             icons: [{ src: "/pwa-192x192.png", sizes: "192x192" }]
+          },
+          {
+            name: "Rekordy klubu",
+            short_name: "Rekordy",
+            description: "Nejlepší jízdy členů v aktuálním roce",
+            url: "/rekordy-klubu",
+            icons: [{ src: "/pwa-192x192.png", sizes: "192x192" }]
           }
         ],
         share_target: {
