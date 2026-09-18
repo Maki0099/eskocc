@@ -293,7 +293,7 @@ Deno.serve(async (req) => {
         athlete_lastname_initial: lastInit,
         athlete_full: fullName,
         matched_user_id: matchedUserId,
-        activity_date: syncedAt,
+        activity_date: existingDateByFp.get(fp) ?? syncedAt,
         distance_m: distance,
         moving_time: movingTime,
         elevation_gain: elevation,
