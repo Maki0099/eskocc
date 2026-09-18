@@ -54,6 +54,7 @@ const Statistics = () => {
   const { user } = useAuth();
   const { isMember, loading: roleLoading } = useUserRole();
   const { startTour, shouldAutoStart, isTourCompleted } = useTour();
+  const navigate = useNavigate();
   const [tourRunning, setTourRunning] = useState(false);
   const [loading, setLoading] = useState(true);
   const [settings, setSettings] = useState<ChallengeSettings | null>(null);
