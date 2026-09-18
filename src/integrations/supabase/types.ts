@@ -243,6 +243,9 @@ export type Database = {
           created_at: string
           distance_m: number
           elevation_gain: number
+          excluded_as_duplicate: boolean
+          excluded_at: string | null
+          excluded_by: string | null
           fingerprint: string
           id: string
           matched_user_id: string | null
@@ -257,6 +260,9 @@ export type Database = {
           created_at?: string
           distance_m?: number
           elevation_gain?: number
+          excluded_as_duplicate?: boolean
+          excluded_at?: string | null
+          excluded_by?: string | null
           fingerprint: string
           id?: string
           matched_user_id?: string | null
@@ -271,6 +277,9 @@ export type Database = {
           created_at?: string
           distance_m?: number
           elevation_gain?: number
+          excluded_as_duplicate?: boolean
+          excluded_at?: string | null
+          excluded_by?: string | null
           fingerprint?: string
           id?: string
           matched_user_id?: string | null
@@ -1147,6 +1156,27 @@ export type Database = {
           username: string
         }[]
       }
+      get_duplicate_activity_candidates: {
+        Args: never
+        Returns: {
+          a_date: string
+          a_distance_m: number
+          a_elevation: number
+          a_excluded: boolean
+          a_id: string
+          a_moving_time: number
+          a_sport_type: string
+          athlete_full: string
+          b_date: string
+          b_distance_m: number
+          b_elevation: number
+          b_excluded: boolean
+          b_id: string
+          b_moving_time: number
+          b_sport_type: string
+          matched_user_id: string
+        }[]
+      }
       get_member_statistics: {
         Args: never
         Returns: {
@@ -1194,6 +1224,10 @@ export type Database = {
           users_updated: number
           users_zeroed: number
         }[]
+      }
+      set_activity_duplicate: {
+        Args: { _excluded: boolean; _id: string }
+        Returns: undefined
       }
     }
     Enums: {
