@@ -1,7 +1,7 @@
 import Seo from "@/components/Seo";
 import { useEffect, useRef, useState } from "react";
 import StatisticsExportButton from "@/components/statistics/StatisticsExportButton";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -32,6 +32,7 @@ import { Button } from "@/components/ui/button";
 import type { AppRole } from "@/lib/types";
 import type { ChallengeSettings } from "@/lib/types";
 import { getInitials } from "@/lib/user-utils";
+import { ROUTES } from "@/lib/routes";
 import StravaConnectPrompt from "@/components/strava/StravaConnectPrompt";
 
 interface MemberStats {
@@ -53,6 +54,7 @@ const Statistics = () => {
   const { user } = useAuth();
   const { isMember, loading: roleLoading } = useUserRole();
   const { startTour, shouldAutoStart, isTourCompleted } = useTour();
+  const navigate = useNavigate();
   const [tourRunning, setTourRunning] = useState(false);
   const [loading, setLoading] = useState(true);
   const [settings, setSettings] = useState<ChallengeSettings | null>(null);
@@ -431,10 +433,24 @@ const Statistics = () => {
                                     </span>
                                   </p>
                                   {!member.is_connected && (
-                                    <span className="mt-1 inline-flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
-                                      <AlertCircle className="w-3 h-3" />
-                                      {isCurrentUser ? "Propoj si Stravu" : "Nepropojená Strava"}
-                                    </span>
+                                    isCurrentUser ? (
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          navigate(ROUTES.ACCOUNT);
+                                        }}
+                                        className="mt-1 inline-flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400 hover:underline"
+                                      >
+                                        <AlertCircle className="w-3 h-3" />
+                                        Propojit Stravu
+                                      </button>
+                                    ) : (
+                                      <span className="mt-1 inline-flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
+                                        <AlertCircle className="w-3 h-3" />
+                                        Nepropojená Strava
+                                      </span>
+                                    )
                                   )}
                                 </div>
                               </Link>
