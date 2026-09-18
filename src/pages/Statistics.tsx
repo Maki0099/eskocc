@@ -551,6 +551,37 @@ const Statistics = () => {
       </main>
       <Footer />
       <TourProvider tourId="statistics" run={tourRunning} onFinish={() => setTourRunning(false)} />
+
+      <Dialog open={howToOpen} onOpenChange={setHowToOpen}>
+        <DialogContent className="sm:max-w-md rounded-2xl">
+          <DialogHeader>
+            <DialogTitle>Jak propojit Stravu</DialogTitle>
+            <DialogDescription>
+              Propojení si musí provést každý člen sám ze svého účtu — za někoho jiného to nejde.
+            </DialogDescription>
+          </DialogHeader>
+          <ol className="space-y-3 text-sm text-muted-foreground list-decimal pl-5">
+            <li>Přihlaš se do svého účtu na ESKO.cc.</li>
+            <li>Otevři <span className="font-medium text-foreground">Nastavení účtu</span>.</li>
+            <li>
+              Klikni na <span className="font-medium text-foreground">Propojit Stravu</span> a potvrď
+              přístup ve Stravě.
+            </li>
+          </ol>
+          <p className="text-xs text-muted-foreground">
+            Bez propojení se kilometry ani převýšení do klubových statistik nepočítají.
+          </p>
+          <Button
+            className="rounded-xl"
+            onClick={() => {
+              setHowToOpen(false);
+              navigate(ROUTES.ACCOUNT);
+            }}
+          >
+            Otevřít nastavení účtu
+          </Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
