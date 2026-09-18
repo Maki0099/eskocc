@@ -434,13 +434,17 @@ const Statistics = () => {
                                   </p>
                                   {!member.is_connected && (
                                     isCurrentUser ? (
-                                      <Link
-                                        to={ROUTES.ACCOUNT}
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          navigate(ROUTES.ACCOUNT);
+                                        }}
                                         className="mt-1 inline-flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400 hover:underline"
                                       >
                                         <AlertCircle className="w-3 h-3" />
                                         Propojit Stravu
-                                      </Link>
+                                      </button>
                                     ) : (
                                       <span className="mt-1 inline-flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
                                         <AlertCircle className="w-3 h-3" />
