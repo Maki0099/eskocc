@@ -665,6 +665,12 @@ const Statistics = () => {
                       })}
                     </div>
                   )}
+                  {rideFilter !== "all" && (
+                    <p className="mt-4 text-xs text-muted-foreground">
+                      Zobrazeni jen členové s vlastním propojením Stravy ({connectedCount} z {members.length}).
+                      U ostatních nelze trenažér a venkovní jízdy rozlišit — propojením Stravy se to změní.
+                    </p>
+                  )}
                 </CardContent>
               </Card>
 
