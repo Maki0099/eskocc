@@ -36,6 +36,7 @@ import { getInitials } from "@/lib/user-utils";
 import { ROUTES } from "@/lib/routes";
 import StravaConnectPrompt from "@/components/strava/StravaConnectPrompt";
 import WeeklyLeaderboard from "@/components/statistics/WeeklyLeaderboard";
+import MonthlyLeaderboard from "@/components/statistics/MonthlyLeaderboard";
 import {
   Dialog,
   DialogContent,
