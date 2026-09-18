@@ -1465,7 +1465,7 @@ export type Database = {
         }[]
       }
       get_member_statistics_filtered: {
-        Args: { _include_commute?: boolean; _include_trainer?: boolean }
+        Args: { _mode?: string }
         Returns: {
           elevation: number
           km: number
