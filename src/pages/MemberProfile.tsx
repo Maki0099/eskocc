@@ -18,6 +18,9 @@ import { ROLE_LABELS } from "@/lib/constants";
 import { getInitials } from "@/lib/user-utils";
 import { MemberProfileSkeleton } from "@/components/skeletons/PageSkeletons";
 import YearlyProgressChart from "@/components/member/YearlyProgressChart";
+import MemberHighlights from "@/components/member/MemberHighlights";
+import ActivityHeatmap from "@/components/member/ActivityHeatmap";
+import SportBreakdown from "@/components/member/SportBreakdown";
 
 interface MemberData {
   full_name: string | null;
