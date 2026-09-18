@@ -98,7 +98,7 @@ const MonthlyLeaderboard = () => {
                   </span>
                   <Link
                     to={`/member/${row.user_id}`}
-                    className="flex items-center gap-2.5 min-w-0 w-44 shrink-0 hover:opacity-80 transition-opacity"
+                    className="flex items-center gap-2.5 min-w-0 w-28 sm:w-44 shrink-0 hover:opacity-80 transition-opacity"
                   >
                     <Avatar className="w-8 h-8 border-2 border-background shadow-sm shrink-0">
                       <AvatarImage src={row.avatar_url || undefined} />
@@ -111,7 +111,7 @@ const MonthlyLeaderboard = () => {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-baseline justify-between gap-2 text-sm mb-1">
                       <span className="font-semibold">{Number(row.km).toLocaleString("cs-CZ")} km</span>
-                      <span className="text-xs text-muted-foreground inline-flex items-center gap-1 whitespace-nowrap">
+                      <span className="text-[11px] sm:text-xs text-muted-foreground inline-flex items-center gap-1 whitespace-nowrap shrink-0">
                         <Mountain className="w-3 h-3" />
                         {Number(row.elevation).toLocaleString("cs-CZ")} m · {row.rides}×
                       </span>

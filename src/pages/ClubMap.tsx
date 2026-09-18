@@ -8,6 +8,7 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import MemberOnlyContent from "@/components/MemberOnlyContent";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { MapPin, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ROUTES } from "@/lib/routes";
@@ -79,22 +80,36 @@ const ClubMap = () => {
   const [activities, setActivities] = useState<ActivityLine[]>([]);
   const [loading, setLoading] = useState(true);
   const [mapError, setMapError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     if (!isMember) return;
     let active = true;
     const load = async () => {
       setLoading(true);
-      const { data } = await supabase.rpc("get_club_activity_polylines" as any, { _days: period });
+      setLoadError(null);
+      if (typeof navigator !== "undefined" && navigator.onLine === false) {
+        if (!active) return;
+        setLoadError("Vypadá to, že nejsi online. Data jízd se nepodařilo načíst.");
+        setLoading(false);
+        return;
+      }
+      const { data, error } = await supabase.rpc("get_club_activity_polylines" as any, { _days: period });
       if (!active) return;
-      setActivities((data as any as ActivityLine[]) || []);
+      if (error) {
+        setLoadError("Data se nepodařilo načíst. Zkontroluj připojení k internetu.");
+        setActivities([]);
+      } else {
+        setActivities((data as any as ActivityLine[]) || []);
+      }
       setLoading(false);
     };
     load();
     return () => {
       active = false;
     };
-  }, [period, isMember]);
+  }, [period, isMember, reloadKey]);
 
   useEffect(() => {
     if (!isMember || !mapContainer.current || map.current) return;
@@ -301,13 +316,22 @@ const ClubMap = () => {
                 </CardContent>
               </Card>
 
-              <p className="text-center text-sm text-muted-foreground">
-                {loading
-                  ? "Načítám jízdy…"
-                  : hasData
-                    ? `${activities.length} jízd za posledních ${period} dní · polyliny se zobrazí, pokud je Strava poskytla`
-                    : "Za zvolené období nejsou k dispozici žádné jízdy s polohou."}
-              </p>
+              {loadError ? (
+                <div className="text-center space-y-3">
+                  <p className="text-sm text-muted-foreground">{loadError}</p>
+                  <Button variant="outline" size="sm" onClick={() => setReloadKey((k) => k + 1)}>
+                    Zkusit znovu
+                  </Button>
+                </div>
+              ) : (
+                <p className="text-center text-sm text-muted-foreground">
+                  {loading
+                    ? "Načítám jízdy…"
+                    : hasData
+                      ? `${activities.length} jízd za posledních ${period} dní · polyliny se zobrazí, pokud je Strava poskytla`
+                      : "Za zvolené období nejsou k dispozici žádné jízdy s polohou."}
+                </p>
+              )}
             </>
           )}
         </div>

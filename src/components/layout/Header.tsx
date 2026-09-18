@@ -10,7 +10,7 @@ import { useTheme } from "@/components/ThemeProvider";
 import { supabase } from "@/integrations/supabase/client";
 import logoWhite from "@/assets/logo-horizontal-white.png";
 import logoDark from "@/assets/logo-horizontal-dark.png";
-import { ROUTES, NAV_ITEMS, getMemberProfilePath } from "@/lib/routes";
+import { ROUTES, NAV_ITEMS, MEMBER_NAV_ITEMS, getMemberProfilePath } from "@/lib/routes";
 import { getInitials } from "@/lib/user-utils";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -64,6 +64,8 @@ const Header = () => {
   const currentTourId = getTourIdFromPath(location.pathname);
   const hasTour = currentTourId !== null;
   const navigate = useNavigate();
+
+  const visibleNavItems = user ? [...NAV_ITEMS, ...MEMBER_NAV_ITEMS] : [...NAV_ITEMS];
 
   const [profile, setProfile] = useState<{ full_name: string | null; avatar_url: string | null } | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
@@ -184,8 +186,8 @@ const Header = () => {
             </Link>
 
             {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center gap-8">
-              {NAV_ITEMS.map((item) => (
+            <nav className="hidden md:flex items-center gap-5 lg:gap-8">
+              {visibleNavItems.map((item) => (
                 <Link
                   key={item.to}
                   to={item.to}
@@ -314,7 +316,7 @@ const Header = () => {
       >
         <nav className="flex flex-col h-full">
           <div className="flex-1 overflow-y-auto py-4">
-            {NAV_ITEMS.map((item, index) => (
+            {visibleNavItems.map((item, index) => (
               <Link
                 key={item.to}
                 to={item.to}

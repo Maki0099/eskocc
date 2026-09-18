@@ -48,5 +48,11 @@ export const NAV_ITEMS = [
   { to: ROUTES.ABOUT, label: 'O klubu' },
 ] as const;
 
+// Navigation items visible only for signed-in members
+export const MEMBER_NAV_ITEMS = [
+  { to: ROUTES.CLUB_RECORDS, label: 'Rekordy' },
+  { to: ROUTES.CLUB_MAP, label: 'Mapa klubu' },
+] as const;
+
 export type RouteKey = keyof typeof ROUTES;
 export type RouteValue = (typeof ROUTES)[RouteKey];

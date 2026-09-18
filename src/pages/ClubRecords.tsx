@@ -39,22 +39,37 @@ const ClubRecords = () => {
   const navigate = useNavigate();
   const [records, setRecords] = useState<RecordRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const year = new Date().getFullYear();
 
   useEffect(() => {
     if (!isMember) return;
     let active = true;
     const load = async () => {
-      const { data } = await supabase.rpc("get_club_records" as any, { _year: year });
+      setLoading(true);
+      setLoadError(null);
+      if (typeof navigator !== "undefined" && navigator.onLine === false) {
+        if (!active) return;
+        setLoadError("Vypadá to, že nejsi online. Rekordy se nepodařilo načíst.");
+        setLoading(false);
+        return;
+      }
+      const { data, error } = await supabase.rpc("get_club_records" as any, { _year: year });
       if (!active) return;
-      setRecords((data as any as RecordRow[]) || []);
+      if (error) {
+        setLoadError("Data se nepodařilo načíst. Zkontroluj připojení k internetu.");
+        setRecords([]);
+      } else {
+        setRecords((data as any as RecordRow[]) || []);
+      }
       setLoading(false);
     };
     load();
     return () => {
       active = false;
     };
-  }, [isMember, year]);
+  }, [isMember, year, reloadKey]);
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -97,6 +112,15 @@ const ClubRecords = () => {
                 <Skeleton key={i} className="h-40 rounded-xl" />
               ))}
             </div>
+          ) : loadError ? (
+            <Card>
+              <CardContent className="py-12 text-center space-y-4">
+                <p className="text-muted-foreground">{loadError}</p>
+                <Button variant="outline" onClick={() => setReloadKey((k) => k + 1)}>
+                  Zkusit znovu
+                </Button>
+              </CardContent>
+            </Card>
           ) : records.length === 0 ? (
             <Card>
               <CardContent className="py-12 text-center">
