@@ -59,7 +59,7 @@ interface MemberStats {
 }
 
 type SortMode = "distance" | "elevation";
-type RideFilter = "all" | "no-trainer" | "outdoor";
+type RideFilter = "all" | "trainer" | "outdoor";
 
 const Statistics = () => {
   const { user } = useAuth();
@@ -87,8 +87,7 @@ const Statistics = () => {
     let active = true;
     const load = async () => {
       const { data } = await supabase.rpc("get_member_statistics_filtered" as any, {
-        _include_trainer: false,
-        _include_commute: rideFilter === "outdoor" ? false : true,
+        _mode: rideFilter,
       });
       if (!active) return;
       const map: Record<string, { km: number; elevation: number }> = {};
@@ -466,8 +465,8 @@ const Statistics = () => {
                       <div className="inline-flex rounded-lg bg-muted p-0.5">
                         {([
                           ["all", "Vše"],
-                          ["no-trainer", "Bez trenažéru"],
-                          ["outdoor", "Jen venku"],
+                          ["trainer", "Trenažér"],
+                          ["outdoor", "Venku"],
                         ] as [RideFilter, string][]).map(([value, label]) => (
                           <button
                             key={value}
