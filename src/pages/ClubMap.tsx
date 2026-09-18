@@ -79,22 +79,36 @@ const ClubMap = () => {
   const [activities, setActivities] = useState<ActivityLine[]>([]);
   const [loading, setLoading] = useState(true);
   const [mapError, setMapError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     if (!isMember) return;
     let active = true;
     const load = async () => {
       setLoading(true);
-      const { data } = await supabase.rpc("get_club_activity_polylines" as any, { _days: period });
+      setLoadError(null);
+      if (typeof navigator !== "undefined" && navigator.onLine === false) {
+        if (!active) return;
+        setLoadError("Vypadá to, že nejsi online. Data jízd se nepodařilo načíst.");
+        setLoading(false);
+        return;
+      }
+      const { data, error } = await supabase.rpc("get_club_activity_polylines" as any, { _days: period });
       if (!active) return;
-      setActivities((data as any as ActivityLine[]) || []);
+      if (error) {
+        setLoadError("Data se nepodařilo načíst. Zkontroluj připojení k internetu.");
+        setActivities([]);
+      } else {
+        setActivities((data as any as ActivityLine[]) || []);
+      }
       setLoading(false);
     };
     load();
     return () => {
       active = false;
     };
-  }, [period, isMember]);
+  }, [period, isMember, reloadKey]);
 
   useEffect(() => {
     if (!isMember || !mapContainer.current || map.current) return;

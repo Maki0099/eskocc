@@ -65,6 +65,8 @@ const Header = () => {
   const hasTour = currentTourId !== null;
   const navigate = useNavigate();
 
+  const visibleNavItems = user ? [...NAV_ITEMS, ...MEMBER_NAV_ITEMS] : [...NAV_ITEMS];
+
   const [profile, setProfile] = useState<{ full_name: string | null; avatar_url: string | null } | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
 
