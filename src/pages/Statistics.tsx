@@ -34,6 +34,13 @@ import type { ChallengeSettings } from "@/lib/types";
 import { getInitials } from "@/lib/user-utils";
 import { ROUTES } from "@/lib/routes";
 import StravaConnectPrompt from "@/components/strava/StravaConnectPrompt";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface MemberStats {
   id: string;
