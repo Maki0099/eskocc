@@ -452,11 +452,14 @@ const Statistics = () => {
                   ) : (
                     <div className="space-y-2">
                       {sortedMembers.map((member, index) => {
+                        const displayDistance = getDisplayDistance(member);
+                        const displayElevation = getDisplayElevation(member);
+                        const pace = getPaceInfo(member);
                         const rawPercentage = member.target > 0
-                          ? Math.round((member.ytd_distance / member.target) * 100)
+                          ? Math.round((displayDistance / member.target) * 100)
                           : 0;
                         const progress = Math.min(rawPercentage, 100);
-                        const isCompleted = member.ytd_distance >= member.target && member.target > 0;
+                        const isCompleted = displayDistance >= member.target && member.target > 0;
                         const isCurrentUser = user?.id === member.id;
 
                         return (
@@ -491,7 +494,7 @@ const Statistics = () => {
                                     {getAgeCategoryLabel(member.age_category)}
                                     <span className="md:hidden inline-flex items-center gap-0.5 ml-1.5">
                                       <Mountain className="w-3 h-3" />
-                                      {member.ytd_elevation.toLocaleString("cs-CZ")} m
+                                      {Math.round(displayElevation).toLocaleString("cs-CZ")} m
                                     </span>
                                   </p>
                                   {!member.is_connected && (
@@ -528,14 +531,14 @@ const Statistics = () => {
                               <div className="flex-1 min-w-0 hidden md:block">
                                 <div className="flex items-baseline justify-between gap-3 text-sm mb-1.5">
                                   <span className="font-semibold">
-                                    {member.ytd_distance.toLocaleString()} km
+                                    {Math.round(displayDistance).toLocaleString()} km
                                   </span>
                                   <span className="text-muted-foreground">
                                     / {member.target.toLocaleString()} km
                                   </span>
                                   <span className="text-muted-foreground inline-flex items-center gap-1 whitespace-nowrap">
                                     <Mountain className="w-3.5 h-3.5" />
-                                    {member.ytd_elevation.toLocaleString("cs-CZ")} m
+                                    {Math.round(displayElevation).toLocaleString("cs-CZ")} m
                                   </span>
                                   <span
                                     className={`ml-auto font-medium inline-flex items-center gap-1 ${
