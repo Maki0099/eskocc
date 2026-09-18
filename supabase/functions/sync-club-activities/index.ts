@@ -228,6 +228,20 @@ Deno.serve(async (req) => {
     );
     if (!r.ok) {
       const t = await r.text();
+      if (r.status === 404) {
+        // Strava removed the Club Activities endpoint on 2026-09-01.
+        // Nothing to retry — report it clearly instead of a raw 500.
+        const msg =
+          "Strava zrušila k 1. 9. 2026 rozhraní pro klubové jízdy, takže hromadnou " +
+          "synchronizaci klubu už nelze provést. Statistiky lze nadále získávat jen " +
+          "z individuálně připojených účtů jednotlivých členů.";
+        await finalize({ status: "error", error_message: "club_activities_endpoint_removed" });
+        return new Response(
+          JSON.stringify({ error: msg, needs_reauth: false, endpoint_removed: true }),
+          { status: 410, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       throw new Error(`Strava API error ${r.status}: ${t}`);
     }
     const allActs: any[] = await r.json();
