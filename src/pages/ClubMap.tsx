@@ -315,13 +315,22 @@ const ClubMap = () => {
                 </CardContent>
               </Card>
 
-              <p className="text-center text-sm text-muted-foreground">
-                {loading
-                  ? "Načítám jízdy…"
-                  : hasData
-                    ? `${activities.length} jízd za posledních ${period} dní · polyliny se zobrazí, pokud je Strava poskytla`
-                    : "Za zvolené období nejsou k dispozici žádné jízdy s polohou."}
-              </p>
+              {loadError ? (
+                <div className="text-center space-y-3">
+                  <p className="text-sm text-muted-foreground">{loadError}</p>
+                  <Button variant="outline" size="sm" onClick={() => setReloadKey((k) => k + 1)}>
+                    Zkusit znovu
+                  </Button>
+                </div>
+              ) : (
+                <p className="text-center text-sm text-muted-foreground">
+                  {loading
+                    ? "Načítám jízdy…"
+                    : hasData
+                      ? `${activities.length} jízd za posledních ${period} dní · polyliny se zobrazí, pokud je Strava poskytla`
+                      : "Za zvolené období nejsou k dispozici žádné jízdy s polohou."}
+                </p>
+              )}
             </>
           )}
         </div>
