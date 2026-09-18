@@ -26,6 +26,10 @@ import MemberRecords from "@/components/member/MemberRecords";
 import WeeklyLoadChart from "@/components/member/WeeklyLoadChart";
 import HeartrateTrend from "@/components/member/HeartrateTrend";
 import SharedRides from "@/components/member/SharedRides";
+import HeartRateZones from "@/components/member/HeartRateZones";
+import PowerTrend from "@/components/member/PowerTrend";
+import CaloriesChart from "@/components/member/CaloriesChart";
+import TrainerRatio from "@/components/member/TrainerRatio";
 
 interface MemberData {
   full_name: string | null;
