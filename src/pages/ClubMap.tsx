@@ -63,10 +63,13 @@ const ClubMap = () => {
   useEffect(() => {
     if (!isMember || !mapContainer.current || map.current) return;
 
+    const container = mapContainer.current;
+    let resizeObserver: ResizeObserver | null = null;
+
     try {
       mapboxgl.accessToken = MAPBOX_TOKEN;
       map.current = new mapboxgl.Map({
-        container: mapContainer.current,
+        container,
         style: "mapbox://styles/mapbox/light-v11",
         center: CLUB_CENTER,
         zoom: 9,
@@ -78,6 +81,11 @@ const ClubMap = () => {
         map.current?.resize();
       });
 
+      resizeObserver = new ResizeObserver(() => {
+        window.requestAnimationFrame(() => map.current?.resize());
+      });
+      resizeObserver.observe(container);
+
       map.current.on("error", (e) => {
         console.error("Mapbox error:", e);
         setMapError("Nepodařilo se načíst mapu");
@@ -88,6 +96,7 @@ const ClubMap = () => {
     }
 
     return () => {
+      resizeObserver?.disconnect();
       markers.current.forEach((m) => m.remove());
       markers.current = [];
       map.current?.remove();
@@ -197,7 +206,7 @@ const ClubMap = () => {
                         <p className="text-muted-foreground">{mapError}</p>
                       </div>
                     ) : (
-                      <div ref={mapContainer} className="absolute inset-0" />
+                      <div ref={mapContainer} className="h-full w-full" />
                     )}
                   </div>
                 </CardContent>
