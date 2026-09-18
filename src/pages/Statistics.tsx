@@ -563,7 +563,7 @@ const Statistics = () => {
                                       {rawPercentage}%
                                     </Badge>
                                     <span className="text-[11px] text-muted-foreground whitespace-nowrap">
-                                      {member.ytd_distance.toLocaleString()} km
+                                      {Math.round(displayDistance).toLocaleString()} km
                                     </span>
                                   </div>
                                 ) : (
@@ -572,7 +572,7 @@ const Statistics = () => {
                                       {rawPercentage}%
                                     </div>
                                     <div className="text-[11px] text-muted-foreground whitespace-nowrap mt-0.5">
-                                      {member.ytd_distance.toLocaleString()} km
+                                      {Math.round(displayDistance).toLocaleString()} km
                                     </div>
                                   </>
                                 )}
@@ -585,6 +585,18 @@ const Statistics = () => {
                                 className={`h-2 bg-muted border border-border/60 ${isCompleted ? '[&>div]:bg-green-600' : '[&>div]:bg-primary'}`}
                               />
                             </div>
+
+                            {pace && (
+                              <p className={`mt-2 text-[11px] font-medium ${
+                                pace.done
+                                  ? "text-green-600 dark:text-green-400"
+                                  : pace.ahead
+                                    ? "text-green-600 dark:text-green-400"
+                                    : "text-amber-600 dark:text-amber-400"
+                              }`}>
+                                {pace.label}
+                              </p>
+                            )}
 
                           </div>
                         );
