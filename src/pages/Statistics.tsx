@@ -453,12 +453,20 @@ const Statistics = () => {
                                         <AlertCircle className="w-3 h-3" />
                                         Propojit Stravu
                                       </button>
-                                    ) : (
-                                      <span className="mt-1 inline-flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
-                                        <AlertCircle className="w-3 h-3" />
-                                        Nepropojená Strava
-                                      </span>
-                                    )
+                                     ) : (
+                                       <button
+                                         type="button"
+                                         onClick={(e) => {
+                                           e.preventDefault();
+                                           e.stopPropagation();
+                                           setHowToOpen(true);
+                                         }}
+                                         className="mt-1 inline-flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400 hover:underline text-left"
+                                       >
+                                         <AlertCircle className="w-3 h-3 shrink-0" />
+                                         Nepropojená Strava — jak propojit?
+                                       </button>
+                                     )
                                   )}
                                 </div>
                               </Link>
