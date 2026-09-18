@@ -59,7 +59,7 @@ interface MemberStats {
 }
 
 type SortMode = "distance" | "elevation";
-type RideFilter = "all" | "no-trainer" | "outdoor";
+type RideFilter = "all" | "trainer" | "outdoor";
 
 const Statistics = () => {
   const { user } = useAuth();
@@ -76,7 +76,7 @@ const Statistics = () => {
   const [sortMode, setSortMode] = useState<SortMode>("distance");
   const [error, setError] = useState<string | null>(null);
   const [rideFilter, setRideFilter] = useState<RideFilter>("all");
-  const [filteredStats, setFilteredStats] = useState<Record<string, { km: number; elevation: number }> | null>(null);
+  const [filteredStats, setFilteredStats] = useState<Record<string, { km: number; elevation: number; rides: number }> | null>(null);
   const exportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -87,13 +87,12 @@ const Statistics = () => {
     let active = true;
     const load = async () => {
       const { data } = await supabase.rpc("get_member_statistics_filtered" as any, {
-        _include_trainer: false,
-        _include_commute: rideFilter === "outdoor" ? false : true,
+        _mode: rideFilter,
       });
       if (!active) return;
-      const map: Record<string, { km: number; elevation: number }> = {};
+      const map: Record<string, { km: number; elevation: number; rides: number }> = {};
       (data as any[] || []).forEach((row) => {
-        map[row.user_id] = { km: Number(row.km), elevation: Number(row.elevation) };
+        map[row.user_id] = { km: Number(row.km), elevation: Number(row.elevation), rides: Number(row.rides) };
       });
       setFilteredStats(map);
     };
@@ -466,8 +465,8 @@ const Statistics = () => {
                       <div className="inline-flex rounded-lg bg-muted p-0.5">
                         {([
                           ["all", "Vše"],
-                          ["no-trainer", "Bez trenažéru"],
-                          ["outdoor", "Jen venku"],
+                          ["trainer", "Trenažér"],
+                          ["outdoor", "Venku"],
                         ] as [RideFilter, string][]).map(([value, label]) => (
                           <button
                             key={value}
@@ -580,6 +579,11 @@ const Statistics = () => {
                                     <Mountain className="w-3.5 h-3.5" />
                                     {Math.round(displayElevation).toLocaleString("cs-CZ")} m
                                   </span>
+                                  {filteredStats && member.is_connected && (
+                                    <span className="text-muted-foreground whitespace-nowrap">
+                                      {filteredStats[member.id]?.rides ?? 0} jízd
+                                    </span>
+                                  )}
                                   <span
                                     className={`ml-auto font-medium inline-flex items-center gap-1 ${
                                       isCompleted ? "text-green-600 dark:text-green-400" : ""
