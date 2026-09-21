@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import logoWhite from "@/assets/logo-horizontal-white.png";
 import logoDark from "@/assets/logo-horizontal-dark.png";
 import { ROUTES, NAV_ITEMS, MEMBER_NAV_ITEMS, getMemberProfilePath } from "@/lib/routes";
-import { getInitials } from "@/lib/user-utils";
+import { getInitials, formatShortName } from "@/lib/user-utils";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -170,7 +170,7 @@ const Header = () => {
       )}
       
       <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
-        <div className="container mx-auto px-4">
+        <div className="w-full px-4 lg:container lg:mx-auto lg:px-4">
           <div className="flex items-center justify-between h-16">
             <Link to={ROUTES.HOME} className="flex items-center">
               <img 
@@ -315,7 +315,28 @@ const Header = () => {
         }`}
       >
         <nav className="flex flex-col h-full">
+          {user && (
+            <Link
+              to={getMemberProfilePath(user.id)}
+              onClick={() => setIsMenuOpen(false)}
+              className="px-6 py-5 border-b border-border/50 bg-muted/20 active:bg-muted/40 transition-colors flex items-center gap-3"
+            >
+              <Avatar className="h-12 w-12 shrink-0">
+                <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.full_name || user.email || "Uživatel"} />
+                <AvatarFallback>
+                  {profileLoading ? "…" : getInitials(profile?.full_name, user.email)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0">
+                <p className="text-base font-medium truncate">
+                  {profileLoading ? "Načítání…" : formatShortName(profile?.full_name) || "Člen klubu"}
+                </p>
+                <p className="text-sm text-muted-foreground truncate">{user.email}</p>
+              </div>
+            </Link>
+          )}
           <div className="flex-1 overflow-y-auto py-4">
+
             {visibleNavItems.map((item, index) => (
               <Link
                 key={item.to}
@@ -381,34 +402,8 @@ const Header = () => {
               <div className="h-12 bg-muted animate-pulse rounded-xl"></div>
             ) : user ? (
               <div className="flex flex-col gap-3">
-                <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-background">
-                  <Avatar className="h-10 w-10 shrink-0">
-                    <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.full_name || user.email || "Uživatel"} />
-                    <AvatarFallback>
-                      {profileLoading ? "…" : getInitials(profile?.full_name, user.email)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">
-                      {profileLoading ? "Načítání…" : profile?.full_name || "Člen klubu"}
-                    </p>
-                    <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-                  </div>
-                </div>
-
                 <Link
-                  to={getMemberProfilePath(user.id)}
-                  onClick={() => setIsMenuOpen(false)}
-                  className="flex items-center justify-between w-full px-4 py-3 rounded-xl bg-background hover:bg-muted/50 transition-colors"
-                >
-                  <span className="text-sm font-medium flex items-center gap-2">
-                    <User className="w-4 h-4" />
-                    Můj profil
-                  </span>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                </Link>
 
-                <Link
                   to={ROUTES.ACCOUNT}
                   onClick={() => setIsMenuOpen(false)}
                   className="flex items-center justify-between w-full px-4 py-3 rounded-xl bg-background hover:bg-muted/50 transition-colors"
