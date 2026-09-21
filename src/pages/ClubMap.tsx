@@ -1,5 +1,5 @@
 import Seo from "@/components/Seo";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { supabase } from "@/integrations/supabase/client";
@@ -203,6 +203,14 @@ const ClubMap = () => {
       map.current = null;
     };
   }, [isMember]);
+
+  const virtualCount = activities.filter((a) => a.is_virtual === true).length;
+  const outdoorCount = activities.length - virtualCount;
+  const visibleActivities = useMemo(() => {
+    if (rideKind === "virtual") return activities.filter((a) => a.is_virtual === true);
+    if (rideKind === "outdoor") return activities.filter((a) => a.is_virtual !== true);
+    return activities;
+  }, [activities, rideKind]);
 
   useEffect(() => {
     if (!map.current) return;
