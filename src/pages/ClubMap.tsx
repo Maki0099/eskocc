@@ -88,6 +88,7 @@ const ClubMap = () => {
   const map = useRef<mapboxgl.Map | null>(null);
   const markers = useRef<mapboxgl.Marker[]>([]);
   const [period, setPeriod] = useState<Period>(90);
+  const [rideKind, setRideKind] = useState<RideKind>("all");
   const [activities, setActivities] = useState<ActivityLine[]>([]);
   const [loading, setLoading] = useState(true);
   const [mapError, setMapError] = useState<string | null>(null);
@@ -151,14 +152,31 @@ const ClubMap = () => {
           id: "route-lines-layer",
           type: "line",
           source: "route-lines",
+          filter: ["!=", ["get", "isVirtual"], true],
           layout: {
             "line-join": "round",
             "line-cap": "round",
           },
           paint: {
-            "line-color": "#7A6855",
+            "line-color": OUTDOOR_COLOR,
             "line-width": 2,
             "line-opacity": 0.55,
+          },
+        });
+        m.addLayer({
+          id: "route-lines-virtual-layer",
+          type: "line",
+          source: "route-lines",
+          filter: ["==", ["get", "isVirtual"], true],
+          layout: {
+            "line-join": "round",
+            "line-cap": "round",
+          },
+          paint: {
+            "line-color": VIRTUAL_COLOR,
+            "line-width": 2,
+            "line-opacity": 0.6,
+            "line-dasharray": [2, 2],
           },
         });
       });
