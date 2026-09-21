@@ -80,10 +80,6 @@ const Statistics = () => {
   const exportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (rideFilter === "all") {
-      setFilteredStats(null);
-      return;
-    }
     let active = true;
     const load = async () => {
       const { data } = await supabase.rpc("get_member_statistics_filtered" as any, {
@@ -486,11 +482,9 @@ const Statistics = () => {
                       </div>
                     </div>
                   </div>
-                  {rideFilter !== "all" && (
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Počítají se jen jízdy na kole · „Trenažér" zahrnuje i virtuální jízdy (Zwift)
-                    </p>
-                  )}
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Počítají se jen jízdy na kole · „Trenažér" zahrnuje i virtuální jízdy (Zwift)
+                  </p>
                 </CardHeader>
                 <CardContent className="px-4 pb-4">
                   {sortedMembers.length === 0 ? (
@@ -665,10 +659,15 @@ const Statistics = () => {
                       })}
                     </div>
                   )}
-                  {rideFilter !== "all" && (
+                  {rideFilter !== "all" ? (
                     <p className="mt-4 text-xs text-muted-foreground">
                       Zobrazeni jen členové s vlastním propojením Stravy ({connectedCount} z {members.length}).
                       U ostatních nelze trenažér a venkovní jízdy rozlišit — propojením Stravy se to změní.
+                    </p>
+                  ) : (
+                    <p className="mt-4 text-xs text-muted-foreground">
+                      U členů s vlastním propojením Stravy ({connectedCount} z {members.length}) se počítají jen jízdy na kole.
+                      U ostatních jde o starší klubová data bez rozlišení sportu.
                     </p>
                   )}
                 </CardContent>
