@@ -1,5 +1,5 @@
 import Seo from "@/components/Seo";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,14 +26,25 @@ interface ActivityLine {
   start_lat: number | null;
   start_lng: number | null;
   map_polyline: string | null;
+  is_virtual: boolean | null;
 }
 
 type Period = 30 | 90 | 365;
+type RideKind = "all" | "outdoor" | "virtual";
+
+const OUTDOOR_COLOR = "#7A6855";
+const VIRTUAL_COLOR = "#3B82F6";
 
 const PERIOD_LABELS: { value: Period; label: string }[] = [
   { value: 30, label: "30 dní" },
   { value: 90, label: "90 dní" },
   { value: 365, label: "Rok" },
+];
+
+const KIND_LABELS: { value: RideKind; label: string }[] = [
+  { value: "all", label: "Vše" },
+  { value: "outdoor", label: "Venku" },
+  { value: "virtual", label: "Virtuální" },
 ];
 
 function decodePolyline(encoded: string): [number, number][] {
@@ -77,6 +88,7 @@ const ClubMap = () => {
   const map = useRef<mapboxgl.Map | null>(null);
   const markers = useRef<mapboxgl.Marker[]>([]);
   const [period, setPeriod] = useState<Period>(90);
+  const [rideKind, setRideKind] = useState<RideKind>("all");
   const [activities, setActivities] = useState<ActivityLine[]>([]);
   const [loading, setLoading] = useState(true);
   const [mapError, setMapError] = useState<string | null>(null);
@@ -140,14 +152,31 @@ const ClubMap = () => {
           id: "route-lines-layer",
           type: "line",
           source: "route-lines",
+          filter: ["!=", ["get", "isVirtual"], true],
           layout: {
             "line-join": "round",
             "line-cap": "round",
           },
           paint: {
-            "line-color": "#7A6855",
+            "line-color": OUTDOOR_COLOR,
             "line-width": 2,
             "line-opacity": 0.55,
+          },
+        });
+        m.addLayer({
+          id: "route-lines-virtual-layer",
+          type: "line",
+          source: "route-lines",
+          filter: ["==", ["get", "isVirtual"], true],
+          layout: {
+            "line-join": "round",
+            "line-cap": "round",
+          },
+          paint: {
+            "line-color": VIRTUAL_COLOR,
+            "line-width": 2,
+            "line-opacity": 0.6,
+            "line-dasharray": [2, 2],
           },
         });
       });
@@ -175,6 +204,14 @@ const ClubMap = () => {
     };
   }, [isMember]);
 
+  const virtualCount = activities.filter((a) => a.is_virtual === true).length;
+  const outdoorCount = activities.length - virtualCount;
+  const visibleActivities = useMemo(() => {
+    if (rideKind === "virtual") return activities.filter((a) => a.is_virtual === true);
+    if (rideKind === "outdoor") return activities.filter((a) => a.is_virtual !== true);
+    return activities;
+  }, [activities, rideKind]);
+
   useEffect(() => {
     if (!map.current) return;
     markers.current.forEach((m) => m.remove());
@@ -186,7 +223,8 @@ const ClubMap = () => {
 
       const features: GeoJSON.Feature<GeoJSON.LineString>[] = [];
 
-      activities.forEach((a) => {
+      visibleActivities.forEach((a) => {
+        const isVirtual = a.is_virtual === true;
         if (a.map_polyline) {
           const coords = decodePolyline(a.map_polyline);
           if (coords.length >= 2) {
@@ -196,6 +234,7 @@ const ClubMap = () => {
                 name: a.full_name || "Člen klubu",
                 distance: a.distance_km,
                 date: a.activity_date,
+                isVirtual,
               },
               geometry: {
                 type: "LineString",
@@ -210,7 +249,7 @@ const ClubMap = () => {
           el.style.width = "12px";
           el.style.height = "12px";
           el.style.borderRadius = "50%";
-          el.style.backgroundColor = "#7A6855";
+          el.style.backgroundColor = isVirtual ? VIRTUAL_COLOR : OUTDOOR_COLOR;
           el.style.border = "2px solid #fff";
           el.style.boxShadow = "0 1px 4px rgba(0,0,0,0.3)";
 
@@ -223,6 +262,7 @@ const ClubMap = () => {
                   <p style="margin: 2px 0 0; font-size: 12px; color: #666;">
                     ${Number(a.distance_km).toLocaleString("cs-CZ")} km · ${format(new Date(a.activity_date), "d. M. yyyy", { locale: cs })}
                   </p>
+                  ${isVirtual ? `<p style="margin: 4px 0 0; font-size: 11px; color: ${VIRTUAL_COLOR};">Virtuální jízda (Zwift / ROUVY)</p>` : ""}
                 </div>
               `)
             )
@@ -243,9 +283,9 @@ const ClubMap = () => {
     } else {
       map.current.once("load", updateLayers);
     }
-  }, [activities]);
+  }, [visibleActivities]);
 
-  const hasData = activities.length > 0;
+  const hasData = visibleActivities.length > 0;
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -302,6 +342,25 @@ const ClubMap = () => {
                 </div>
               </div>
 
+              <div className="flex justify-center">
+                <div className="inline-flex rounded-lg bg-muted p-0.5">
+                  {KIND_LABELS.map((k) => (
+                    <button
+                      key={k.value}
+                      type="button"
+                      onClick={() => setRideKind(k.value)}
+                      className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                        rideKind === k.value
+                          ? "bg-background shadow-sm text-foreground"
+                          : "text-muted-foreground"
+                      }`}
+                    >
+                      {k.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <Card className="overflow-hidden">
                 <CardContent className="p-0">
                   <div className="h-[60vh] min-h-[400px] relative">
@@ -324,13 +383,35 @@ const ClubMap = () => {
                   </Button>
                 </div>
               ) : (
-                <p className="text-center text-sm text-muted-foreground">
-                  {loading
-                    ? "Načítám jízdy…"
-                    : hasData
-                      ? `${activities.length} jízd za posledních ${period} dní · polyliny se zobrazí, pokud je Strava poskytla`
-                      : "Za zvolené období nejsou k dispozici žádné jízdy s polohou."}
-                </p>
+                <div className="space-y-3">
+                  <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
+                    <span className="inline-flex items-center gap-2">
+                      <span
+                        className="w-3 h-3 rounded-full border-2 border-background shadow"
+                        style={{ backgroundColor: OUTDOOR_COLOR }}
+                      />
+                      Venku ({outdoorCount})
+                    </span>
+                    <span className="inline-flex items-center gap-2">
+                      <span
+                        className="w-3 h-3 rounded-full border-2 border-background shadow"
+                        style={{ backgroundColor: VIRTUAL_COLOR }}
+                      />
+                      Virtuální — Zwift / ROUVY ({virtualCount})
+                    </span>
+                  </div>
+                  <p className="text-center text-sm text-muted-foreground">
+                    {loading
+                      ? "Načítám jízdy…"
+                      : hasData
+                        ? `${visibleActivities.length} jízd za posledních ${period} dní · polyliny se zobrazí, pokud je Strava poskytla`
+                        : "Za zvolené období nejsou k dispozici žádné jízdy s polohou."}
+                  </p>
+                  <p className="text-center text-xs text-muted-foreground max-w-xl mx-auto">
+                    Virtuální jízdy posílají souřadnice herní trasy (Skotsko, Mallorca, Nový Zéland…), proto se
+                    objevují po celém světě, i když se jelo doma na trenažéru.
+                  </p>
+                </div>
               )}
             </>
           )}
