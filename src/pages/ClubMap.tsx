@@ -342,6 +342,25 @@ const ClubMap = () => {
                 </div>
               </div>
 
+              <div className="flex justify-center">
+                <div className="inline-flex rounded-lg bg-muted p-0.5">
+                  {KIND_LABELS.map((k) => (
+                    <button
+                      key={k.value}
+                      type="button"
+                      onClick={() => setRideKind(k.value)}
+                      className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                        rideKind === k.value
+                          ? "bg-background shadow-sm text-foreground"
+                          : "text-muted-foreground"
+                      }`}
+                    >
+                      {k.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <Card className="overflow-hidden">
                 <CardContent className="p-0">
                   <div className="h-[60vh] min-h-[400px] relative">
