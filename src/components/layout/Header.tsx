@@ -315,7 +315,28 @@ const Header = () => {
         }`}
       >
         <nav className="flex flex-col h-full">
+          {user && (
+            <Link
+              to={getMemberProfilePath(user.id)}
+              onClick={() => setIsMenuOpen(false)}
+              className="px-6 py-5 border-b border-border/50 bg-muted/20 active:bg-muted/40 transition-colors flex items-center gap-3"
+            >
+              <Avatar className="h-12 w-12 shrink-0">
+                <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.full_name || user.email || "Uživatel"} />
+                <AvatarFallback>
+                  {profileLoading ? "…" : getInitials(profile?.full_name, user.email)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0">
+                <p className="text-base font-medium truncate">
+                  {profileLoading ? "Načítání…" : formatShortName(profile?.full_name) || "Člen klubu"}
+                </p>
+                <p className="text-sm text-muted-foreground truncate">{user.email}</p>
+              </div>
+            </Link>
+          )}
           <div className="flex-1 overflow-y-auto py-4">
+
             {visibleNavItems.map((item, index) => (
               <Link
                 key={item.to}
