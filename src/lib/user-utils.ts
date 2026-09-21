@@ -31,6 +31,19 @@ export function getInitials(
 }
 
 /**
+ * Format a full name as "Firstname L." (keeps all first names, shortens surname)
+ */
+export function formatShortName(name: string | null | undefined): string {
+  if (!name) return "";
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "";
+  if (parts.length === 1) return parts[0];
+  const last = parts[parts.length - 1];
+  return `${parts.slice(0, -1).join(" ")} ${last.charAt(0).toUpperCase()}.`;
+}
+
+
+/**
  * Calculate age from birth date
  * Returns null if birthDate is null or undefined
  */
