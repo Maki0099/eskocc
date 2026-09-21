@@ -26,14 +26,25 @@ interface ActivityLine {
   start_lat: number | null;
   start_lng: number | null;
   map_polyline: string | null;
+  is_virtual: boolean | null;
 }
 
 type Period = 30 | 90 | 365;
+type RideKind = "all" | "outdoor" | "virtual";
+
+const OUTDOOR_COLOR = "#7A6855";
+const VIRTUAL_COLOR = "#3B82F6";
 
 const PERIOD_LABELS: { value: Period; label: string }[] = [
   { value: 30, label: "30 dní" },
   { value: 90, label: "90 dní" },
   { value: 365, label: "Rok" },
+];
+
+const KIND_LABELS: { value: RideKind; label: string }[] = [
+  { value: "all", label: "Vše" },
+  { value: "outdoor", label: "Venku" },
+  { value: "virtual", label: "Virtuální" },
 ];
 
 function decodePolyline(encoded: string): [number, number][] {
