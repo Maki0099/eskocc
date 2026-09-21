@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import logoWhite from "@/assets/logo-horizontal-white.png";
 import logoDark from "@/assets/logo-horizontal-dark.png";
 import { ROUTES, NAV_ITEMS, MEMBER_NAV_ITEMS, getMemberProfilePath } from "@/lib/routes";
-import { getInitials } from "@/lib/user-utils";
+import { getInitials, formatShortName } from "@/lib/user-utils";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
