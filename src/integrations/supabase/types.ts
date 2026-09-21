@@ -1245,6 +1245,7 @@ export type Database = {
           activity_date: string
           distance_km: number
           full_name: string
+          is_virtual: boolean
           map_polyline: string
           start_lat: number
           start_lng: number
