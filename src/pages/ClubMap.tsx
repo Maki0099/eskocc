@@ -215,7 +215,8 @@ const ClubMap = () => {
 
       const features: GeoJSON.Feature<GeoJSON.LineString>[] = [];
 
-      activities.forEach((a) => {
+      visibleActivities.forEach((a) => {
+        const isVirtual = a.is_virtual === true;
         if (a.map_polyline) {
           const coords = decodePolyline(a.map_polyline);
           if (coords.length >= 2) {
@@ -225,6 +226,7 @@ const ClubMap = () => {
                 name: a.full_name || "Člen klubu",
                 distance: a.distance_km,
                 date: a.activity_date,
+                isVirtual,
               },
               geometry: {
                 type: "LineString",
