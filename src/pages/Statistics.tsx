@@ -659,10 +659,15 @@ const Statistics = () => {
                       })}
                     </div>
                   )}
-                  {rideFilter !== "all" && (
+                  {rideFilter !== "all" ? (
                     <p className="mt-4 text-xs text-muted-foreground">
                       Zobrazeni jen členové s vlastním propojením Stravy ({connectedCount} z {members.length}).
                       U ostatních nelze trenažér a venkovní jízdy rozlišit — propojením Stravy se to změní.
+                    </p>
+                  ) : (
+                    <p className="mt-4 text-xs text-muted-foreground">
+                      U členů s vlastním propojením Stravy ({connectedCount} z {members.length}) se počítají jen jízdy na kole.
+                      U ostatních jde o starší klubová data bez rozlišení sportu.
                     </p>
                   )}
                 </CardContent>
