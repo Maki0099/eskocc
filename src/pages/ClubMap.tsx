@@ -275,9 +275,9 @@ const ClubMap = () => {
     } else {
       map.current.once("load", updateLayers);
     }
-  }, [activities]);
+  }, [visibleActivities]);
 
-  const hasData = activities.length > 0;
+  const hasData = visibleActivities.length > 0;
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
