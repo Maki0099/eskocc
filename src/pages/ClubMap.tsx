@@ -241,7 +241,7 @@ const ClubMap = () => {
           el.style.width = "12px";
           el.style.height = "12px";
           el.style.borderRadius = "50%";
-          el.style.backgroundColor = "#7A6855";
+          el.style.backgroundColor = isVirtual ? VIRTUAL_COLOR : OUTDOOR_COLOR;
           el.style.border = "2px solid #fff";
           el.style.boxShadow = "0 1px 4px rgba(0,0,0,0.3)";
 
@@ -254,6 +254,7 @@ const ClubMap = () => {
                   <p style="margin: 2px 0 0; font-size: 12px; color: #666;">
                     ${Number(a.distance_km).toLocaleString("cs-CZ")} km · ${format(new Date(a.activity_date), "d. M. yyyy", { locale: cs })}
                   </p>
+                  ${isVirtual ? `<p style="margin: 4px 0 0; font-size: 11px; color: ${VIRTUAL_COLOR};">Virtuální jízda (Zwift / ROUVY)</p>` : ""}
                 </div>
               `)
             )
