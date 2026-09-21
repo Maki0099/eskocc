@@ -383,13 +383,35 @@ const ClubMap = () => {
                   </Button>
                 </div>
               ) : (
-                <p className="text-center text-sm text-muted-foreground">
-                  {loading
-                    ? "Načítám jízdy…"
-                    : hasData
-                      ? `${activities.length} jízd za posledních ${period} dní · polyliny se zobrazí, pokud je Strava poskytla`
-                      : "Za zvolené období nejsou k dispozici žádné jízdy s polohou."}
-                </p>
+                <div className="space-y-3">
+                  <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
+                    <span className="inline-flex items-center gap-2">
+                      <span
+                        className="w-3 h-3 rounded-full border-2 border-background shadow"
+                        style={{ backgroundColor: OUTDOOR_COLOR }}
+                      />
+                      Venku ({outdoorCount})
+                    </span>
+                    <span className="inline-flex items-center gap-2">
+                      <span
+                        className="w-3 h-3 rounded-full border-2 border-background shadow"
+                        style={{ backgroundColor: VIRTUAL_COLOR }}
+                      />
+                      Virtuální — Zwift / ROUVY ({virtualCount})
+                    </span>
+                  </div>
+                  <p className="text-center text-sm text-muted-foreground">
+                    {loading
+                      ? "Načítám jízdy…"
+                      : hasData
+                        ? `${visibleActivities.length} jízd za posledních ${period} dní · polyliny se zobrazí, pokud je Strava poskytla`
+                        : "Za zvolené období nejsou k dispozici žádné jízdy s polohou."}
+                  </p>
+                  <p className="text-center text-xs text-muted-foreground max-w-xl mx-auto">
+                    Virtuální jízdy posílají souřadnice herní trasy (Skotsko, Mallorca, Nový Zéland…), proto se
+                    objevují po celém světě, i když se jelo doma na trenažéru.
+                  </p>
+                </div>
               )}
             </>
           )}
