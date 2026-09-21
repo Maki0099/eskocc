@@ -80,10 +80,6 @@ const Statistics = () => {
   const exportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (rideFilter === "all") {
-      setFilteredStats(null);
-      return;
-    }
     let active = true;
     const load = async () => {
       const { data } = await supabase.rpc("get_member_statistics_filtered" as any, {
