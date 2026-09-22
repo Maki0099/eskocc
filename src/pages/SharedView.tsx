@@ -219,6 +219,10 @@ const SharedView = () => {
                         <p className="text-xs text-muted-foreground">
                           {format(new Date(a.activity_date), "d. MMMM yyyy", { locale: cs })}
                         </p>
+                        <p className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                          <Share2 className="w-3 h-3" />
+                          Sdílená trasa od {displayName}
+                        </p>
                         <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                           <span className="flex items-center gap-1">
                             <Bike className="w-3.5 h-3.5" />
