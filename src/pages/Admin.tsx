@@ -531,17 +531,50 @@ const Admin = () => {
                                 </TooltipProvider>
                               </TableCell>
                               <TableCell className="hidden md:table-cell">
-                                {user.hasPersonalStrava ? (
-                                  <Badge
-                                    variant="secondary"
-                                    className="gap-1 bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20"
-                                    title="Uživatel má propojený svůj Strava účet"
-                                  >
-                                    <Activity className="w-3 h-3" />
-                                    Propojeno
-                                  </Badge>
-                                ) : (
-                                  <span className="text-muted-foreground text-sm">—</span>
+                                {user.stravaStatus === "connected" && (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Badge
+                                        variant="secondary"
+                                        className="gap-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 cursor-help"
+                                      >
+                                        <Activity className="w-3 h-3" />
+                                        Propojeno
+                                      </Badge>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p className="text-xs">
+                                        Poslední synchronizace: {user.stravaLastSyncedAt ? format(new Date(user.stravaLastSyncedAt), "d. M. yyyy HH:mm", { locale: cs }) : "neznámá"}
+                                      </p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                )}
+                                {user.stravaStatus === "expired" && (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Badge
+                                        variant="secondary"
+                                        className="gap-1 bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 cursor-help"
+                                      >
+                                        <AlertTriangle className="w-3 h-3" />
+                                        Vypršelo
+                                      </Badge>
+                                    </TooltipTrigger>
+                                    <TooltipContent className="max-w-xs">
+                                      <p className="text-xs">
+                                        Propojení vyžaduje obnovení.
+                                        {user.stravaLastSyncedAt && (
+                                          <> Poslední sync: {format(new Date(user.stravaLastSyncedAt), "d. M. yyyy HH:mm", { locale: cs })}.</>
+                                        )}
+                                        {user.stravaLastError && (
+                                          <> Chyba: {user.stravaLastError}</>
+                                        )}
+                                      </p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                )}
+                                {user.stravaStatus === "none" && (
+                                  <span className="text-muted-foreground text-sm">Nepřipojeno</span>
                                 )}
                               </TableCell>
                               <TableCell className="text-right">
