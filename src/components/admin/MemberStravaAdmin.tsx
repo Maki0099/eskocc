@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, RefreshCw, Activity, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 interface ConnectionRow {
   user_id: string;
@@ -56,6 +57,7 @@ export const MemberStravaAdmin = () => {
   };
 
   const connected = rows.filter((r) => r.athlete_id && !r.needs_reauth).length;
+  const expired = rows.filter((r) => r.athlete_id && r.needs_reauth).length;
 
   return (
     <Card>
@@ -71,8 +73,14 @@ export const MemberStravaAdmin = () => {
           </Button>
         </div>
         <p className="text-sm text-muted-foreground">
-          Propojeno {connected} z {rows.length} členů. Data se stahují z osobních účtů členů,
-          klubové rozhraní Strava k 1. 9. 2026 zrušila. Historická klubová data zůstávají uložena.
+          Propojeno {connected} z {rows.length} členů
+          {expired > 0 && (
+            <span className="text-amber-600 dark:text-amber-400 font-medium">
+              {" "}· vypršelo {expired} propojení
+            </span>
+          )}
+          . Data se stahují z osobních účtů členů, klubové rozhraní Strava k 1. 9. 2026 zrušila.
+          Historická klubová data zůstávají uložena.
         </p>
       </CardHeader>
       <CardContent>
@@ -85,7 +93,10 @@ export const MemberStravaAdmin = () => {
             {rows.map((r) => (
               <div
                 key={r.user_id}
-                className="flex flex-wrap items-center gap-3 p-3 rounded-xl border border-border/50"
+                className={cn(
+                  "flex flex-wrap items-center gap-3 p-3 rounded-xl border border-border/50",
+                  r.needs_reauth && "bg-amber-50 dark:bg-amber-950/20 border-amber-500/30"
+                )}
               >
                 <div className="min-w-0 flex-1">
                   <p className="font-medium text-sm truncate">{r.full_name || "Bez jména"}</p>

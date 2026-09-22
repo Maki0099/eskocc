@@ -28,6 +28,7 @@ import {
   CheckCircle2,
   HelpCircle,
   MapPin,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { AppRole } from "@/lib/types";
@@ -56,6 +57,8 @@ interface MemberStats {
   target: number;
   age_category: string;
   is_connected: boolean;
+  needs_reauth: boolean;
+  last_synced_at: string | null;
 }
 
 type SortMode = "distance" | "elevation";
@@ -159,6 +162,8 @@ const Statistics = () => {
             target,
             age_category: profile.age_category,
             is_connected: profile.is_connected ?? false,
+            needs_reauth: profile.needs_reauth ?? false,
+            last_synced_at: profile.last_synced_at ?? null,
           };
         });
 
@@ -539,7 +544,29 @@ const Statistics = () => {
                                       {Math.round(displayElevation).toLocaleString("cs-CZ")} m
                                     </span>
                                   </p>
-                                  {!member.is_connected && (
+                                  {member.needs_reauth ? (
+                                    isCurrentUser ? (
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          navigate(ROUTES.ACCOUNT);
+                                        }}
+                                        className="mt-1 inline-flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400 hover:underline"
+                                      >
+                                        <AlertTriangle className="w-3 h-3" />
+                                        Propojení vypršelo – obnovit
+                                      </button>
+                                    ) : (
+                                      <span
+                                        className="mt-1 inline-flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400"
+                                        title={member.last_synced_at ? `Poslední sync: ${new Date(member.last_synced_at).toLocaleString("cs-CZ")}` : "Propojení vyžaduje obnovení"}
+                                      >
+                                        <AlertTriangle className="w-3 h-3 shrink-0" />
+                                        Vypršelo
+                                      </span>
+                                    )
+                                  ) : !member.is_connected ? (
                                     isCurrentUser ? (
                                       <button
                                         type="button"
@@ -552,21 +579,29 @@ const Statistics = () => {
                                         <AlertCircle className="w-3 h-3" />
                                         Propojit Stravu
                                       </button>
-                                     ) : (
-                                       <button
-                                         type="button"
-                                         onClick={(e) => {
-                                           e.preventDefault();
-                                           e.stopPropagation();
-                                           setHowToOpen(true);
-                                         }}
-                                         className="mt-1 inline-flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400 hover:underline text-left"
-                                       >
-                                         <AlertCircle className="w-3 h-3 shrink-0" />
-                                         Nepropojená Strava — jak propojit?
-                                       </button>
-                                     )
-                                  )}
+                                    ) : (
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.preventDefault();
+                                          e.stopPropagation();
+                                          setHowToOpen(true);
+                                        }}
+                                        className="mt-1 inline-flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400 hover:underline text-left"
+                                      >
+                                        <AlertCircle className="w-3 h-3 shrink-0" />
+                                        Nepropojená Strava — jak propojit?
+                                      </button>
+                                    )
+                                  ) : !isCurrentUser ? (
+                                    <span
+                                      className="mt-1 inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400"
+                                      title={member.last_synced_at ? `Poslední sync: ${new Date(member.last_synced_at).toLocaleString("cs-CZ")}` : "Propojeno se Stravou"}
+                                    >
+                                      <CheckCircle2 className="w-3 h-3 shrink-0" />
+                                      Propojeno
+                                    </span>
+                                  ) : null}
                                 </div>
                               </Link>
 

@@ -47,7 +47,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Users, Shield, Loader2, Coffee, Target, Clock, KeyRound, Bell, Route, Sparkles, Trash2, Activity, Images, Mountain, CopyCheck } from "lucide-react";
+import { Users, Shield, Loader2, Coffee, Target, Clock, KeyRound, Bell, Route, Sparkles, Trash2, Activity, Images, Mountain, CopyCheck, AlertTriangle } from "lucide-react";
 import BeskydyRoutesAdmin from "@/components/admin/BeskydyRoutesAdmin";
 import VersionInfo from "@/components/admin/VersionInfo";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -69,7 +69,9 @@ interface UserWithRole {
   created_at: string;
   role: AppRole;
   clubAthlete: { firstname: string; lastnameInitial: string | null; athleteKey?: string } | null;
-  hasPersonalStrava: boolean;
+  stravaStatus: "connected" | "expired" | "none";
+  stravaLastSyncedAt: string | null;
+  stravaLastError: string | null;
 }
 
 const Admin = () => {
@@ -116,11 +118,16 @@ const Admin = () => {
 
       const { data: stravaTokens, error: tokensError } = await supabase
         .from("user_strava_tokens")
-        .select("user_id");
+        .select("user_id, needs_reauth, last_synced_at, last_error");
 
       if (tokensError) throw tokensError;
 
-      const personalStravaSet = new Set((stravaTokens || []).map((t) => t.user_id as string));
+      const stravaByUser = new Map(
+        (stravaTokens || []).map((t) => [
+          t.user_id as string,
+          { needs_reauth: t.needs_reauth as boolean, last_synced_at: t.last_synced_at as string | null, last_error: t.last_error as string | null },
+        ])
+      );
 
       const mappingByUser = new Map(
         (mappings || []).map((m) => [
@@ -131,11 +138,18 @@ const Admin = () => {
 
       const usersWithRoles: UserWithRole[] = (profiles || []).map((profile) => {
         const userRole = roles?.find((r) => r.user_id === profile.id);
+        const strava = stravaByUser.get(profile.id);
+        let stravaStatus: UserWithRole["stravaStatus"] = "none";
+        if (strava) {
+          stravaStatus = strava.needs_reauth ? "expired" : "connected";
+        }
         return {
           ...profile,
           role: (userRole?.role as AppRole) || "pending",
           clubAthlete: mappingByUser.get(profile.id) || null,
-          hasPersonalStrava: personalStravaSet.has(profile.id),
+          stravaStatus,
+          stravaLastSyncedAt: strava?.last_synced_at || null,
+          stravaLastError: strava?.last_error || null,
         };
       });
 
@@ -147,6 +161,7 @@ const Admin = () => {
       setLoading(false);
     }
   };
+
 
   useEffect(() => {
     if (isAdmin) {
@@ -342,7 +357,7 @@ const Admin = () => {
             })()}
 
             <TabsContent value="users" className="space-y-6">
-              <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+              <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
                 <Card>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -396,10 +411,26 @@ const Admin = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">
-                      {users.filter((u) => u.clubAthlete).length}
+                      {users.filter((u) => u.stravaStatus === "connected").length}
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Vlastní účet: {users.filter((u) => u.hasPersonalStrava).length}
+                      Vlastní účet člena
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
+                      <AlertTriangle className="w-3.5 h-3.5" />
+                      Vypršelá propojení
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-orange-500">
+                      {users.filter((u) => u.stravaStatus === "expired").length}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Čeká na obnovení
                     </p>
                   </CardContent>
                 </Card>
@@ -500,17 +531,50 @@ const Admin = () => {
                                 </TooltipProvider>
                               </TableCell>
                               <TableCell className="hidden md:table-cell">
-                                {user.hasPersonalStrava ? (
-                                  <Badge
-                                    variant="secondary"
-                                    className="gap-1 bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20"
-                                    title="Uživatel má propojený svůj Strava účet"
-                                  >
-                                    <Activity className="w-3 h-3" />
-                                    Propojeno
-                                  </Badge>
-                                ) : (
-                                  <span className="text-muted-foreground text-sm">—</span>
+                                {user.stravaStatus === "connected" && (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Badge
+                                        variant="secondary"
+                                        className="gap-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 cursor-help"
+                                      >
+                                        <Activity className="w-3 h-3" />
+                                        Propojeno
+                                      </Badge>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p className="text-xs">
+                                        Poslední synchronizace: {user.stravaLastSyncedAt ? format(new Date(user.stravaLastSyncedAt), "d. M. yyyy HH:mm", { locale: cs }) : "neznámá"}
+                                      </p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                )}
+                                {user.stravaStatus === "expired" && (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Badge
+                                        variant="secondary"
+                                        className="gap-1 bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 cursor-help"
+                                      >
+                                        <AlertTriangle className="w-3 h-3" />
+                                        Vypršelo
+                                      </Badge>
+                                    </TooltipTrigger>
+                                    <TooltipContent className="max-w-xs">
+                                      <p className="text-xs">
+                                        Propojení vyžaduje obnovení.
+                                        {user.stravaLastSyncedAt && (
+                                          <> Poslední sync: {format(new Date(user.stravaLastSyncedAt), "d. M. yyyy HH:mm", { locale: cs })}.</>
+                                        )}
+                                        {user.stravaLastError && (
+                                          <> Chyba: {user.stravaLastError}</>
+                                        )}
+                                      </p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                )}
+                                {user.stravaStatus === "none" && (
+                                  <span className="text-muted-foreground text-sm">Nepřipojeno</span>
                                 )}
                               </TableCell>
                               <TableCell className="text-right">
