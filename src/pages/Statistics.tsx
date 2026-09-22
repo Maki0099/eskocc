@@ -56,6 +56,8 @@ interface MemberStats {
   target: number;
   age_category: string;
   is_connected: boolean;
+  needs_reauth: boolean;
+  last_synced_at: string | null;
 }
 
 type SortMode = "distance" | "elevation";
