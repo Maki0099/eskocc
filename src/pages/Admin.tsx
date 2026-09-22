@@ -118,11 +118,16 @@ const Admin = () => {
 
       const { data: stravaTokens, error: tokensError } = await supabase
         .from("user_strava_tokens")
-        .select("user_id");
+        .select("user_id, needs_reauth, last_synced_at, last_error");
 
       if (tokensError) throw tokensError;
 
-      const personalStravaSet = new Set((stravaTokens || []).map((t) => t.user_id as string));
+      const stravaByUser = new Map(
+        (stravaTokens || []).map((t) => [
+          t.user_id as string,
+          { needs_reauth: t.needs_reauth as boolean, last_synced_at: t.last_synced_at as string | null, last_error: t.last_error as string | null },
+        ])
+      );
 
       const mappingByUser = new Map(
         (mappings || []).map((m) => [
@@ -133,11 +138,18 @@ const Admin = () => {
 
       const usersWithRoles: UserWithRole[] = (profiles || []).map((profile) => {
         const userRole = roles?.find((r) => r.user_id === profile.id);
+        const strava = stravaByUser.get(profile.id);
+        let stravaStatus: UserWithRole["stravaStatus"] = "none";
+        if (strava) {
+          stravaStatus = strava.needs_reauth ? "expired" : "connected";
+        }
         return {
           ...profile,
           role: (userRole?.role as AppRole) || "pending",
           clubAthlete: mappingByUser.get(profile.id) || null,
-          hasPersonalStrava: personalStravaSet.has(profile.id),
+          stravaStatus,
+          stravaLastSyncedAt: strava?.last_synced_at || null,
+          stravaLastError: strava?.last_error || null,
         };
       });
 
@@ -149,6 +161,7 @@ const Admin = () => {
       setLoading(false);
     }
   };
+
 
   useEffect(() => {
     if (isAdmin) {
