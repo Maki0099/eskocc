@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Loader2, RefreshCw, Unlink, AlertTriangle } from "lucide-react";
 import stravaLogo from "@/assets/strava-logo.svg";
+import { startStravaOAuth } from "@/lib/strava-oauth";
 
 interface TokenRow {
   athlete_id: string;
@@ -12,8 +13,6 @@ interface TokenRow {
   last_synced_at: string | null;
   last_error: string | null;
 }
-
-const PROJECT_REF = "mtlycegceaeueuyymkyv";
 
 export const StravaConnectionCard = () => {
   const { user } = useAuth();
@@ -59,17 +58,7 @@ export const StravaConnectionCard = () => {
     if (!user) return;
     setConnecting(true);
     try {
-      const redirectUri = `https://${PROJECT_REF}.supabase.co/functions/v1/user-strava-callback`;
-      const returnTo = window.location.origin;
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
-      const res = await fetch(
-        `https://${PROJECT_REF}.supabase.co/functions/v1/user-strava-auth?redirect_uri=${encodeURIComponent(redirectUri)}&return_to=${encodeURIComponent(returnTo)}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      const payload = await res.json();
-      if (!res.ok || !payload.url) throw new Error(payload.error || "Selhalo získání URL");
-      window.location.href = payload.url;
+      await startStravaOAuth();
     } catch (e) {
       toast({
         variant: "destructive",
