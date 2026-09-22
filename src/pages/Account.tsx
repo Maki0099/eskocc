@@ -23,6 +23,7 @@ import { AccountPageSkeleton } from "@/components/skeletons/PageSkeletons";
 import CheckForUpdatesButton from "@/components/pwa/CheckForUpdatesButton";
 import ForceRefreshButton from "@/components/pwa/ForceRefreshButton";
 import { StravaConnectionCard } from "@/components/strava/StravaConnectionCard";
+import ShareLinksManager from "@/components/share/ShareLinksManager";
 
 interface Profile {
   full_name: string | null;
@@ -407,6 +408,11 @@ const Account = () => {
           <div className="mt-12 pt-8 border-t border-border/40">
             <h2 className="font-medium mb-4">Strava</h2>
             <StravaConnectionCard />
+          </div>
+
+          <div className="mt-12 pt-8 border-t border-border/40">
+            <h2 className="font-medium mb-4">Sdílené odkazy</h2>
+            <ShareLinksManager />
           </div>
 
           <div className="mt-12 pt-8 border-t border-border/40" data-tour="notifications-section">

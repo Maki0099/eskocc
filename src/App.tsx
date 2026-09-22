@@ -36,6 +36,7 @@ const Install = lazy(() => import("./pages/Install"));
 const Documents = lazy(() => import("./pages/Documents"));
 const Notifications = lazy(() => import("./pages/Notifications"));
 const ShareTarget = lazy(() => import("./pages/ShareTarget"));
+const SharedView = lazy(() => import("./pages/SharedView"));
 const PruvodceBeskydy = lazy(() => import("./pages/PruvodceBeskydy"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -106,6 +107,7 @@ const App = () => (
                   }
                 />
                 <Route path={ROUTES.SHARE_TARGET} element={<ShareTarget />} />
+                <Route path={ROUTE_PATTERNS.SHARED_VIEW} element={<SharedView />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
