@@ -1244,9 +1244,13 @@ export type Database = {
         Returns: {
           activity_date: string
           distance_km: number
+          elevation_gain: number
           full_name: string
+          id: string
           is_virtual: boolean
           map_polyline: string
+          moving_time: number
+          name: string
           start_lat: number
           start_lng: number
           user_id: string
