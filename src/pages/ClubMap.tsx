@@ -9,21 +9,29 @@ import Footer from "@/components/layout/Footer";
 import MemberOnlyContent from "@/components/MemberOnlyContent";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MapPin, ArrowLeft } from "lucide-react";
+import { MapPin, ArrowLeft, Download } from "lucide-react";
 import { decodePolyline } from "@/lib/polyline";
 import { Link } from "react-router-dom";
-import { ROUTES } from "@/lib/routes";
+import { ROUTES, getMemberProfilePath } from "@/lib/routes";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
+import RouteDetailDialog, {
+  downloadRouteGpx,
+  formatDuration,
+} from "@/components/member/RouteDetailDialog";
 
 const MAPBOX_TOKEN = "pk.eyJ1IjoibWFraTA5OSIsImEiOiJjbWdydmlmYTgwN3NvMnNyNXg0NjgzYW5iIn0.AiNtdl1RlCCszZnRDT8zUw";
 const CLUB_CENTER: [number, number] = [18.2401, 49.3513];
 
 interface ActivityLine {
+  id: string;
   user_id: string;
   full_name: string | null;
+  name: string | null;
   activity_date: string;
   distance_km: number;
+  elevation_gain: number | null;
+  moving_time: number | null;
   start_lat: number | null;
   start_lng: number | null;
   map_polyline: string | null;
@@ -35,6 +43,7 @@ type RideKind = "all" | "outdoor" | "virtual";
 
 const OUTDOOR_COLOR = "#7A6855";
 const VIRTUAL_COLOR = "#3B82F6";
+const SELECTED_WIDTH = 5;
 
 const PERIOD_LABELS: { value: Period; label: string }[] = [
   { value: 30, label: "30 dní" },
@@ -61,6 +70,8 @@ const ClubMap = () => {
   const [mapError, setMapError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   useEffect(() => {
     if (!isMember) return;
@@ -114,6 +125,7 @@ const ClubMap = () => {
           type: "geojson",
           data: { type: "FeatureCollection", features: [] },
           lineMetrics: true,
+          promoteId: "activityId",
         });
         m.addLayer({
           id: "route-lines-layer",
@@ -145,6 +157,56 @@ const ClubMap = () => {
             "line-opacity": 0.6,
             "line-dasharray": [2, 2],
           },
+        });
+        // Wide invisible hit layer so thin lines are easy to click
+        m.addLayer({
+          id: "route-lines-hit-layer",
+          type: "line",
+          source: "route-lines",
+          layout: {
+            "line-join": "round",
+            "line-cap": "round",
+          },
+          paint: {
+            "line-color": "rgba(0,0,0,0)",
+            "line-width": 14,
+          },
+        });
+        // Highlight layer for the selected route
+        m.addLayer({
+          id: "route-lines-selected-layer",
+          type: "line",
+          source: "route-lines",
+          filter: ["==", ["get", "activityId"], ""],
+          layout: {
+            "line-join": "round",
+            "line-cap": "round",
+          },
+          paint: {
+            "line-color": [
+              "case",
+              ["==", ["get", "isVirtual"], true],
+              VIRTUAL_COLOR,
+              OUTDOOR_COLOR,
+            ],
+            "line-width": SELECTED_WIDTH,
+            "line-opacity": 1,
+          },
+        });
+
+        m.on("click", "route-lines-hit-layer", (e) => {
+          const id = e.features?.[0]?.properties?.activityId as string | undefined;
+          if (id) setSelectedId(id);
+        });
+        m.on("mouseenter", "route-lines-hit-layer", () => {
+          m.getCanvas().style.cursor = "pointer";
+        });
+        m.on("mouseleave", "route-lines-hit-layer", () => {
+          m.getCanvas().style.cursor = "";
+        });
+        m.on("click", (e) => {
+          const hits = m.queryRenderedFeatures(e.point, { layers: ["route-lines-hit-layer"] });
+          if (hits.length === 0) setSelectedId(null);
         });
       });
 
@@ -179,6 +241,11 @@ const ClubMap = () => {
     return activities;
   }, [activities, rideKind]);
 
+  const selectedActivity = useMemo(
+    () => visibleActivities.find((a) => a.id === selectedId) ?? null,
+    [visibleActivities, selectedId]
+  );
+
   useEffect(() => {
     if (!map.current) return;
     markers.current.forEach((m) => m.remove());
@@ -198,6 +265,7 @@ const ClubMap = () => {
             features.push({
               type: "Feature",
               properties: {
+                activityId: a.id,
                 name: a.full_name || "Člen klubu",
                 distance: a.distance_km,
                 date: a.activity_date,
@@ -219,6 +287,11 @@ const ClubMap = () => {
           el.style.backgroundColor = isVirtual ? VIRTUAL_COLOR : OUTDOOR_COLOR;
           el.style.border = "2px solid #fff";
           el.style.boxShadow = "0 1px 4px rgba(0,0,0,0.3)";
+          el.style.cursor = "pointer";
+          el.addEventListener("click", (ev) => {
+            ev.stopPropagation();
+            setSelectedId(a.id);
+          });
 
           const marker = new mapboxgl.Marker({ element: el })
             .setLngLat([Number(a.start_lng), Number(a.start_lat)])
@@ -251,6 +324,37 @@ const ClubMap = () => {
       map.current.once("load", updateLayers);
     }
   }, [visibleActivities]);
+
+  // Highlight the selected route, dim the rest
+  useEffect(() => {
+    const m = map.current;
+    if (!m) return;
+
+    const applySelection = () => {
+      if (!m.getLayer("route-lines-selected-layer")) return;
+      m.setFilter("route-lines-selected-layer", [
+        "==",
+        ["get", "activityId"],
+        selectedId ?? "",
+      ]);
+      const dimmed = selectedId ? 0.12 : null;
+      if (m.getLayer("route-lines-layer")) {
+        m.setPaintProperty("route-lines-layer", "line-opacity", dimmed ?? 0.55);
+      }
+      if (m.getLayer("route-lines-virtual-layer")) {
+        m.setPaintProperty("route-lines-virtual-layer", "line-opacity", dimmed ?? 0.6);
+      }
+      markers.current.forEach((marker) => {
+        marker.getElement().style.opacity = selectedId ? "0.35" : "1";
+      });
+    };
+
+    if (m.loaded() && m.getSource("route-lines")) {
+      applySelection();
+    } else {
+      m.once("load", applySelection);
+    }
+  }, [selectedId, visibleActivities]);
 
   const hasData = visibleActivities.length > 0;
 
@@ -341,6 +445,74 @@ const ClubMap = () => {
                   </div>
                 </CardContent>
               </Card>
+
+              {selectedActivity ? (
+                <Card>
+                  <CardContent className="p-4 space-y-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="font-medium truncate">
+                          {selectedActivity.name || "Jízda"}
+                        </p>
+                        <Link
+                          to={getMemberProfilePath(selectedActivity.user_id)}
+                          className="text-sm text-primary hover:underline"
+                        >
+                          {selectedActivity.full_name || "Člen klubu"}
+                        </Link>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {format(new Date(selectedActivity.activity_date), "d. MMMM yyyy", {
+                            locale: cs,
+                          })}
+                          {" · "}
+                          {Number(selectedActivity.distance_km).toLocaleString("cs-CZ")} km
+                          {selectedActivity.elevation_gain != null &&
+                            ` · ${selectedActivity.elevation_gain} m`}
+                          {selectedActivity.moving_time
+                            ? ` · ${formatDuration(selectedActivity.moving_time)}`
+                            : ""}
+                          {selectedActivity.is_virtual ? " · virtuální jízda" : ""}
+                        </p>
+                      </div>
+                      <Button variant="ghost" size="sm" onClick={() => setSelectedId(null)}>
+                        Zrušit výběr
+                      </Button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        size="sm"
+                        className="gap-2"
+                        onClick={() => setDetailOpen(true)}
+                        disabled={!selectedActivity.map_polyline}
+                      >
+                        <MapPin className="w-4 h-4" />
+                        Zobrazit trasu
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                        onClick={() => downloadRouteGpx(selectedActivity)}
+                        disabled={!selectedActivity.map_polyline}
+                      >
+                        <Download className="w-4 h-4" />
+                        Stáhnout GPX
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : (
+                hasData && (
+                  <p className="text-center text-sm text-muted-foreground">
+                    Klikni na trasu nebo startovní bod – zvýrazní se a zobrazí se její detail.
+                  </p>
+                )
+              )}
+
+              <RouteDetailDialog
+                route={detailOpen ? selectedActivity : null}
+                onOpenChange={(open) => !open && setDetailOpen(false)}
+              />
 
               {loadError ? (
                 <div className="text-center space-y-3">
