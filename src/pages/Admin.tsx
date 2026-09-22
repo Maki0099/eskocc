@@ -47,7 +47,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Users, Shield, Loader2, Coffee, Target, Clock, KeyRound, Bell, Route, Sparkles, Trash2, Activity, Images, Mountain, CopyCheck } from "lucide-react";
+import { Users, Shield, Loader2, Coffee, Target, Clock, KeyRound, Bell, Route, Sparkles, Trash2, Activity, Images, Mountain, CopyCheck, AlertTriangle } from "lucide-react";
 import BeskydyRoutesAdmin from "@/components/admin/BeskydyRoutesAdmin";
 import VersionInfo from "@/components/admin/VersionInfo";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
