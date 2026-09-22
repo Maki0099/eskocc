@@ -51,7 +51,7 @@ const ShareLinkDialog = ({ open, onOpenChange, ownerId, kind, activityId }: Prop
   const handleCreate = async () => {
     setLoading(true);
     try {
-      const created = await createShareLink(ownerId, kind, activityId ?? null, false);
+      const created = await createShareLink(ownerId, kind, activityId ?? null, true);
       setLink(created);
       toast.success("Odkaz vytvořen");
     } catch {
@@ -129,7 +129,7 @@ const ShareLinkDialog = ({ open, onOpenChange, ownerId, kind, activityId }: Prop
               <div>
                 <Label htmlFor="bio-switch">Zveřejnit i tep a výkon</Label>
                 <p className="text-xs text-muted-foreground">
-                  Ve výchozím stavu se tep ani watty nezobrazují.
+                  Ve výchozím stavu zapnuto – kdykoli můžeš vypnout.
                 </p>
               </div>
               <Switch
