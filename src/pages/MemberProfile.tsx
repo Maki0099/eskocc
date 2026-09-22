@@ -243,6 +243,18 @@ const MemberProfile = () => {
             <p className="text-sm text-muted-foreground">
               Členem od {memberSince}
             </p>
+
+            {isOwnProfile && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-4 gap-2"
+                onClick={() => setShareOpen(true)}
+              >
+                <Share2 className="h-4 w-4" />
+                Sdílet profil
+              </Button>
+            )}
           </CardContent>
         </Card>
 
@@ -297,7 +309,7 @@ const MemberProfile = () => {
         {userId && <SharedRides userId={userId} />}
         {userId && (
           <div className="mb-8">
-            <MemberRoutes userId={userId} />
+            <MemberRoutes userId={userId} canShare={isOwnProfile} />
           </div>
         )}
 
@@ -360,6 +372,14 @@ const MemberProfile = () => {
           </Card>
         )}
       </main>
+      {isOwnProfile && userId && (
+        <ShareLinkDialog
+          open={shareOpen}
+          onOpenChange={setShareOpen}
+          ownerId={userId}
+          kind="profile"
+        />
+      )}
       <TourProvider
         tourId="memberProfile"
         run={tourRunning}
