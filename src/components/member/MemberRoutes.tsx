@@ -1,6 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import mapboxgl from "mapbox-gl";
-import "mapbox-gl/dist/mapbox-gl.css";
+import { useEffect, useState } from "react";
 import { Bike, Download, Mountain, Route as RouteIcon, Clock, Maximize2, Info } from "lucide-react";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
@@ -9,29 +7,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { toast } from "sonner";
 import {
-  coordsToGpx,
   decodePolyline,
-  downloadGpx,
   downsample,
   encodePolyline,
-  slugifyFileName,
   type LngLat,
 } from "@/lib/polyline";
-
-const MAPBOX_TOKEN =
-  "pk.eyJ1IjoibWFraTA5OSIsImEiOiJjbWdydmlmYTgwN3NvMnNyNXg0NjgzYW5iIn0.AiNtdl1RlCCszZnRDT8zUw";
+import RouteDetailDialog, {
+  downloadRouteGpx,
+  formatDuration,
+  MAPBOX_TOKEN,
+} from "@/components/member/RouteDetailDialog";
 
 const PAGE_SIZE = 20;
 
@@ -58,63 +49,6 @@ const staticMapUrl = (coords: LngLat[], width = 400, height = 200) => {
     `${path}/auto/${width}x${height}@2x?padding=20&access_token=${MAPBOX_TOKEN}`
   );
 };
-
-const formatDuration = (seconds: number) => {
-  const h = Math.floor(seconds / 3600);
-  const m = Math.round((seconds % 3600) / 60);
-  return h > 0 ? `${h}:${String(m).padStart(2, "0")}` : `${m} min`;
-};
-
-function RouteDetailMap({ coords }: { coords: LngLat[] }) {
-  const container = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!container.current || coords.length < 2) return;
-    mapboxgl.accessToken = MAPBOX_TOKEN;
-
-    const lngs = coords.map((c) => c[0]);
-    const lats = coords.map((c) => c[1]);
-    const map = new mapboxgl.Map({
-      container: container.current,
-      style: "mapbox://styles/mapbox/outdoors-v12",
-      bounds: [
-        [Math.min(...lngs), Math.min(...lats)],
-        [Math.max(...lngs), Math.max(...lats)],
-      ],
-      fitBoundsOptions: { padding: 40 },
-    });
-    map.addControl(new mapboxgl.NavigationControl(), "top-right");
-
-    map.on("load", () => {
-      map.addSource("route", {
-        type: "geojson",
-        data: {
-          type: "Feature",
-          properties: {},
-          geometry: { type: "LineString", coordinates: coords },
-        },
-      });
-      map.addLayer({
-        id: "route-line",
-        type: "line",
-        source: "route",
-        layout: { "line-join": "round", "line-cap": "round" },
-        paint: { "line-color": "#7A6855", "line-width": 4 },
-      });
-      new mapboxgl.Marker({ color: "#22c55e", scale: 0.8 })
-        .setLngLat(coords[0])
-        .addTo(map);
-      new mapboxgl.Marker({ color: "#ef4444", scale: 0.8 })
-        .setLngLat(coords[coords.length - 1])
-        .addTo(map);
-      map.resize();
-    });
-
-    return () => map.remove();
-  }, [coords]);
-
-  return <div ref={container} className="w-full h-full" />;
-}
 
 const MemberRoutes = ({ userId }: Props) => {
   const [routes, setRoutes] = useState<MemberRoute[]>([]);
@@ -165,26 +99,14 @@ const MemberRoutes = ({ userId }: Props) => {
     }
   };
 
-  const handleDownload = (route: MemberRoute) => {
-    if (!route.map_polyline) return;
-    const coords = decodePolyline(route.map_polyline);
-    if (coords.length < 2) {
-      toast.error("Trasa neobsahuje dostatek bodů");
-      return;
-    }
-    const name = route.name || "Jízda";
-    const gpx = coordsToGpx(coords, name, route.activity_date);
-    downloadGpx(
-      gpx,
-      `${slugifyFileName(name)}-${format(new Date(route.activity_date), "yyyy-MM-dd")}.gpx`
-    );
-    toast.success("GPX staženo");
-  };
-
-  const detailCoords = useMemo(
-    () => (detail?.map_polyline ? decodePolyline(detail.map_polyline) : []),
-    [detail]
-  );
+  const toDetailData = (route: MemberRoute) => ({
+    name: route.name,
+    activity_date: route.activity_date,
+    map_polyline: route.map_polyline,
+    distance_km: route.distance_m / 1000,
+    elevation_gain: route.elevation_gain,
+    moving_time: route.moving_time,
+  });
 
   return (
     <Card>
@@ -289,7 +211,7 @@ const MemberRoutes = ({ userId }: Props) => {
                         variant="outline"
                         size="sm"
                         className="w-full gap-2"
-                        onClick={() => handleDownload(route)}
+                        onClick={() => downloadRouteGpx(toDetailData(route))}
                       >
                         <Download className="w-4 h-4" />
                         Stáhnout GPX
@@ -311,22 +233,10 @@ const MemberRoutes = ({ userId }: Props) => {
         )}
       </CardContent>
 
-      <Dialog open={!!detail} onOpenChange={(open) => !open && setDetail(null)}>
-        <DialogContent className="max-w-4xl">
-          <DialogHeader>
-            <DialogTitle>{detail?.name || "Trasa"}</DialogTitle>
-          </DialogHeader>
-          <div className="h-[60vh] rounded-lg overflow-hidden">
-            {detailCoords.length > 1 && <RouteDetailMap coords={detailCoords} />}
-          </div>
-          {detail && (
-            <Button className="gap-2" onClick={() => handleDownload(detail)}>
-              <Download className="w-4 h-4" />
-              Stáhnout GPX
-            </Button>
-          )}
-        </DialogContent>
-      </Dialog>
+      <RouteDetailDialog
+        route={detail ? toDetailData(detail) : null}
+        onOpenChange={(open) => !open && setDetail(null)}
+      />
     </Card>
   );
 };
