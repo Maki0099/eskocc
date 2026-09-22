@@ -14,8 +14,6 @@ interface TokenRow {
   last_error: string | null;
 }
 
-const PROJECT_REF = "mtlycegceaeueuyymkyv";
-
 export const StravaConnectionCard = () => {
   const { user } = useAuth();
   const { toast } = useToast();
