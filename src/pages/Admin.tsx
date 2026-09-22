@@ -357,7 +357,7 @@ const Admin = () => {
             })()}
 
             <TabsContent value="users" className="space-y-6">
-              <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+              <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
                 <Card>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -411,10 +411,26 @@ const Admin = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">
-                      {users.filter((u) => u.clubAthlete).length}
+                      {users.filter((u) => u.stravaStatus === "connected").length}
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Vlastní účet: {users.filter((u) => u.hasPersonalStrava).length}
+                      Vlastní účet člena
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
+                      <AlertTriangle className="w-3.5 h-3.5" />
+                      Vypršelá propojení
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-orange-500">
+                      {users.filter((u) => u.stravaStatus === "expired").length}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Čeká na obnovení
                     </p>
                   </CardContent>
                 </Card>
