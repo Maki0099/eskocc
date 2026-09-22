@@ -1019,6 +1019,53 @@ export type Database = {
           },
         ]
       }
+      share_links: {
+        Row: {
+          activity_id: string | null
+          created_at: string
+          id: string
+          include_biometrics: boolean
+          kind: string
+          owner_id: string
+          revoked_at: string | null
+          token: string
+          updated_at: string
+          view_count: number
+        }
+        Insert: {
+          activity_id?: string | null
+          created_at?: string
+          id?: string
+          include_biometrics?: boolean
+          kind: string
+          owner_id: string
+          revoked_at?: string | null
+          token: string
+          updated_at?: string
+          view_count?: number
+        }
+        Update: {
+          activity_id?: string | null
+          created_at?: string
+          id?: string
+          include_biometrics?: boolean
+          kind?: string
+          owner_id?: string
+          revoked_at?: string | null
+          token?: string
+          updated_at?: string
+          view_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "share_links_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "member_activities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       strava_club_events: {
         Row: {
           address: string | null
@@ -1556,6 +1603,39 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_shared_activities: {
+        Args: { _limit?: number; _offset?: number; _token: string }
+        Returns: {
+          activity_date: string
+          average_heartrate: number
+          average_speed: number
+          average_watts: number
+          distance_m: number
+          elevation_gain: number
+          id: string
+          map_polyline: string
+          moving_time: number
+          name: string
+          sport_type: string
+          start_lat: number
+          start_lng: number
+        }[]
+      }
+      get_shared_payload: {
+        Args: { _token: string }
+        Returns: {
+          activity_id: string
+          avatar_url: string
+          full_name: string
+          include_biometrics: boolean
+          kind: string
+          nickname: string
+          owner_id: string
+          ytd_count: number
+          ytd_distance: number
+          ytd_elevation: number
+        }[]
+      }
       get_shared_rides: {
         Args: { _user_id: string }
         Returns: {
@@ -1600,6 +1680,7 @@ export type Database = {
           users_zeroed: number
         }[]
       }
+      register_share_view: { Args: { _token: string }; Returns: undefined }
       set_activity_duplicate: {
         Args: { _excluded: boolean; _id: string }
         Returns: undefined
