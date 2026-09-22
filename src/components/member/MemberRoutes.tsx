@@ -219,6 +219,17 @@ const MemberRoutes = ({ userId, canShare = false }: Props) => {
                         <Download className="w-4 h-4" />
                         Stáhnout GPX
                       </Button>
+                      {canShare && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="w-full gap-2"
+                          onClick={() => setShareRouteId(route.id)}
+                        >
+                          <Share2 className="w-4 h-4" />
+                          Sdílet jízdu
+                        </Button>
+                      )}
                     </div>
                   </div>
                 );
@@ -240,6 +251,16 @@ const MemberRoutes = ({ userId, canShare = false }: Props) => {
         route={detail ? toDetailData(detail) : null}
         onOpenChange={(open) => !open && setDetail(null)}
       />
+
+      {canShare && shareRouteId && (
+        <ShareLinkDialog
+          open={!!shareRouteId}
+          onOpenChange={(open) => !open && setShareRouteId(null)}
+          ownerId={userId}
+          kind="activity"
+          activityId={shareRouteId}
+        />
+      )}
     </Card>
   );
 };
