@@ -69,7 +69,9 @@ interface UserWithRole {
   created_at: string;
   role: AppRole;
   clubAthlete: { firstname: string; lastnameInitial: string | null; athleteKey?: string } | null;
-  hasPersonalStrava: boolean;
+  stravaStatus: "connected" | "expired" | "none";
+  stravaLastSyncedAt: string | null;
+  stravaLastError: string | null;
 }
 
 const Admin = () => {
