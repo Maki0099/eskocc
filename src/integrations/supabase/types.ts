@@ -1440,6 +1440,21 @@ export type Database = {
           most_elevation_date: string
         }[]
       }
+      get_member_routes: {
+        Args: { _limit?: number; _offset?: number; _user_id: string }
+        Returns: {
+          activity_date: string
+          distance_m: number
+          elevation_gain: number
+          id: string
+          map_polyline: string
+          moving_time: number
+          name: string
+          sport_type: string
+          start_lat: number
+          start_lng: number
+        }[]
+      }
       get_member_sport_breakdown: {
         Args: { _user_id: string; _year?: number }
         Returns: {
