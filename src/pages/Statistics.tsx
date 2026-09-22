@@ -28,6 +28,7 @@ import {
   CheckCircle2,
   HelpCircle,
   MapPin,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { AppRole } from "@/lib/types";
