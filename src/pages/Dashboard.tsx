@@ -11,6 +11,7 @@ import { ChallengeWidget } from "@/components/dashboard/ChallengeWidget";
 import PendingMembershipWidget from "@/components/dashboard/PendingMembershipWidget";
 import PushNotificationPrompt from "@/components/dashboard/PushNotificationPrompt";
 import StravaConnectPrompt from "@/components/strava/StravaConnectPrompt";
+import StravaConnectModal from "@/components/strava/StravaConnectModal";
 import UpcomingEventsWidget from "@/components/dashboard/UpcomingEventsWidget";
 import { ROLE_LABELS } from "@/lib/constants";
 import { ROUTES } from "@/lib/routes";
@@ -104,6 +105,8 @@ const Dashboard = () => {
               )}
             </div>
           </div>
+
+          {user && role !== "pending" && <StravaConnectModal />}
 
           {user && role !== "pending" && (
             <div className="mb-6 space-y-4">
