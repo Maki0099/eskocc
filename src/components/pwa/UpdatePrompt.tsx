@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { useRegisterSW } from "virtual:pwa-register/react";
+import { clearRuntimeCaches } from "@/lib/pwa-update";
 
 /**
  * Detekce nové verze PWA + uživatelské hlášení s tlačítkem "Aktualizovat".
@@ -58,49 +59,38 @@ const UpdatePrompt = () => {
 
   const applyUpdate = async () => {
     if (reloadingRef.current) return;
-    reloadingRef.current = true;
 
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      toast.error("Nejsi online", {
+        description: "Aktualizace vyžaduje připojení k internetu.",
+      });
+      return;
+    }
+
+    reloadingRef.current = true;
     const loadingId = toast.loading("Načítám novou verzi…");
 
     try {
-      if ("caches" in window) {
-        try {
-          const keys = await caches.keys();
-          await Promise.all(
-            keys
-              .filter((k) => !k.startsWith("workbox-precache"))
-              .map((k) => caches.delete(k))
-          );
-        } catch (err) {
-          console.warn("Cache cleanup failed:", err);
-        }
-      }
-
-      if ("serviceWorker" in navigator) {
-        const onControllerChange = () => {
-          navigator.serviceWorker.controller?.postMessage({
-            type: "RELOAD_ALL_CLIENTS",
-          });
-          setTimeout(() => window.location.reload(), 100);
-        };
-        navigator.serviceWorker.addEventListener(
-          "controllerchange",
-          onControllerChange,
-          { once: true }
-        );
-      }
-
+      // Nejdřív stáhnout a aktivovat novou verzi, teprve pak uklidit dočasná data
       await updateServiceWorker(true);
+      await clearRuntimeCaches();
 
-      // Fallback: pokud controllerchange neproběhne do 3 s, načti ručně
-      setTimeout(() => {
-        toast.dismiss(loadingId);
-        window.location.reload();
-      }, 3000);
+      toast.dismiss(loadingId);
+      window.location.reload();
     } catch (err) {
       console.error("Update failed:", err);
       toast.dismiss(loadingId);
-      toast.error("Aktualizace se nezdařila. Zkus to prosím znovu.");
+      toast.error("Aktualizace se nezdařila", {
+        description:
+          (err instanceof Error ? err.message : String(err)) +
+          " — aplikace běží dál na stávající verzi.",
+        action: {
+          label: "Zkusit znovu",
+          onClick: () => {
+            void applyUpdate();
+          },
+        },
+      });
       reloadingRef.current = false;
     }
   };
