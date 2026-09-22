@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Bike, Download, Mountain, Route as RouteIcon, Clock, Maximize2, Info } from "lucide-react";
+import { Bike, Download, Mountain, Route as RouteIcon, Clock, Maximize2, Info, Share2 } from "lucide-react";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
@@ -39,6 +39,7 @@ interface MemberRoute {
 
 interface Props {
   userId: string;
+  canShare?: boolean;
 }
 
 const staticMapUrl = (coords: LngLat[], width = 400, height = 200) => {
