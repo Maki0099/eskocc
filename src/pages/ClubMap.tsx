@@ -68,6 +68,7 @@ const ClubMap = () => {
   const [activities, setActivities] = useState<ActivityLine[]>([]);
   const [loading, setLoading] = useState(true);
   const [mapError, setMapError] = useState<string | null>(null);
+  const [mapReady, setMapReady] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -208,6 +209,8 @@ const ClubMap = () => {
           const hits = m.queryRenderedFeatures(e.point, { layers: ["route-lines-hit-layer"] });
           if (hits.length === 0) setSelectedId(null);
         });
+
+        setMapReady(true);
       });
 
       resizeObserver = new ResizeObserver(() => {
@@ -230,6 +233,7 @@ const ClubMap = () => {
       markers.current = [];
       map.current?.remove();
       map.current = null;
+      setMapReady(false);
     };
   }, [isMember]);
 
@@ -247,7 +251,7 @@ const ClubMap = () => {
   );
 
   useEffect(() => {
-    if (!map.current) return;
+    if (!map.current || !mapReady) return;
     markers.current.forEach((m) => m.remove());
     markers.current = [];
 
@@ -318,17 +322,13 @@ const ClubMap = () => {
       });
     };
 
-    if (map.current.loaded()) {
-      updateLayers();
-    } else {
-      map.current.once("load", updateLayers);
-    }
-  }, [visibleActivities]);
+    updateLayers();
+  }, [visibleActivities, mapReady]);
 
   // Highlight the selected route, dim the rest
   useEffect(() => {
     const m = map.current;
-    if (!m) return;
+    if (!m || !mapReady) return;
 
     const applySelection = () => {
       if (!m.getLayer("route-lines-selected-layer")) return;
@@ -349,12 +349,10 @@ const ClubMap = () => {
       });
     };
 
-    if (m.loaded() && m.getSource("route-lines")) {
+    if (m.getSource("route-lines")) {
       applySelection();
-    } else {
-      m.once("load", applySelection);
     }
-  }, [selectedId, visibleActivities]);
+  }, [selectedId, visibleActivities, mapReady]);
 
   const hasData = visibleActivities.length > 0;
 
