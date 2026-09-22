@@ -50,7 +50,7 @@ export const createShareLink = async (
   ownerId: string,
   kind: ShareKind,
   activityId: string | null,
-  includeBiometrics: boolean
+  includeBiometrics = true
 ): Promise<ShareLink> => {
   const { data, error } = await supabase
     .from("share_links")
