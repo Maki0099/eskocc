@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Bike, Download, Mountain, Route as RouteIcon, Clock, Maximize2, Info } from "lucide-react";
+import { Bike, Download, Mountain, Route as RouteIcon, Clock, Maximize2, Info, Share2 } from "lucide-react";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,6 +23,7 @@ import RouteDetailDialog, {
   formatDuration,
   MAPBOX_TOKEN,
 } from "@/components/member/RouteDetailDialog";
+import ShareLinkDialog from "@/components/share/ShareLinkDialog";
 
 const PAGE_SIZE = 20;
 
@@ -39,6 +40,7 @@ interface MemberRoute {
 
 interface Props {
   userId: string;
+  canShare?: boolean;
 }
 
 const staticMapUrl = (coords: LngLat[], width = 400, height = 200) => {
@@ -50,7 +52,8 @@ const staticMapUrl = (coords: LngLat[], width = 400, height = 200) => {
   );
 };
 
-const MemberRoutes = ({ userId }: Props) => {
+const MemberRoutes = ({ userId, canShare = false }: Props) => {
+  const [shareRouteId, setShareRouteId] = useState<string | null>(null);
   const [routes, setRoutes] = useState<MemberRoute[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -216,6 +219,17 @@ const MemberRoutes = ({ userId }: Props) => {
                         <Download className="w-4 h-4" />
                         Stáhnout GPX
                       </Button>
+                      {canShare && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="w-full gap-2"
+                          onClick={() => setShareRouteId(route.id)}
+                        >
+                          <Share2 className="w-4 h-4" />
+                          Sdílet jízdu
+                        </Button>
+                      )}
                     </div>
                   </div>
                 );
@@ -237,6 +251,16 @@ const MemberRoutes = ({ userId }: Props) => {
         route={detail ? toDetailData(detail) : null}
         onOpenChange={(open) => !open && setDetail(null)}
       />
+
+      {canShare && shareRouteId && (
+        <ShareLinkDialog
+          open={!!shareRouteId}
+          onOpenChange={(open) => !open && setShareRouteId(null)}
+          ownerId={userId}
+          kind="activity"
+          activityId={shareRouteId}
+        />
+      )}
     </Card>
   );
 };

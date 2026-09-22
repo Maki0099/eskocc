@@ -31,6 +31,8 @@ import PowerTrend from "@/components/member/PowerTrend";
 import CaloriesChart from "@/components/member/CaloriesChart";
 import TrainerRatio from "@/components/member/TrainerRatio";
 import MemberRoutes from "@/components/member/MemberRoutes";
+import ShareLinkDialog from "@/components/share/ShareLinkDialog";
+import { Share2 } from "lucide-react";
 
 interface MemberData {
   full_name: string | null;
@@ -64,6 +66,7 @@ const MemberProfile = () => {
   const [participations, setParticipations] = useState<EventParticipation[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
 
   const handleStartTour = () => {
     setTourRunning(true);
@@ -240,6 +243,18 @@ const MemberProfile = () => {
             <p className="text-sm text-muted-foreground">
               Členem od {memberSince}
             </p>
+
+            {isOwnProfile && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-4 gap-2"
+                onClick={() => setShareOpen(true)}
+              >
+                <Share2 className="h-4 w-4" />
+                Sdílet profil
+              </Button>
+            )}
           </CardContent>
         </Card>
 
@@ -294,7 +309,7 @@ const MemberProfile = () => {
         {userId && <SharedRides userId={userId} />}
         {userId && (
           <div className="mb-8">
-            <MemberRoutes userId={userId} />
+            <MemberRoutes userId={userId} canShare={isOwnProfile} />
           </div>
         )}
 
@@ -357,6 +372,14 @@ const MemberProfile = () => {
           </Card>
         )}
       </main>
+      {isOwnProfile && userId && (
+        <ShareLinkDialog
+          open={shareOpen}
+          onOpenChange={setShareOpen}
+          ownerId={userId}
+          kind="profile"
+        />
+      )}
       <TourProvider
         tourId="memberProfile"
         run={tourRunning}

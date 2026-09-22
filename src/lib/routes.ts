@@ -30,6 +30,7 @@ export const ROUTE_PATTERNS = {
   EVENT_DETAIL: '/events/:id',
   MEMBER_PROFILE: '/member/:userId',
   ROUTE_DETAIL: '/routes/:id',
+  SHARED_VIEW: '/s/:token',
 } as const;
 
 // Helper functions for dynamic routes
