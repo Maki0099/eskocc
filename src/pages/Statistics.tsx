@@ -161,6 +161,8 @@ const Statistics = () => {
             target,
             age_category: profile.age_category,
             is_connected: profile.is_connected ?? false,
+            needs_reauth: profile.needs_reauth ?? false,
+            last_synced_at: profile.last_synced_at ?? null,
           };
         });
 
