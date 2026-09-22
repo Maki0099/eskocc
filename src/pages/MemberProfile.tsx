@@ -30,6 +30,7 @@ import HeartRateZones from "@/components/member/HeartRateZones";
 import PowerTrend from "@/components/member/PowerTrend";
 import CaloriesChart from "@/components/member/CaloriesChart";
 import TrainerRatio from "@/components/member/TrainerRatio";
+import MemberRoutes from "@/components/member/MemberRoutes";
 
 interface MemberData {
   full_name: string | null;
@@ -291,6 +292,11 @@ const MemberProfile = () => {
         {userId && <ActivityHeatmap userId={userId} />}
         {userId && <SportBreakdown userId={userId} />}
         {userId && <SharedRides userId={userId} />}
+        {userId && (
+          <div className="mb-8">
+            <MemberRoutes userId={userId} />
+          </div>
+        )}
 
 
         <div className="grid grid-cols-2 gap-4 mb-8" data-tour="member-stats">
