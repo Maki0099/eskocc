@@ -99,16 +99,24 @@ const UpdatePrompt = () => {
     if (!needRefresh || toastShownRef.current || reloadingRef.current) return;
     toastShownRef.current = true;
 
+    // Automaticky použít novou verzi po krátkém odpočtu — uživatel nemusí klikat.
+    const timer = setTimeout(() => {
+      void applyUpdate();
+    }, 8000);
+
     toast("Je dostupná nová verze", {
-      description: "Aktualizuj pro načtení nejnovějších změn.",
+      description: "Aplikace se za pár vteřin sama aktualizuje na nejnovější verzi.",
       duration: Infinity,
       action: {
-        label: "Aktualizovat",
+        label: "Aktualizovat nyní",
         onClick: () => {
+          clearTimeout(timer);
           void applyUpdate();
         },
       },
     });
+
+    return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [needRefresh]);
 
