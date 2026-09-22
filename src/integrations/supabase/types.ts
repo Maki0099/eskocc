@@ -1459,6 +1459,8 @@ export type Database = {
           full_name: string
           id: string
           is_connected: boolean
+          last_synced_at: string
+          needs_reauth: boolean
           nickname: string
           strava_ytd_count: number
           strava_ytd_distance: number
