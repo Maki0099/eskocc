@@ -106,7 +106,7 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {user && role !== "pending" && <StravaConnectModal />}
+          {user && role !== "pending" && !runTour && <StravaConnectModal />}
 
           {user && role !== "pending" && (
             <div className="mb-6 space-y-4">
