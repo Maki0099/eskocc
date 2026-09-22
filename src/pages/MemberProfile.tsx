@@ -31,6 +31,8 @@ import PowerTrend from "@/components/member/PowerTrend";
 import CaloriesChart from "@/components/member/CaloriesChart";
 import TrainerRatio from "@/components/member/TrainerRatio";
 import MemberRoutes from "@/components/member/MemberRoutes";
+import ShareLinkDialog from "@/components/share/ShareLinkDialog";
+import { Share2 } from "lucide-react";
 
 interface MemberData {
   full_name: string | null;
@@ -64,6 +66,7 @@ const MemberProfile = () => {
   const [participations, setParticipations] = useState<EventParticipation[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
 
   const handleStartTour = () => {
     setTourRunning(true);
