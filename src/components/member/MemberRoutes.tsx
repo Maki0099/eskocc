@@ -23,6 +23,7 @@ import RouteDetailDialog, {
   formatDuration,
   MAPBOX_TOKEN,
 } from "@/components/member/RouteDetailDialog";
+import ShareLinkDialog from "@/components/share/ShareLinkDialog";
 
 const PAGE_SIZE = 20;
 
@@ -51,7 +52,8 @@ const staticMapUrl = (coords: LngLat[], width = 400, height = 200) => {
   );
 };
 
-const MemberRoutes = ({ userId }: Props) => {
+const MemberRoutes = ({ userId, canShare = false }: Props) => {
+  const [shareRouteId, setShareRouteId] = useState<string | null>(null);
   const [routes, setRoutes] = useState<MemberRoute[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
