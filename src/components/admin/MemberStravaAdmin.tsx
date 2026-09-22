@@ -56,6 +56,7 @@ export const MemberStravaAdmin = () => {
   };
 
   const connected = rows.filter((r) => r.athlete_id && !r.needs_reauth).length;
+  const expired = rows.filter((r) => r.athlete_id && r.needs_reauth).length;
 
   return (
     <Card>
@@ -71,10 +72,10 @@ export const MemberStravaAdmin = () => {
           </Button>
         </div>
         <p className="text-sm text-muted-foreground">
-          Propojeno {connected} z {rows.length} členů. Data se stahují z osobních účtů členů,
-          klubové rozhraní Strava k 1. 9. 2026 zrušila. Historická klubová data zůstávají uložena.
-        </p>
-      </CardHeader>
+          Propojeno {connected} z {rows.length} členů
+          {expired > 0 && (
+            <span className="text-amber-600 dark:text-amber-400 font-medium">
+              {
       <CardContent>
         {loading ? (
           <div className="py-8 flex justify-center">
