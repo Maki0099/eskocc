@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Bike, Clock, Download, Heart, Maximize2, Mountain, Zap } from "lucide-react";
+import { Bike, Clock, Download, Heart, Maximize2, Mountain, Share2, Zap } from "lucide-react";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
 import Seo from "@/components/Seo";
@@ -164,8 +164,14 @@ const SharedView = () => {
                     {getInitials(payload.full_name)}
                   </AvatarFallback>
                 </Avatar>
-                <div>
+                <div className="space-y-1">
                   <h1 className="text-xl font-bold">{displayName}</h1>
+                  <p className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
+                    <Share2 className="w-3 h-3" />
+                    {payload.kind === "profile"
+                      ? "Sdílený profil člena klubu ESKO.cc"
+                      : "Sdílená trasa z klubu ESKO.cc"}
+                  </p>
                   {payload.kind === "profile" && (
                     <p className="text-sm text-muted-foreground">
                       {payload.ytd_distance.toLocaleString("cs-CZ")} km ·{" "}
