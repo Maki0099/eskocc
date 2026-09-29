@@ -73,11 +73,11 @@ export const StravaConnectionCard = () => {
     if (!user) return;
     setSyncing(true);
     try {
-      const { error } = await supabase.functions.invoke("strava-stats-batch", {
+      const { error } = await supabase.functions.invoke("sync-member-activities", {
         body: {},
       });
       if (error) throw error;
-      toast({ title: "Synchronizováno", description: "Tvoje statistiky byly obnoveny." });
+      toast({ title: "Synchronizováno", description: "Jízdy i statistiky jsou aktuální." });
       await load();
     } catch (e) {
       toast({
