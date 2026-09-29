@@ -36,6 +36,7 @@ import type { ChallengeSettings } from "@/lib/types";
 import { getInitials } from "@/lib/user-utils";
 import { ROUTES } from "@/lib/routes";
 import StravaConnectPrompt from "@/components/strava/StravaConnectPrompt";
+import SyncNowButton from "@/components/strava/SyncNowButton";
 import WeeklyLeaderboard from "@/components/statistics/WeeklyLeaderboard";
 import MonthlyLeaderboard from "@/components/statistics/MonthlyLeaderboard";
 import {
@@ -80,6 +81,7 @@ const Statistics = () => {
   const [error, setError] = useState<string | null>(null);
   const [rideFilter, setRideFilter] = useState<RideFilter>("all");
   const [filteredStats, setFilteredStats] = useState<Record<string, { km: number; elevation: number; rides: number }> | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
   const exportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -99,7 +101,7 @@ const Statistics = () => {
     return () => {
       active = false;
     };
-  }, [rideFilter]);
+  }, [rideFilter, refreshKey]);
 
   const handleStartTour = () => {
     setTourRunning(true);
@@ -181,7 +183,7 @@ const Statistics = () => {
     };
 
     fetchData();
-  }, [currentYear]);
+  }, [currentYear, refreshKey]);
 
   const getRankIcon = (index: number) => {
     switch (index) {
@@ -330,7 +332,8 @@ const Statistics = () => {
           ) : (
             <div className="space-y-6">
               <StravaConnectPrompt />
-              <div className="flex justify-end">
+              <div className="flex flex-wrap justify-end gap-2">
+                <SyncNowButton onSynced={() => setRefreshKey((k) => k + 1)} />
                 <StatisticsExportButton targetRef={exportRef} year={currentYear} />
               </div>
               <div ref={exportRef} className="space-y-6 bg-background">
