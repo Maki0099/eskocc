@@ -1648,6 +1648,23 @@ export type Database = {
         }[]
       }
       get_top_members: { Args: { limit_count?: number }; Returns: Json }
+      get_unsupported_activities: {
+        Args: { _days?: number }
+        Returns: {
+          activity_date: string
+          average_speed: number
+          distance_m: number
+          elevation_gain: number
+          id: string
+          looks_like_bike: boolean
+          member_name: string
+          moving_time: number
+          name: string
+          sport_type: string
+          strava_activity_id: string
+          user_id: string
+        }[]
+      }
       get_weekly_leaderboard: {
         Args: never
         Returns: {
