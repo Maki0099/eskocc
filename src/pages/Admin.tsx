@@ -54,6 +54,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { ClubStravaAdmin } from "@/components/admin/ClubStravaAdmin";
 import { DuplicateActivitiesAdmin } from "@/components/admin/DuplicateActivitiesAdmin";
 import { MemberStravaAdmin } from "@/components/admin/MemberStravaAdmin";
+import { UnsupportedActivitiesAdmin } from "@/components/admin/UnsupportedActivitiesAdmin";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
@@ -702,7 +703,10 @@ const Admin = () => {
             </TabsContent>
 
             <TabsContent value="member-strava">
-              <MemberStravaAdmin />
+              <div className="space-y-6">
+                <MemberStravaAdmin />
+                <UnsupportedActivitiesAdmin />
+              </div>
             </TabsContent>
 
             <TabsContent value="club-strava">
