@@ -124,7 +124,7 @@ const NotificationCard = ({
 const Notifications = () => {
   const navigate = useNavigate();
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
-  const { startTour, shouldAutoStart, isTourCompleted } = useTour();
+  const { startTour, isTourCompleted } = useTour();
   const [tourRunning, setTourRunning] = useState(false);
   const { 
     notifications, 
@@ -140,13 +140,6 @@ const Notifications = () => {
     setTourRunning(true);
     startTour("notifications");
   };
-
-  useEffect(() => {
-    if (!loading && shouldAutoStart("notifications")) {
-      const timer = setTimeout(() => handleStartTour(), 500);
-      return () => clearTimeout(timer);
-    }
-  }, [loading]);
 
   const filteredNotifications = filter === 'unread' 
     ? notifications.filter(n => !n.is_read)

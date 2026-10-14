@@ -59,7 +59,7 @@ const MemberProfile = () => {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { startTour, shouldAutoStart, isTourCompleted } = useTour();
+  const { startTour, isTourCompleted } = useTour();
   const [tourRunning, setTourRunning] = useState(false);
   const [member, setMember] = useState<MemberData | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
@@ -72,13 +72,6 @@ const MemberProfile = () => {
     setTourRunning(true);
     startTour("memberProfile");
   };
-
-  useEffect(() => {
-    if (!loading && member && shouldAutoStart("memberProfile")) {
-      const timer = setTimeout(() => handleStartTour(), 500);
-      return () => clearTimeout(timer);
-    }
-  }, [loading, member]);
 
   useEffect(() => {
     const fetchMemberData = async () => {

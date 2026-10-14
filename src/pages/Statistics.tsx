@@ -68,7 +68,7 @@ type RideFilter = "all" | "trainer" | "outdoor";
 const Statistics = () => {
   const { user } = useAuth();
   const { isMember, loading: roleLoading } = useUserRole();
-  const { startTour, shouldAutoStart, isTourCompleted } = useTour();
+  const { startTour, isTourCompleted } = useTour();
   const navigate = useNavigate();
   const [tourRunning, setTourRunning] = useState(false);
   const [howToOpen, setHowToOpen] = useState(false);
@@ -107,13 +107,6 @@ const Statistics = () => {
     setTourRunning(true);
     startTour("statistics");
   };
-
-  useEffect(() => {
-    if (!loading && isMember && shouldAutoStart("statistics")) {
-      const timer = setTimeout(() => handleStartTour(), 500);
-      return () => clearTimeout(timer);
-    }
-  }, [loading, isMember]);
 
   const currentYear = new Date().getFullYear();
 

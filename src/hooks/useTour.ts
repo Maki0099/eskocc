@@ -12,7 +12,6 @@ interface UseTourReturn {
   isTourCompleted: (tourId: TourId) => boolean;
   markTourCompleted: (tourId: TourId) => void;
   resetAllTours: () => void;
-  shouldAutoStart: (tourId: TourId) => boolean;
 }
 
 const getCompletedTours = (): TourId[] => {
@@ -57,12 +56,6 @@ export const useTour = (): UseTourReturn => {
     localStorage.removeItem(STORAGE_KEY);
   }, []);
 
-  const shouldAutoStart = useCallback((tourId: TourId): boolean => {
-    const completed = getCompletedTours();
-    const dismissedKey = `esko_tour_dismissed_${tourId}`;
-    const dismissed = localStorage.getItem(dismissedKey);
-    return !completed.includes(tourId) && !dismissed;
-  }, []);
 
   return {
     isRunning,
@@ -72,6 +65,5 @@ export const useTour = (): UseTourReturn => {
     isTourCompleted,
     markTourCompleted,
     resetAllTours,
-    shouldAutoStart,
   };
 };
