@@ -104,7 +104,8 @@ const CampRoutes = () => {
   useEffect(() => {
     const m = map.current;
     if (!m || !mapReady) return;
-    const src = m.getSource("camp") as mapboxgl.GeoJSONSource;
+    const src = m.getSource("camp") as mapboxgl.GeoJSONSource | undefined;
+    if (!src) return;
     src.setData({
       type: "FeatureCollection",
       features: lines.map((l) => ({
