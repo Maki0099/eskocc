@@ -5,7 +5,7 @@ Až dnes se na pěti stránkách průvodce rozjel sám (půl sekundy po načten�
 
 ## Co se mění
 - **Pět stránek** přestane průvodce spouštět automaticky: Dashboard, Statistiky, detail trasy, profil člena, Notifikace. Zbylé stránky (Úvod, Vyjížďky, Galerie, detail vyjížďky, Nastavení účtu) se chovají stejně jako teď – průvodce šel jen z tlačítka.
-- **Tlačítka pro spuštění zůstávají** na všech stránkách: otazník v horní liště a otazník přímo v hlavičceeach stránek. Kdo chce průvodce, klikne.
+- **Tlačítka pro spuštění zůstávají** na všech stránkách: otazník v horní liště a otazník přímo v hlavičce stránky. Kdo chce průvodce, klikne.
 - **Text u resetu v Nastavení účtu** se upraví. Dnes slibuje „Průvodce se znovu zobrazí při další návštěvě dashboardu“, což přestane platit. Nově: reset znovu zobrazí tlačítka s nápovědou na stránkách.
 - **Úklid v kódu**: odstraní se funkce `shouldAutoStart`, kterou už nikdo nebude používat.
 
