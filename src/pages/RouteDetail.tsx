@@ -91,7 +91,7 @@ const RouteDetail = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { isMember, isAdmin, canCreateEvents, loading: roleLoading } = useUserRole();
-  const { startTour, shouldAutoStart, isTourCompleted } = useTour();
+  const { startTour, isTourCompleted } = useTour();
   const [tourRunning, setTourRunning] = useState(false);
   const [route, setRoute] = useState<FavoriteRoute | null>(null);
   const [photos, setPhotos] = useState<Photo[]>([]);
@@ -104,13 +104,6 @@ const RouteDetail = () => {
     setTourRunning(true);
     startTour("routeDetail");
   };
-
-  useEffect(() => {
-    if (!loading && route && isMember && shouldAutoStart("routeDetail")) {
-      const timer = setTimeout(() => handleStartTour(), 500);
-      return () => clearTimeout(timer);
-    }
-  }, [loading, route, isMember]);
 
   const fetchRoute = useCallback(async () => {
     if (!id) return;

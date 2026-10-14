@@ -1,5 +1,5 @@
 import Seo from "@/components/Seo";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -22,8 +22,7 @@ import TourProvider from "@/components/tour/TourProvider";
 const Dashboard = () => {
   const { user, signOut } = useAuth();
   const { profile, role, loading } = useUserStats();
-  const { startTour, endTour, shouldAutoStart, markTourCompleted } = useTour();
-  const autoStartChecked = useRef(false);
+  const { startTour, endTour } = useTour();
   const [runTour, setRunTour] = useState(false);
 
   const handleStartTour = () => {
@@ -35,18 +34,6 @@ const Dashboard = () => {
     setRunTour(false);
     endTour();
   };
-
-  useEffect(() => {
-    if (!loading && !autoStartChecked.current) {
-      autoStartChecked.current = true;
-      if (shouldAutoStart("dashboard")) {
-        setTimeout(() => {
-          handleStartTour();
-          markTourCompleted("dashboard");
-        }, 500);
-      }
-    }
-  }, [loading, shouldAutoStart, markTourCompleted]);
 
   const handleSignOut = async () => {
     await signOut();

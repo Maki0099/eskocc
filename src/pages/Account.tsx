@@ -61,7 +61,7 @@ const Account = () => {
     resetAllTours();
     toast({
       title: "Průvodce resetován",
-      description: "Průvodce aplikací se znovu zobrazí při další návštěvě.",
+      description: "Znovu se zobrazí tlačítka s nápovědou na stránkách.",
     });
   };
 
@@ -439,7 +439,7 @@ const Account = () => {
               Resetovat průvodce aplikací
             </Button>
             <p className="text-xs text-muted-foreground mt-2">
-              Průvodce se znovu zobrazí při další návštěvě dashboardu
+              Znovu se zobrazí tlačítka s nápovědou na stránkách
             </p>
           </div>
 

@@ -1,5 +1,5 @@
 import Seo from "@/components/Seo";
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Bell, Check, CheckCheck, Trash2, Calendar, AlertCircle, Info, ArrowLeft, Filter, ExternalLink, HelpCircle } from 'lucide-react';
 import { useNotifications, Notification } from '@/hooks/useNotifications';
@@ -124,7 +124,7 @@ const NotificationCard = ({
 const Notifications = () => {
   const navigate = useNavigate();
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
-  const { startTour, shouldAutoStart, isTourCompleted } = useTour();
+  const { startTour, isTourCompleted } = useTour();
   const [tourRunning, setTourRunning] = useState(false);
   const { 
     notifications, 
@@ -140,13 +140,6 @@ const Notifications = () => {
     setTourRunning(true);
     startTour("notifications");
   };
-
-  useEffect(() => {
-    if (!loading && shouldAutoStart("notifications")) {
-      const timer = setTimeout(() => handleStartTour(), 500);
-      return () => clearTimeout(timer);
-    }
-  }, [loading]);
 
   const filteredNotifications = filter === 'unread' 
     ? notifications.filter(n => !n.is_read)
