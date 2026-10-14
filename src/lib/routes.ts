@@ -23,6 +23,7 @@ export const ROUTES = {
   NOTIFICATIONS: '/notifications',
   SHARE_TARGET: '/share-target',
   GUIDE_BESKYDY: '/pruvodce-beskydy',
+  CAMP: '/mallorca',
 } as const;
 
 // Dynamic route patterns (for Route definitions in App.tsx)
@@ -31,12 +32,14 @@ export const ROUTE_PATTERNS = {
   MEMBER_PROFILE: '/member/:userId',
   ROUTE_DETAIL: '/routes/:id',
   SHARED_VIEW: '/s/:token',
+  CAMP_ROUTE: '/mallorca/:slug',
 } as const;
 
 // Helper functions for dynamic routes
 export const getEventDetailPath = (id: string): string => `/events/${id}`;
 export const getMemberProfilePath = (userId: string): string => `/member/${userId}`;
 export const getRouteDetailPath = (id: string): string => `/routes/${id}`;
+export const getCampRoutePath = (slug: string): string => `/mallorca/${slug}`;
 export const getClubRecordsPath = (): string => '/rekordy-klubu';
 
 // Navigation items for header/footer
@@ -53,6 +56,7 @@ export const NAV_ITEMS = [
 export const MEMBER_NAV_ITEMS = [
   { to: ROUTES.CLUB_RECORDS, label: 'Rekordy' },
   { to: ROUTES.CLUB_MAP, label: 'Mapa klubu' },
+  { to: ROUTES.CAMP, label: 'Mallorca' },
 ] as const;
 
 export type RouteKey = keyof typeof ROUTES;

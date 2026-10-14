@@ -38,6 +38,8 @@ const Notifications = lazy(() => import("./pages/Notifications"));
 const ShareTarget = lazy(() => import("./pages/ShareTarget"));
 const SharedView = lazy(() => import("./pages/SharedView"));
 const PruvodceBeskydy = lazy(() => import("./pages/PruvodceBeskydy"));
+const CampRoutes = lazy(() => import("./pages/CampRoutes"));
+const CampRouteDetail = lazy(() => import("./pages/CampRouteDetail"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -73,6 +75,8 @@ const App = () => (
                 <Route path={ROUTES.ABOUT} element={<About />} />
                 <Route path={ROUTES.INSTALL} element={<Install />} />
                 <Route path={ROUTES.DOCUMENTS} element={<Documents />} />
+                <Route path={ROUTES.CAMP} element={<CampRoutes />} />
+                <Route path={ROUTE_PATTERNS.CAMP_ROUTE} element={<CampRouteDetail />} />
                 <Route path={ROUTES.GUIDE_BESKYDY} element={<PruvodceBeskydy />} />
                 <Route
                   path={ROUTES.DASHBOARD}
