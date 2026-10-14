@@ -1,5 +1,5 @@
 import Seo from "@/components/Seo";
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Bell, Check, CheckCheck, Trash2, Calendar, AlertCircle, Info, ArrowLeft, Filter, ExternalLink, HelpCircle } from 'lucide-react';
 import { useNotifications, Notification } from '@/hooks/useNotifications';
