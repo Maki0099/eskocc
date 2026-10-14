@@ -42,20 +42,22 @@ export const getRouteDetailPath = (id: string): string => `/routes/${id}`;
 export const getCampRoutePath = (slug: string): string => `/mallorca/${slug}`;
 export const getClubRecordsPath = (): string => '/rekordy-klubu';
 
-// Navigation items for header/footer
-export const NAV_ITEMS = [
-  { to: ROUTES.EVENTS, label: 'Vyjížďky' },
-  { to: ROUTES.STATISTICS, label: 'Statistiky' },
-  { to: ROUTES.CAFE, label: 'Kavárna' },
-  { to: ROUTES.GALLERY, label: 'Galerie' },
-  { to: ROUTES.ABOUT, label: 'O klubu' },
-] as const;
+export type NavItem = {
+  to: string;
+  label: string;
+  memberOnly?: boolean;
+};
 
-// Navigation items visible only for signed-in members
-export const MEMBER_NAV_ITEMS = [
-  { to: ROUTES.CLUB_MAP, label: 'Mapa klubu' },
-  { to: ROUTES.CAMP, label: 'Mallorca' },
-] as const;
+// Navigation items for header/footer, in the order they should be shown
+export const NAV_ITEMS: NavItem[] = [
+  { to: ROUTES.STATISTICS, label: 'Statistiky' },
+  { to: ROUTES.CLUB_MAP, label: 'Mapa klubu', memberOnly: true },
+  { to: ROUTES.CAMP, label: 'Mallorca', memberOnly: true },
+  { to: ROUTES.EVENTS, label: 'Vyjížďky' },
+  { to: ROUTES.GALLERY, label: 'Galerie' },
+  { to: ROUTES.CAFE, label: 'Kavárna' },
+  { to: ROUTES.ABOUT, label: 'O klubu' },
+];
 
 export type RouteKey = keyof typeof ROUTES;
 export type RouteValue = (typeof ROUTES)[RouteKey];
