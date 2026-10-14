@@ -61,7 +61,7 @@ const Account = () => {
     resetAllTours();
     toast({
       title: "Průvodce resetován",
-      description: "Průvodce aplikací se znovu zobrazí při další návštěvě.",
+      description: "Znovu se zobrazí tlačítka s nápovědou na stránkách.",
     });
   };
 
