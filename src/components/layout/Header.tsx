@@ -28,7 +28,7 @@ const MobileNotificationLink = () => {
   
   return (
     <Link to={ROUTES.NOTIFICATIONS} className="block">
-      <Button variant="outline" className="w-full h-12 gap-2 text-base rounded-xl relative">
+      <Button variant="outline" className="w-full h-11 gap-2 text-base rounded-xl relative">
         <Bell className="w-5 h-5" />
         Notifikace
         {unreadCount > 0 && (
@@ -358,7 +358,7 @@ const Header = () => {
           <div className="mt-auto shrink-0 px-6 pt-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] border-t border-border/50 bg-muted/30 space-y-2 [&_a>span]:text-sm">
             <Link
               to={ROUTES.INSTALL}
-              className="flex items-center justify-between w-full px-4 py-3 rounded-xl bg-background hover:bg-muted/50 transition-colors"
+              className="flex items-center justify-between w-full px-4 py-2.5 rounded-xl bg-background hover:bg-muted/50 transition-colors"
             >
               <span className="text-sm font-medium flex items-center gap-2">
                 <Download className="w-4 h-4" />
@@ -369,7 +369,7 @@ const Header = () => {
             
             <button
               onClick={cycleTheme}
-              className="flex items-center justify-between w-full px-4 py-3 rounded-xl bg-background hover:bg-muted/50 transition-colors"
+              className="flex items-center justify-between w-full px-4 py-2.5 rounded-xl bg-background hover:bg-muted/50 transition-colors"
             >
               <span className="text-sm font-medium flex items-center gap-2">
                 {theme === "auto" ? <Sunrise className="w-4 h-4" /> : theme === "light" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
@@ -388,7 +388,7 @@ const Header = () => {
                   setIsMenuOpen(false);
                   handleStartTour();
                 }}
-                className="flex items-center justify-between w-full px-4 py-3 rounded-xl bg-background hover:bg-muted/50 transition-colors"
+                className="flex items-center justify-between w-full px-4 py-2.5 rounded-xl bg-background hover:bg-muted/50 transition-colors"
               >
                 <span className="text-sm font-medium flex items-center gap-2">
                   <HelpCircle className="w-4 h-4" />
@@ -401,12 +401,12 @@ const Header = () => {
             {loading ? (
               <div className="h-12 bg-muted animate-pulse rounded-xl"></div>
             ) : user ? (
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-2">
                 <Link
 
                   to={ROUTES.ACCOUNT}
                   onClick={() => setIsMenuOpen(false)}
-                  className="flex items-center justify-between w-full px-4 py-3 rounded-xl bg-background hover:bg-muted/50 transition-colors"
+                  className="flex items-center justify-between w-full px-4 py-2.5 rounded-xl bg-background hover:bg-muted/50 transition-colors"
                 >
                   <span className="text-sm font-medium flex items-center gap-2">
                     <Settings className="w-4 h-4" />
@@ -418,7 +418,7 @@ const Header = () => {
                 <Link
                   to={ROUTES.DASHBOARD}
                   onClick={() => setIsMenuOpen(false)}
-                  className="flex items-center justify-between w-full px-4 py-3 rounded-xl bg-background hover:bg-muted/50 transition-colors"
+                  className="flex items-center justify-between w-full px-4 py-2.5 rounded-xl bg-background hover:bg-muted/50 transition-colors"
                 >
                   <span className="text-sm font-medium flex items-center gap-2">
                     <LayoutDashboard className="w-4 h-4" />
@@ -435,7 +435,7 @@ const Header = () => {
                     signOut();
                     navigate(ROUTES.HOME);
                   }}
-                  className="flex items-center justify-between w-full px-4 py-3 rounded-xl bg-background hover:bg-muted/50 transition-colors text-left"
+                  className="flex items-center justify-between w-full px-4 py-2.5 rounded-xl bg-background hover:bg-muted/50 transition-colors text-left"
                 >
                   <span className="text-sm font-medium flex items-center gap-2">
                     <LogOut className="w-4 h-4" />
@@ -445,7 +445,7 @@ const Header = () => {
                 </button>
               </div>
             ) : (
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-2">
                 <Link to={ROUTES.REGISTER} className="block">
                   <Button variant="apple" className="w-full h-12 text-base rounded-xl">
                     Registrace
