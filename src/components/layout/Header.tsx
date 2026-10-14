@@ -10,7 +10,7 @@ import { useTheme } from "@/components/ThemeProvider";
 import { supabase } from "@/integrations/supabase/client";
 import logoWhite from "@/assets/logo-horizontal-white.png";
 import logoDark from "@/assets/logo-horizontal-dark.png";
-import { ROUTES, NAV_ITEMS, MEMBER_NAV_ITEMS, getMemberProfilePath } from "@/lib/routes";
+import { ROUTES, NAV_ITEMS, getMemberProfilePath } from "@/lib/routes";
 import { getInitials, formatShortName } from "@/lib/user-utils";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -65,7 +65,7 @@ const Header = () => {
   const hasTour = currentTourId !== null;
   const navigate = useNavigate();
 
-  const visibleNavItems = user ? [...NAV_ITEMS, ...MEMBER_NAV_ITEMS] : [...NAV_ITEMS];
+  const visibleNavItems = user ? NAV_ITEMS : NAV_ITEMS.filter((item) => !item.memberOnly);
 
   const [profile, setProfile] = useState<{ full_name: string | null; avatar_url: string | null } | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
