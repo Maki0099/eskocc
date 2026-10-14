@@ -38,7 +38,8 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.ico", "apple-touch-icon.png", "robots.txt"],
+      includeAssets: ["favicon.ico", "apple-touch-icon.png"],
+      includeManifestIcons: false,
       manifest: {
         name: "ESKO.cc - Cyklistický klub Karolinka",
         short_name: "EskoCC",
@@ -135,7 +136,6 @@ export default defineConfig(({ mode }) => ({
         // požadavků (HTTP 429), takže stovky JS chunků v precache shazovaly aktualizaci.
         // JS/CSS se ukládají průběžně přes runtimeCaching níže.
         globPatterns: ["index.html", "offline.html"],
-        includeManifestIcons: false,
         importScripts: ['/sw-push.js'],
         runtimeCaching: [
           // Hashované JS/CSS/fonty aplikace – stahují se až při použití
