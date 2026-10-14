@@ -49,6 +49,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Users, Shield, Loader2, Coffee, Target, Clock, KeyRound, Bell, Route, Sparkles, Trash2, Activity, Images, Mountain, CopyCheck, AlertTriangle } from "lucide-react";
 import BeskydyRoutesAdmin from "@/components/admin/BeskydyRoutesAdmin";
+import CampRoutesAdmin from "@/components/admin/CampRoutesAdmin";
 import VersionInfo from "@/components/admin/VersionInfo";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ClubStravaAdmin } from "@/components/admin/ClubStravaAdmin";
@@ -281,6 +282,7 @@ const Admin = () => {
                 { id: "notifications", label: "Notifikace", icon: Bell },
                 { id: "routes", label: "Trasy", icon: Route },
                 { id: "beskydy", label: "Beskydy", icon: Mountain },
+                { id: "camp", label: "Mallorca", icon: Mountain },
                 { id: "ai", label: "AI", icon: Sparkles },
                 { id: "member-strava", label: "Strava členů", icon: Activity },
                 { id: "club-strava", label: "Strava klub", icon: Activity },
@@ -690,6 +692,10 @@ const Admin = () => {
 
             <TabsContent value="beskydy" className="space-y-6">
               <BeskydyRoutesAdmin />
+            </TabsContent>
+
+            <TabsContent value="camp" className="space-y-6">
+              <CampRoutesAdmin />
             </TabsContent>
 
             <TabsContent value="routes" className="space-y-6">

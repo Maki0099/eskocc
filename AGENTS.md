@@ -1,0 +1,1 @@
+- Camp (soustředění) routes live in camp_routes/camp_route_photos; files in public 'routes' bucket under camp/<slug>/ — reuses existing public bucket and admin policies.

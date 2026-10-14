@@ -234,6 +234,104 @@ export type Database = {
         }
         Relationships: []
       }
+      camp_route_photos: {
+        Row: {
+          caption: string | null
+          created_at: string
+          file_url: string
+          id: string
+          is_ai: boolean
+          route_id: string
+          sort_order: number
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          file_url: string
+          id?: string
+          is_ai?: boolean
+          route_id: string
+          sort_order?: number
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          file_url?: string
+          id?: string
+          is_ai?: boolean
+          route_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "camp_route_photos_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "camp_routes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      camp_routes: {
+        Row: {
+          camp: string
+          camp_day: number | null
+          cover_image_url: string | null
+          created_at: string
+          description: string
+          difficulty: string
+          distance_km: number
+          elevation_m: number
+          gpx_path: string
+          id: string
+          is_published: boolean
+          mapy_url: string | null
+          slug: string
+          sort_order: number
+          terrain: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          camp?: string
+          camp_day?: number | null
+          cover_image_url?: string | null
+          created_at?: string
+          description?: string
+          difficulty?: string
+          distance_km?: number
+          elevation_m?: number
+          gpx_path: string
+          id?: string
+          is_published?: boolean
+          mapy_url?: string | null
+          slug: string
+          sort_order?: number
+          terrain?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          camp?: string
+          camp_day?: number | null
+          cover_image_url?: string | null
+          created_at?: string
+          description?: string
+          difficulty?: string
+          distance_km?: number
+          elevation_m?: number
+          gpx_path?: string
+          id?: string
+          is_published?: boolean
+          mapy_url?: string | null
+          slug?: string
+          sort_order?: number
+          terrain?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       club_activities: {
         Row: {
           activity_date: string
