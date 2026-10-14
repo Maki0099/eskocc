@@ -37,6 +37,19 @@ export default defineConfig(({ mode }) => ({
     // Active24 throttles request bursts. Let dynamic imports load dependencies
     // normally instead of preloading every dependency in parallel.
     modulePreload: false,
+    // Fewer, larger chunks = fewer parallel requests per page.
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes("node_modules")) {
+            if (id.includes("mapbox-gl")) return "vendor-mapbox";
+            if (id.includes("recharts") || id.includes("d3-")) return "vendor-charts";
+            return "vendor";
+          }
+          if (id.includes("/src/components/ui/") || id.includes("/src/lib/") || id.includes("/src/hooks/") || id.includes("/src/integrations/") || id.includes("/src/contexts/")) return "app-core";
+        },
+      },
+    },
   },
   plugins: [
     react(),
