@@ -33,6 +33,11 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 8080,
   },
+  build: {
+    // Active24 throttles request bursts. Let dynamic imports load dependencies
+    // normally instead of preloading every dependency in parallel.
+    modulePreload: false,
+  },
   plugins: [
     react(),
     mode === "development" && componentTagger(),
