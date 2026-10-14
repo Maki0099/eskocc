@@ -314,7 +314,7 @@ const Header = () => {
           isMenuOpen ? "translate-y-0" : "-translate-y-full"
         }`}
       >
-        <nav className="flex flex-col h-full">
+        <nav className="flex flex-col h-full overflow-y-auto overscroll-contain">
           {user && (
             <Link
               to={getMemberProfilePath(user.id)}
@@ -335,13 +335,13 @@ const Header = () => {
               </div>
             </Link>
           )}
-          <div className="flex-1 overflow-y-auto py-4">
+          <div className="shrink-0 py-2">
 
             {visibleNavItems.map((item, index) => (
               <Link
                 key={item.to}
                 to={item.to}
-                className={`flex items-center justify-between px-6 py-4 text-lg transition-all ${
+                className={`flex items-center justify-between px-6 py-3 text-lg transition-all ${
                   isActive(item.to)
                     ? "text-foreground font-medium bg-muted/50"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
@@ -355,7 +355,7 @@ const Header = () => {
           </div>
 
           {/* Mobile Theme Toggle & Auth Buttons */}
-          <div className="p-6 border-t border-border/50 bg-muted/30 space-y-4">
+          <div className="mt-auto shrink-0 px-6 pt-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] border-t border-border/50 bg-muted/30 space-y-2 [&_a>span]:text-sm">
             <Link
               to={ROUTES.INSTALL}
               className="flex items-center justify-between w-full px-4 py-3 rounded-xl bg-background hover:bg-muted/50 transition-colors"
