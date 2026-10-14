@@ -38,7 +38,8 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.ico", "apple-touch-icon.png", "robots.txt"],
+      includeAssets: ["favicon.ico", "apple-touch-icon.png"],
+      includeManifestIcons: false,
       manifest: {
         name: "ESKO.cc - Cyklistický klub Karolinka",
         short_name: "EskoCC",
@@ -131,17 +132,23 @@ export default defineConfig(({ mode }) => ({
         clientsClaim: true,
         skipWaiting: true,
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, // 3 MiB
-        // Precache only the app shell. Images/fonts go through runtimeCaching → rychlejší první instalace.
-        globPatterns: ["**/*.{js,css,html,woff,woff2}"],
-        globIgnores: [
-          "**/documents/**",
-          "**/pwa-512x512.png",
-          "**/maskable-icon-512x512.png",
-          "**/splash-*.png",
-          "**/hero-cycling.*",
-        ],
+        // Precache jen pár souborů (HTML). Hosting (Active24) blokuje >~10 souběžných
+        // požadavků (HTTP 429), takže stovky JS chunků v precache shazovaly aktualizaci.
+        // JS/CSS se ukládají průběžně přes runtimeCaching níže.
+        globPatterns: ["index.html", "offline.html"],
         importScripts: ['/sw-push.js'],
         runtimeCaching: [
+          // Hashované JS/CSS/fonty aplikace – stahují se až při použití
+          {
+            urlPattern: ({ url, sameOrigin }) =>
+              sameOrigin && url.pathname.startsWith("/assets/") && /\.(?:js|css|woff2?)$/i.test(url.pathname),
+            handler: "CacheFirst",
+            options: {
+              cacheName: "app-assets-cache",
+              expiration: { maxEntries: 300, maxAgeSeconds: 60 * 60 * 24 * 60 },
+              cacheableResponse: { statuses: [200] },
+            },
+          },
           // Supabase API calls - Network first with cache fallback
           {
             urlPattern: /^https:\/\/mtlycegceaeueuyymkyv\.supabase\.co\/rest\/.*/i,
