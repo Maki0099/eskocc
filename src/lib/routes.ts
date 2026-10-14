@@ -53,7 +53,6 @@ export const NAV_ITEMS = [
 
 // Navigation items visible only for signed-in members
 export const MEMBER_NAV_ITEMS = [
-  { to: ROUTES.CLUB_RECORDS, label: 'Rekordy' },
   { to: ROUTES.CLUB_MAP, label: 'Mapa klubu' },
   { to: ROUTES.CAMP, label: 'Mallorca' },
 ] as const;
