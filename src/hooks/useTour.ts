@@ -56,7 +56,6 @@ export const useTour = (): UseTourReturn => {
     localStorage.removeItem(STORAGE_KEY);
   }, []);
 
-
   return {
     isRunning,
     currentTour,
