@@ -44,7 +44,6 @@ export const getClubRecordsPath = (): string => '/rekordy-klubu';
 
 // Navigation items for header/footer
 export const NAV_ITEMS = [
-  { to: ROUTES.HOME, label: 'Domů' },
   { to: ROUTES.EVENTS, label: 'Vyjížďky' },
   { to: ROUTES.STATISTICS, label: 'Statistiky' },
   { to: ROUTES.CAFE, label: 'Kavárna' },
