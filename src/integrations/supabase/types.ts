@@ -865,6 +865,45 @@ export type Database = {
           },
         ]
       }
+      guest_access_links: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          expires_at: string
+          guest_user_id: string | null
+          id: string
+          label: string
+          last_used_at: string | null
+          revoked_at: string | null
+          token: string
+          use_count: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          expires_at: string
+          guest_user_id?: string | null
+          id?: string
+          label: string
+          last_used_at?: string | null
+          revoked_at?: string | null
+          token: string
+          use_count?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string
+          guest_user_id?: string | null
+          id?: string
+          label?: string
+          last_used_at?: string | null
+          revoked_at?: string | null
+          token?: string
+          use_count?: number
+        }
+        Relationships: []
+      }
       member_activities: {
         Row: {
           activity_date: string
@@ -1384,6 +1423,7 @@ export type Database = {
       }
     }
     Functions: {
+      can_view_club: { Args: { _user_id: string }; Returns: boolean }
       get_club_activity_polylines: {
         Args: { _days?: number }
         Returns: {
@@ -1473,6 +1513,15 @@ export type Database = {
           b_sport_type: string
           likely_duplicate: boolean
           matched_user_id: string
+        }[]
+      }
+      get_guest_access_status: {
+        Args: never
+        Returns: {
+          active: boolean
+          expires_at: string
+          is_guest: boolean
+          label: string
         }[]
       }
       get_member_activity_heatmap: {
@@ -1781,6 +1830,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_active_guest: { Args: { _user_id: string }; Returns: boolean }
       recalc_club_ytd: {
         Args: never
         Returns: {
