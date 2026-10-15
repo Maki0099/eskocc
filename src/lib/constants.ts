@@ -8,6 +8,7 @@ export const ROLE_LABELS: Record<AppRole, string> = {
   member: "Člen",
   active_member: "Aktivní člen",
   admin: "Administrátor",
+  guest: "Host",
 };
 
 /**
@@ -18,6 +19,7 @@ export const ROLE_BADGE_VARIANTS: Record<AppRole, "default" | "secondary" | "out
   member: "secondary",
   active_member: "default",
   admin: "default",
+  guest: "outline",
 };
 
 /**

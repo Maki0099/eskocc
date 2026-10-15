@@ -33,6 +33,7 @@ export const ROUTE_PATTERNS = {
   ROUTE_DETAIL: '/routes/:id',
   SHARED_VIEW: '/s/:token',
   CAMP_ROUTE: '/mallorca/:slug',
+  GUEST_ACCESS: '/host/:token',
 } as const;
 
 // Helper functions for dynamic routes
