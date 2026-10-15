@@ -3,7 +3,7 @@
 /**
  * Application role type - matches the app_role enum in Supabase
  */
-export type AppRole = "pending" | "member" | "active_member" | "admin";
+export type AppRole = "pending" | "member" | "active_member" | "admin" | "guest";
 
 /**
  * Challenge settings structure for yearly cycling challenges
