@@ -130,7 +130,7 @@ const EventDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { isAdmin, isMember } = useUserRole();
+  const { isAdmin, isMember, canParticipate } = useUserRole();
   
   const isPastEvent = (eventDate: string) => new Date(eventDate) < new Date();
 
@@ -559,7 +559,7 @@ const EventDetail = () => {
                         Stáhnout GPX
                       </a>
                     </Button>
-                    {user && isMember && !linkedRoute && (
+                    {user && canParticipate && !linkedRoute && (
                       <Button
                         variant="outline"
                         onClick={handleAddToFavorites}
@@ -639,7 +639,7 @@ const EventDetail = () => {
                   <ImageIcon className="w-5 h-5" />
                   Fotky ({photos.length})
                 </CardTitle>
-                {user && isMember && (
+                {user && canParticipate && (
                   <PhotoUpload eventId={id} onUploadComplete={fetchPhotos} />
                 )}
               </div>

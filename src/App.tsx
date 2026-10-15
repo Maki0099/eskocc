@@ -14,6 +14,7 @@ import PageLoader from "./components/PageLoader";
 import NetworkStatus from "./components/pwa/NetworkStatus";
 import UpdatePrompt from "./components/pwa/UpdatePrompt";
 import { ROUTES, ROUTE_PATTERNS } from "@/lib/routes";
+import GuestBanner from "./components/GuestBanner";
 
 // Lazy load all pages for code-splitting
 const Index = lazy(() => import("./pages/Index"));
@@ -41,6 +42,7 @@ const SharedView = lazy(() => import("./pages/SharedView"));
 const PruvodceBeskydy = lazy(() => import("./pages/PruvodceBeskydy"));
 const CampRoutes = lazy(() => import("./pages/CampRoutes"));
 const CampRouteDetail = lazy(() => import("./pages/CampRouteDetail"));
+const GuestAccess = lazy(() => import("./pages/GuestAccess"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -57,6 +59,7 @@ const App = () => (
           <ScrollToTop />
           <ScrollProgressBar />
           <AuthProvider>
+            <GuestBanner />
             <Suspense fallback={<PageLoader />}>
               <Routes>
                 <Route path={ROUTES.HOME} element={<Index />} />
@@ -113,6 +116,7 @@ const App = () => (
                 />
                 <Route path={ROUTES.SHARE_TARGET} element={<ShareTarget />} />
                 <Route path={ROUTE_PATTERNS.SHARED_VIEW} element={<SharedView />} />
+                <Route path={ROUTE_PATTERNS.GUEST_ACCESS} element={<GuestAccess />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>

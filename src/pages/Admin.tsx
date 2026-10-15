@@ -47,7 +47,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Users, Shield, Loader2, Coffee, Target, Clock, KeyRound, Bell, Route, Sparkles, Trash2, Activity, Images, Mountain, CopyCheck, AlertTriangle } from "lucide-react";
+import { Users, Shield, Loader2, Coffee, Target, Clock, KeyRound, Bell, Route, Sparkles, Trash2, Activity, Images, Mountain, CopyCheck, AlertTriangle, Ticket } from "lucide-react";
+import GuestAccessAdmin from "@/components/admin/GuestAccessAdmin";
 import BeskydyRoutesAdmin from "@/components/admin/BeskydyRoutesAdmin";
 import CampRoutesAdmin from "@/components/admin/CampRoutesAdmin";
 import VersionInfo from "@/components/admin/VersionInfo";
@@ -289,6 +290,7 @@ const Admin = () => {
                 { id: "duplicates", label: "Duplicity", icon: CopyCheck },
                 { id: "albums", label: "Alba", icon: Images },
                 { id: "gallery-photos", label: "Fotky", icon: Images },
+                { id: "guests", label: "Hosté", icon: Ticket },
               ];
               const activeTabConfig = adminTabs.find((t) => t.id === activeTab) ?? adminTabs[0];
               const ActiveIcon = activeTabConfig.icon;
@@ -721,6 +723,10 @@ const Admin = () => {
 
             <TabsContent value="duplicates">
               <DuplicateActivitiesAdmin />
+            </TabsContent>
+
+            <TabsContent value="guests">
+              <GuestAccessAdmin />
             </TabsContent>
 
             <TabsContent value="albums">

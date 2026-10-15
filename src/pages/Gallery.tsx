@@ -35,7 +35,7 @@ interface Photo {
 
 const Gallery = () => {
   const { user } = useAuth();
-  const { isMember, loading: roleLoading } = useUserRole();
+  const { isMember, canParticipate, loading: roleLoading } = useUserRole();
   const { albums: externalAlbums, loading: albumsLoading } = useExternalAlbums();
 
   const [photos, setPhotos] = useState<Photo[]>([]);
@@ -95,7 +95,7 @@ const Gallery = () => {
                 Fotky z akcí a vyjížděk klubu Eskocc
               </p>
             </div>
-            {user && isMember && <PhotoUpload onUploadComplete={fetchPhotos} />}
+            {user && canParticipate && <PhotoUpload onUploadComplete={fetchPhotos} />}
           </div>
 
           {!isMember && !roleLoading ? (

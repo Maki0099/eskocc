@@ -90,7 +90,7 @@ const RouteDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { isMember, isAdmin, canCreateEvents, loading: roleLoading } = useUserRole();
+  const { isMember, canParticipate, isAdmin, canCreateEvents, loading: roleLoading } = useUserRole();
   const { startTour, isTourCompleted } = useTour();
   const [tourRunning, setTourRunning] = useState(false);
   const [route, setRoute] = useState<FavoriteRoute | null>(null);
@@ -463,7 +463,7 @@ const RouteDetail = () => {
                   <ImageIcon className="w-5 h-5" />
                   Fotky ({photos.length})
                 </CardTitle>
-                {user && isMember && (
+                {user && canParticipate && (
                   <PhotoUpload routeId={route.id} onUploadComplete={fetchPhotos} />
                 )}
               </div>

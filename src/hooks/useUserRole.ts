@@ -38,7 +38,10 @@ export const useUserRole = () => {
 
   const canCreateEvents = role === "active_member" || role === "admin";
   const isAdmin = role === "admin";
-  const isMember = role === "member" || role === "active_member" || role === "admin";
+  const isGuest = role === "guest";
+  // isMember = may VIEW member content (guests included); canParticipate = may act
+  const canParticipate = role === "member" || role === "active_member" || role === "admin";
+  const isMember = canParticipate || isGuest;
 
-  return { role, loading, canCreateEvents, isAdmin, isMember };
+  return { role, loading, canCreateEvents, isAdmin, isMember, isGuest, canParticipate };
 };
