@@ -1,2 +1,3 @@
 - Camp (soustředění) routes live in camp_routes/camp_route_photos; files in public 'routes' bucket under camp/<slug>/ — reuses existing public bucket and admin policies.
 - Keep Vite module preloading disabled to reduce asset request bursts against the production hosting rate limit.
+- Guest access: temporary links in guest_access_links redeemed by the redeem-guest-link function into a 'guest' role user; read policies use can_view_club(), write policies stay member-only — keeps guests read-only.
