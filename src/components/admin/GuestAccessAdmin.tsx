@@ -32,6 +32,8 @@ const GuestAccessAdmin = () => {
   const [expires, setExpires] = useState(toLocalInput(addDays(new Date(), 7)));
   const [busy, setBusy] = useState(false);
 
+  const [visits, setVisits] = useState<Record<string, { guest_name: string; created_at: string }[]>>({});
+
   const load = async () => {
     const { data, error } = await supabase
       .from("guest_access_links")
@@ -40,6 +42,18 @@ const GuestAccessAdmin = () => {
       .order("created_at", { ascending: false });
     if (error) toast.error("Odkazy se nepodařilo načíst");
     setLinks((data ?? []) as GuestLink[]);
+    const ids = (data ?? []).map((l) => l.id);
+    if (ids.length) {
+      const { data: v } = await supabase
+        .from("guest_access_visits")
+        .select("link_id, guest_name, created_at")
+        .in("link_id", ids)
+        .order("created_at", { ascending: false })
+        .limit(500);
+      const map: Record<string, { guest_name: string; created_at: string }[]> = {};
+      (v ?? []).forEach((r) => (map[r.link_id] ??= []).push(r));
+      setVisits(map);
+    }
   };
 
   useEffect(() => {
@@ -127,13 +141,25 @@ const GuestAccessAdmin = () => {
             {links.map((l) => {
               const expired = new Date(l.expires_at) <= new Date();
               return (
-                <div key={l.id} className="rounded-xl border border-border p-3 flex items-center justify-between gap-3">
+                <div key={l.id} className="rounded-xl border border-border p-3 flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-sm font-medium truncate">{l.label}</p>
                     <p className="text-xs text-muted-foreground">
                       {expired ? "Vypršelo" : "Platí do"} {fmt(l.expires_at)} · otevřeno {l.use_count}×
                       {l.last_used_at ? ` · naposledy ${fmt(l.last_used_at)}` : ""}
                     </p>
+                    {visits[l.id]?.length ? (
+                      <details className="mt-1 text-xs">
+                        <summary className="cursor-pointer text-foreground">
+                          Kdo se díval ({new Set(visits[l.id].map((v) => v.guest_name)).size})
+                        </summary>
+                        <ul className="mt-1 space-y-0.5 text-muted-foreground">
+                          {visits[l.id].map((v, i) => (
+                            <li key={i}><span className="text-foreground">{v.guest_name}</span> · {fmt(v.created_at)}</li>
+                          ))}
+                        </ul>
+                      </details>
+                    ) : null}
                   </div>
                   <div className="flex gap-1 shrink-0">
                     <Button variant="ghost" size="icon" onClick={() => copy(l.token)} aria-label="Kopírovat">

@@ -42,6 +42,7 @@ const GuestBanner = () => {
   if (!expiresAt) return null;
   return (
     <div className="fixed bottom-0 inset-x-0 z-[60] bg-accent text-accent-foreground text-center text-xs sm:text-sm py-1.5 pb-[calc(0.375rem+env(safe-area-inset-bottom))]">
+      {localStorage.getItem("esko_guest_name") ? `Host: ${localStorage.getItem("esko_guest_name")} · ` : ""}
       Hostovský přístup do {format(new Date(expiresAt), "d. M. yyyy H:mm", { locale: cs })}
     </div>
   );

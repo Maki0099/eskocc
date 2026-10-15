@@ -10,10 +10,12 @@ const json = (body: unknown, status = 200) =>
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
-    const { token } = await req.json().catch(() => ({}));
+    const { token, name, check } = await req.json().catch(() => ({}));
     if (typeof token !== "string" || token.length < 16 || token.length > 64) {
       return json({ error: "invalid" }, 400);
     }
+    const guestName = typeof name === "string" ? name.trim().slice(0, 80) : "";
+    if (!check && guestName.length < 2) return json({ error: "name" }, 400);
     const admin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
@@ -26,6 +28,7 @@ Deno.serve(async (req) => {
     if (!link || link.revoked_at || new Date(link.expires_at) <= new Date()) {
       return json({ error: "expired" }, 410);
     }
+    if (check) return json({ ok: true, label: link.label, expires_at: link.expires_at });
 
     const email = `guest-${link.id}@guest.eskocc.cz`;
     let guestId = link.guest_user_id as string | null;
@@ -57,6 +60,12 @@ Deno.serve(async (req) => {
         last_used_at: new Date().toISOString(),
       })
       .eq("id", link.id);
+    await admin.from("guest_access_visits").insert({
+      link_id: link.id,
+      guest_name: guestName,
+      user_agent: (req.headers.get("user-agent") ?? "").slice(0, 300),
+    });
+
 
     return json({ token_hash: gen.properties.hashed_token, expires_at: link.expires_at });
   } catch (e) {

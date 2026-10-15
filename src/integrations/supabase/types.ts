@@ -904,6 +904,38 @@ export type Database = {
         }
         Relationships: []
       }
+      guest_access_visits: {
+        Row: {
+          created_at: string
+          guest_name: string
+          id: string
+          link_id: string
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string
+          guest_name: string
+          id?: string
+          link_id: string
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string
+          guest_name?: string
+          id?: string
+          link_id?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guest_access_visits_link_id_fkey"
+            columns: ["link_id"]
+            isOneToOne: false
+            referencedRelation: "guest_access_links"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       member_activities: {
         Row: {
           activity_date: string
