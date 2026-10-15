@@ -8,6 +8,13 @@
       "when": 1791958730427,
       "tag": "0000_camp_routes",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792083926100,
+      "tag": "0001_add_guest_role",
+      "breakpoints": true
     }
   ]
 }
