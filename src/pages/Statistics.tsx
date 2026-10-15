@@ -67,7 +67,7 @@ type RideFilter = "all" | "trainer" | "outdoor";
 
 const Statistics = () => {
   const { user } = useAuth();
-  const { isMember, loading: roleLoading } = useUserRole();
+  const { isMember, isGuest, loading: roleLoading } = useUserRole();
   const { startTour, isTourCompleted } = useTour();
   const navigate = useNavigate();
   const [tourRunning, setTourRunning] = useState(false);
@@ -324,9 +324,9 @@ const Statistics = () => {
             </Card>
           ) : (
             <div className="space-y-6">
-              <StravaConnectPrompt />
+              {!isGuest && <StravaConnectPrompt />}
               <div className="flex flex-wrap justify-end gap-2">
-                <SyncNowButton onSynced={() => setRefreshKey((k) => k + 1)} />
+                {!isGuest && <SyncNowButton onSynced={() => setRefreshKey((k) => k + 1)} />}
                 <StatisticsExportButton targetRef={exportRef} year={currentYear} />
               </div>
               <div ref={exportRef} className="space-y-6 bg-background">
